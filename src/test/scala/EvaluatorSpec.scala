@@ -30,9 +30,9 @@ class EvaluatorSpec extends FunSpec with Matchers {
 
     it("can load dependencies for an evaluation") {
       val code = """
-        import cats._
+import cats._
 
-        Eval.now(42).value
+Eval.now(42).value
       """
       val remotes = List("https://oss.sonatype.org/content/repositories/releases/")
       val dependencies = List(
@@ -79,6 +79,48 @@ Eval.now(42).value
       }
       result2 should matchPattern {
         case EvalResult.Success(_, 42, _) =>
+      }
+    }
+
+    it("can run code from the exercises content") {
+      val code = """
+import stdlib._
+Asserts.scalaTestAsserts(true)
+"""
+      val remotes = List("https://oss.sonatype.org/content/repositories/releases/")
+      val dependencies = List(
+        ("org.scala-exercises", "exercises-stdlib_2.11", "0.2.0")
+      )
+
+      val result: EvalResult[Unit] = evaluator.eval(
+        code,
+        remotes = remotes,
+        dependencies = dependencies
+      )
+
+      result should matchPattern {
+        case EvalResult.Success(_, (), _) =>
+      }
+    }
+
+    it("captures exceptions when running the exercises content") {
+      val code = """
+import stdlib._
+Asserts.scalaTestAsserts(false)
+"""
+      val remotes = List("https://oss.sonatype.org/content/repositories/releases/")
+      val dependencies = List(
+        ("org.scala-exercises", "exercises-stdlib_2.11", "0.2.0")
+      )
+
+      val result: EvalResult[Unit] = evaluator.eval(
+        code,
+        remotes = remotes,
+        dependencies = dependencies
+      )
+
+      result should matchPattern {
+        case EvalResult.EvalRuntimeError(_, Some(RuntimeError(err: TestFailedException, _))) =>
       }
     }
   }
