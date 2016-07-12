@@ -206,15 +206,13 @@ class Eval(target: Option[File] = None, jars: List[File] = Nil) {
    * where unique is computed from the jvmID (a random number)
    * and a digest of code
    */
-  def applyProcessed[T](code: String, resetState: Boolean, jars: Seq[File]): T = {
+  def execute[T](code: String, resetState: Boolean, jars: Seq[File]): T = {
     val id = uniqueId(code)
     val className = "Evaluator__" + id
-    applyProcessed(className, code, resetState, jars)
+    execute(className, code, resetState, jars)
   }
 
-  /**
-   */
-  def applyProcessed[T](className: String, code: String, resetState: Boolean, jars: Seq[File]): T = {
+  def execute[T](className: String, code: String, resetState: Boolean, jars: Seq[File]): T = {
     val jarUrls = jars.map(jar => new java.net.URL(s"file://${jar.getAbsolutePath}")).toArray
     val urlClassLoader = new URLClassLoader(jarUrls , compiler.getClass.getClassLoader)
     val classLoader = new AbstractFileClassLoader(compilerOutputDir, urlClassLoader)

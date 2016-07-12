@@ -22,10 +22,9 @@ import scala.util.Try
 import scala.util.control.NonFatal
 import scala.concurrent._
 import scala.concurrent.duration._
-import scalaz.concurrent.{ Task => ZTask }
+import scalaz.concurrent.Task
 
-import monix.eval.Task
-import monix.execution._
+import monix.execution.Scheduler
 
 import com.twitter.util.Eval; import Eval._
 
@@ -48,14 +47,15 @@ object EvalResult {
   case object Timeout extends EvalResult[Nothing]
   case class Success[T](complilationInfos: CI, result: T, consoleOutput: String) extends EvalResult[T]
   case class Timeout[T]() extends EvalResult[T]
+  case class UnresolvedDependency(error: coursier.FileError) extends EvalResult[Nothing]
   case class EvalRuntimeError(complilationInfos: CI, runtimeError: Option[RuntimeError]) extends EvalResult[Nothing]
   case class CompilationError(complilationInfos: CI) extends EvalResult[Nothing]
   case class GeneralError(stack: Throwable) extends EvalResult[Nothing]
 }
 
-class Evaluator(timeout: FiniteDuration = 20.seconds) {
-  implicit val scheduler: Scheduler = Scheduler.io("evaluation-scheduler")
-
+class Evaluator(timeout: FiniteDuration = 20.seconds)(
+  implicit S: Scheduler
+) {
   type Dependency = (String, String, String)
   type Remote = String
 
@@ -69,28 +69,27 @@ class Evaluator(timeout: FiniteDuration = 20.seconds) {
     (sev, CompilationInfo(msg, Some(RangePosition(pos.start, pos.point, pos.end))) :: Nil)
   }
 
-  def resolveArtifacts(remotes: Seq[Remote], dependencies: Seq[Dependency]): Resolution = {
-    val resolution = Resolution(
-      dependencies.map(d => {
-        Dependency(
-          Module(d._1, d._2), d._3
-        )
-      }).toSet
+  def remoteToRepository(remote: Remote): Repository =
+    MavenRepository(remote)
+
+  def dependencyToModule(dependency: Dependency): coursier.Dependency =
+    coursier.Dependency(
+      Module(dependency._1, dependency._2), dependency._3
     )
-    val repositories: Seq[Repository] = remotes.map(url => MavenRepository(url))
 
+  def resolveArtifacts(remotes: Seq[Remote], dependencies: Seq[Dependency]): Task[Resolution] = {
+    val resolution = Resolution(dependencies.map(dependencyToModule).toSet)
+    val repositories: Seq[Repository] = remotes.map(remoteToRepository)
     val fetch = Fetch.from(repositories, Cache.fetch())
-    resolution.process.run(fetch).run
+    resolution.process.run(fetch)
   }
 
-  def fetchArtifacts(resolution: Resolution): List[coursier.FileError \/ File] = {
-    if (resolution.isDone)
-      ZTask.gatherUnordered(
-        resolution.artifacts.map(Cache.file(_).run)
-      ).run
-    else
-      Nil
-  }
+  def fetchArtifacts(remotes: Seq[Remote], dependencies: Seq[Dependency]): Task[coursier.FileError \/ List[File]] = for {
+    resolution <- resolveArtifacts(remotes, dependencies)
+    artifacts <- Task.gatherUnordered(
+      resolution.artifacts.map(Cache.file(_).run)
+    )
+  } yield artifacts.sequenceU
 
   def createEval(jars: Seq[File]) = {
     new Eval(jars = jars.toList) {
@@ -117,12 +116,12 @@ class Evaluator(timeout: FiniteDuration = 20.seconds) {
     }
   }
 
-  private[this] def performEval[T](code: String, jars: Seq[File]): EvalResult[T] = {
+  private[this] def evaluate[T](code: String, jars: Seq[File]): EvalResult[T] = {
     val eval = createEval(jars)
 
     val result = for {
       _ ← Try(eval.check(code))
-      result ← Try(eval.applyProcessed[T](code, resetState = true, jars = jars))
+      result ← Try(eval.execute[T](code, resetState = true, jars = jars))
     } yield result
 
     val errors: Map[Severity, List[CompilationInfo]] = eval.errors.toMap
@@ -137,22 +136,21 @@ class Evaluator(timeout: FiniteDuration = 20.seconds) {
     }
   }
 
-  def eval[T](code: String, remotes: Seq[Remote] = Nil, dependencies: Seq[Dependency] = Nil): EvalResult[T] = {
-    // todo: don't take into account dependency resolution time in timeout
-    val resolution = resolveArtifacts(remotes, dependencies)
-    val allJars = fetchArtifacts(resolution).sequenceU
-
-    val jars: Seq[File] = allJars match {
-      case \/-(jars) => jars
-      case -\/(fileError) => Nil // todo: handle errors
-    }
-
-    val evaluation = Task({
-      performEval(code, jars)
-    }) // todo
-
-    Try(
-      Await.result(evaluation.runAsync, timeout)
-    ).getOrElse(EvalResult.Timeout())
+  def eval[T](
+    code: String,
+    remotes: Seq[Remote] = Nil,
+    dependencies: Seq[Dependency] = Nil
+  ): Task[EvalResult[T]] = {
+    for {
+      allJars <- fetchArtifacts(remotes, dependencies)
+      result <- allJars match {
+        case \/-(jars) => Task({
+          evaluate(code, jars)
+        }).timed(timeout).handle({
+          case err: TimeoutException => EvalResult.Timeout[T]()
+        })
+        case -\/(fileError) => Task.now(EvalResult.UnresolvedDependency(fileError))
+      }
+    } yield result
   }
 }

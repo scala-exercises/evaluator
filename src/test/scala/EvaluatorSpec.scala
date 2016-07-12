@@ -6,14 +6,16 @@
 package org.scalaexercises.evaluator
 
 import scala.concurrent.duration._
+import monix.execution.Scheduler
 import org.scalatest._
 
 class EvaluatorSpec extends FunSpec with Matchers {
-  val evaluator = new Evaluator(10 seconds)
+  implicit val scheduler: Scheduler = Scheduler.io("exercises-spec")
+  val evaluator = new Evaluator(20 seconds)
 
   describe("evaluation") {
     it("can evaluate simple expressions") {
-      val result: EvalResult[Int] = evaluator.eval("{ 41 + 1 }")
+      val result: EvalResult[Int] = evaluator.eval("{ 41 + 1 }").run
 
       result should matchPattern {
         case EvalResult.Success(_, 42, _) ⇒
@@ -21,7 +23,7 @@ class EvaluatorSpec extends FunSpec with Matchers {
     }
 
     it("fails with a timeout when takes longer than the configured timeout") {
-      val result: EvalResult[Int] = evaluator.eval("{ while(true) {}; 123 }")
+      val result: EvalResult[Int] = evaluator.eval("{ while(true) {}; 123 }").run
 
       result should matchPattern {
         case t: EvalResult.Timeout[_] ⇒
@@ -43,7 +45,7 @@ Eval.now(42).value
         code,
         remotes = remotes,
         dependencies = dependencies
-      )
+      ).run
 
       result should matchPattern {
         case EvalResult.Success(_, 42, _) =>
@@ -67,12 +69,12 @@ Eval.now(42).value
         code,
         remotes = remotes,
         dependencies = dependencies1
-      )
+      ).run
       val result2: EvalResult[Int] = evaluator.eval(
         code,
         remotes = remotes,
         dependencies = dependencies2
-      )
+      ).run
 
       result1 should matchPattern {
         case EvalResult.Success(_, 42, _) =>
@@ -96,7 +98,7 @@ Asserts.scalaTestAsserts(true)
         code,
         remotes = remotes,
         dependencies = dependencies
-      )
+      ).run
 
       result should matchPattern {
         case EvalResult.Success(_, (), _) =>
@@ -117,7 +119,7 @@ Asserts.scalaTestAsserts(false)
         code,
         remotes = remotes,
         dependencies = dependencies
-      )
+      ).run
 
       result should matchPattern {
         case EvalResult.EvalRuntimeError(_, Some(RuntimeError(err: TestFailedException, _))) =>
