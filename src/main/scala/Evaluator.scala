@@ -7,7 +7,7 @@ package org.scalaexercises.evaluator
 
 import scala.language.reflectiveCalls
 
-import java.io.File
+import java.io.{ File, InputStream }
 import java.nio.file.Path
 import java.util.jar.JarFile
 import java.util.concurrent.TimeoutException
@@ -17,15 +17,19 @@ import scala.tools.nsc.reporters._
 import scala.tools.nsc.io.{ VirtualDirectory, AbstractFile }
 import scala.reflect.internal.util.{ Position, NoPosition, BatchSourceFile, AbstractFileClassLoader }
 
+import scalaz._; import Scalaz._
 import scala.util.Try
 import scala.util.control.NonFatal
 import scala.concurrent._
 import scala.concurrent.duration._
+import scalaz.concurrent.{ Task => ZTask }
 
 import monix.eval.Task
 import monix.execution._
 
-import com.twitter.util.Eval
+import com.twitter.util.Eval; import Eval._
+
+import coursier._
 
 sealed trait Severity
 final case object Info extends Severity
@@ -52,6 +56,9 @@ object EvalResult {
 class Evaluator(timeout: FiniteDuration = 20.seconds) {
   implicit val scheduler: Scheduler = Scheduler.io("evaluation-scheduler")
 
+  type Dependency = (String, String, String)
+  type Remote = String
+
   private[this] def convert(errors: (Position, String, String)): (Severity, List[CompilationInfo]) = {
     val (pos, msg, severity) = errors
     val sev = severity match {
@@ -62,9 +69,39 @@ class Evaluator(timeout: FiniteDuration = 20.seconds) {
     (sev, CompilationInfo(msg, Some(RangePosition(pos.start, pos.point, pos.end))) :: Nil)
   }
 
-  private[this] def performEval[T](code: String): EvalResult[T] = {
-    val eval = new Eval {
+  def resolveArtifacts(remotes: Seq[Remote], dependencies: Seq[Dependency]): Resolution = {
+    val resolution = Resolution(
+      dependencies.map(d => {
+        Dependency(
+          Module(d._1, d._2), d._3
+        )
+      }).toSet
+    )
+    val repositories: Seq[Repository] = remotes.map(url => MavenRepository(url))
+
+    val fetch = Fetch.from(repositories, Cache.fetch())
+    resolution.process.run(fetch).run
+  }
+
+  def fetchArtifacts(resolution: Resolution): List[coursier.FileError \/ File] = {
+    if (resolution.isDone)
+      ZTask.gatherUnordered(
+        resolution.artifacts.map(Cache.file(_).run)
+      ).run
+    else
+      Nil
+  }
+
+  def createEval(jars: Seq[File]) = {
+    new Eval(jars = jars.toList) {
       @volatile var errors: Map[Severity, List[CompilationInfo]] = Map.empty
+
+      override lazy val compilerSettings: Settings = new EvalSettings(None){
+        if (!jars.isEmpty) {
+          val newJars = jars.mkString(File.pathSeparator)
+          classpath.value = newJars + File.pathSeparator + classpath.value
+        }
+      }
 
       override lazy val compilerMessageHandler: Option[Reporter] = Some(new AbstractReporter {
         override val settings: Settings = compilerSettings
@@ -78,10 +115,14 @@ class Evaluator(timeout: FiniteDuration = 20.seconds) {
         }
       })
     }
+  }
+
+  private[this] def performEval[T](code: String, jars: Seq[File]): EvalResult[T] = {
+    val eval = createEval(jars)
 
     val result = for {
       _ ← Try(eval.check(code))
-      result ← Try(eval.apply[T](code, resetState = true))
+      result ← Try(eval.applyProcessed[T](code, resetState = true, jars = jars))
     } yield result
 
     val errors: Map[Severity, List[CompilationInfo]] = eval.errors.toMap
@@ -96,10 +137,22 @@ class Evaluator(timeout: FiniteDuration = 20.seconds) {
     }
   }
 
-  def eval[T](code: String): EvalResult[T] = {
-    val task = Task({ performEval(code) })
+  def eval[T](code: String, remotes: Seq[Remote] = Nil, dependencies: Seq[Dependency] = Nil): EvalResult[T] = {
+    // todo: don't take into account dependency resolution time in timeout
+    val resolution = resolveArtifacts(remotes, dependencies)
+    val allJars = fetchArtifacts(resolution).sequenceU
+
+    val jars: Seq[File] = allJars match {
+      case \/-(jars) => jars
+      case -\/(fileError) => Nil // todo: handle errors
+    }
+
+    val evaluation = Task({
+      performEval(code, jars)
+    }) // todo
+
     Try(
-      Await.result(task.runAsync, timeout)
+      Await.result(evaluation.runAsync, timeout)
     ).getOrElse(EvalResult.Timeout())
   }
 }
