@@ -7,7 +7,6 @@ lazy val evaluator = (project in file("."))
     resolvers += Resolver.sonatypeRepo("snapshots"),
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
-      "com.twitter" %% "util-core" % "6.34.0",
       "io.monix" %% "monix" % "2.0-RC8",
       "org.http4s" %% "http4s-dsl" % http4sVersion,
       "org.http4s" %% "http4s-blaze-server" % http4sVersion,

@@ -1,37 +1,141 @@
 /*
- * Copyright 2010 Twitter, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may
- * not use this file except in compliance with the License. You may obtain
- * a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * scala-exercises-evaluator
+ * Copyright (C) 2015-2016 47 Degrees, LLC. <http://www.47deg.com>
  */
 
-package com.twitter.util
+package org.scalaexercises.evaluator
 
-import com.twitter.conversions.string._
-import com.twitter.io.StreamIO
-import java.io._
-import java.math.BigInteger
+
+import scala.language.reflectiveCalls
+
+import java.io.{ File, InputStream }
 import java.net.URLClassLoader
-import java.security.MessageDigest
-import java.util.Random
+import java.nio.file.Path
 import java.util.jar.JarFile
-import scala.collection.mutable
-import scala.io.Source
-import scala.reflect.internal.util.{BatchSourceFile, Position}
-import scala.tools.nsc.interpreter.AbstractFileClassLoader
-import scala.tools.nsc.io.{AbstractFile, VirtualDirectory}
-import scala.tools.nsc.reporters.{Reporter, AbstractReporter}
-import scala.tools.nsc.{Global, Settings}
-import scala.util.matching.Regex
+import java.util.concurrent.TimeoutException
+import java.security.MessageDigest
+import java.math.BigInteger
+
+import scala.tools.nsc.{ Global, Settings }
+import scala.tools.nsc.reporters._
+import scala.tools.nsc.io.{ VirtualDirectory, AbstractFile }
+import scala.reflect.internal.util.{ Position, NoPosition, BatchSourceFile, AbstractFileClassLoader }
+
+import scalaz._; import Scalaz._
+import scala.util.Try
+import scala.util.control.NonFatal
+import scala.concurrent._
+import scala.concurrent.duration._
+import scalaz.concurrent.Task
+
+import monix.execution.Scheduler
+
+import coursier._
+
+import org.scalaexercises.evaluator._
+
+
+class Evaluator(timeout: FiniteDuration = 20.seconds)(
+  implicit S: Scheduler
+) {
+  type Dependency = (String, String, String)
+  type Remote = String
+
+  private[this] def convert(errors: (Position, String, String)): (Severity, List[CompilationInfo]) = {
+    val (pos, msg, severity) = errors
+    val sev = severity match {
+      case "ERROR"   ⇒ Error
+      case "WARNING" ⇒ Warning
+      case _         ⇒ Informational
+    }
+    (sev, CompilationInfo(msg, Some(RangePosition(pos.start, pos.point, pos.end))) :: Nil)
+  }
+
+  def remoteToRepository(remote: Remote): Repository =
+    MavenRepository(remote)
+
+  def dependencyToModule(dependency: Dependency): coursier.Dependency =
+    coursier.Dependency(
+      Module(dependency._1, dependency._2), dependency._3
+    )
+
+  def resolveArtifacts(remotes: Seq[Remote], dependencies: Seq[Dependency]): Task[Resolution] = {
+    val resolution = Resolution(dependencies.map(dependencyToModule).toSet)
+    val repositories: Seq[Repository] = remotes.map(remoteToRepository)
+    val fetch = Fetch.from(repositories, Cache.fetch())
+    resolution.process.run(fetch)
+  }
+
+  def fetchArtifacts(remotes: Seq[Remote], dependencies: Seq[Dependency]): Task[coursier.FileError \/ List[File]] = for {
+    resolution <- resolveArtifacts(remotes, dependencies)
+    artifacts <- Task.gatherUnordered(
+      resolution.artifacts.map(Cache.file(_).run)
+    )
+  } yield artifacts.sequenceU
+
+  def createEval(jars: Seq[File]) = {
+    new Eval(jars = jars.toList) {
+      @volatile var errors: Map[Severity, List[CompilationInfo]] = Map.empty
+
+      override lazy val compilerSettings: Settings = new EvalSettings(None){
+        if (!jars.isEmpty) {
+          val newJars = jars.mkString(File.pathSeparator)
+          classpath.value = newJars + File.pathSeparator + classpath.value
+        }
+      }
+
+      override lazy val compilerMessageHandler: Option[Reporter] = Some(new AbstractReporter {
+        override val settings: Settings = compilerSettings
+        override def displayPrompt(): Unit = ()
+        override def display(pos: Position, msg: String, severity: this.type#Severity): Unit = {
+          errors += convert((pos, msg, severity.toString))
+        }
+        override def reset() = {
+          super.reset()
+          errors = Map.empty
+        }
+      })
+    }
+  }
+
+  private[this] def evaluate[T](code: String, jars: Seq[File]): EvalResult[T] = {
+    val eval = createEval(jars)
+
+    val result = for {
+      _ ← Try(eval.check(code))
+      result ← Try(eval.execute[T](code, resetState = true, jars = jars))
+    } yield result
+
+    val errors = eval.errors.toMap.asInstanceOf[EvalResult.CI]
+
+    result match {
+      case scala.util.Success(r) ⇒ EvalSuccess[T](errors, r, "")
+      case scala.util.Failure(t) ⇒ t match {
+        case e: Eval.CompilerException ⇒ CompilationError(errors)
+        case NonFatal(e)               ⇒ EvalRuntimeError(errors, Option(RuntimeError(e, None)))
+        case e                         ⇒ GeneralError(e)
+      }
+    }
+  }
+
+  def eval[T](
+    code: String,
+    remotes: Seq[Remote] = Nil,
+    dependencies: Seq[Dependency] = Nil
+  ): Task[EvalResult[T]] = {
+    for {
+      allJars <- fetchArtifacts(remotes, dependencies)
+      result <- allJars match {
+        case \/-(jars) => Task({
+          evaluate(code, jars)
+        }).timed(timeout).handle({
+          case err: TimeoutException => Timeout[T](timeout)
+        })
+        case -\/(fileError) => Task.now(UnresolvedDependency(fileError.describe))
+      }
+    } yield result
+  }
+}
 
 /**
   * Dynamic scala compiler. Lots of (slow) state is created, so it may be advantageous to keep
@@ -45,7 +149,7 @@ private class StringCompiler(
   messageHandler: Option[Reporter]
 ) {
 
-  val cache = new mutable.HashMap[String, Class[_]]()
+  val cache = new scala.collection.mutable.HashMap[String, Class[_]]()
 
   trait MessageCollector {
     val messages: Seq[List[String]]
@@ -53,7 +157,7 @@ private class StringCompiler(
 
   val reporter = messageHandler getOrElse new AbstractReporter with MessageCollector {
     val settings = StringCompiler.this.settings
-    val messages = new mutable.ListBuffer[List[String]]
+    val messages = new scala.collection.mutable.ListBuffer[List[String]]
 
     def display(pos: Position, message: String, severity: Severity) {
       severity.count += 1
@@ -224,20 +328,6 @@ class Eval(target: Option[File] = None, jars: List[File] = Nil) {
   }
 
   /**
-   * Converts the given file to evaluable source.
-   */
-  def toSource(file: File): String = {
-    Source.fromFile(file).mkString
-  }
-
-  /**
-   * Compile an entire source file into the virtual classloader.
-   */
-  def compile(code: String) {
-    compiler(code)
-  }
-
-  /**
    * Check if code is Eval-able.
    * @throws CompilerException if not Eval-able.
    */
@@ -245,27 +335,10 @@ class Eval(target: Option[File] = None, jars: List[File] = Nil) {
     val id = uniqueId(code)
     val className = "Evaluator__" + id
     val wrappedCode = wrapCodeInClass(className, code)
-    compile(wrappedCode) // may throw CompilerException
+    compiler(wrappedCode)
   }
 
-  /**
-   * Check if files are Eval-able.
-   * @throws CompilerException if not Eval-able.
-   */
-  def check(files: File*) {
-    val code = files.map { Source.fromFile(_).mkString }.mkString("\n")
-    check(code)
-  }
-
-  /**
-   * Check if stream is Eval-able.
-   * @throws CompilerException if not Eval-able.
-   */
-  def check(stream: InputStream) {
-    check(Source.fromInputStream(stream).mkString)
-  }
-
-  private[util] def uniqueId(code: String, idOpt: Option[Int] = Some(Eval.jvmId)): String = {
+  private[this] def uniqueId(code: String, idOpt: Option[Int] = Some(Eval.jvmId)): String = {
     val digest = MessageDigest.getInstance("SHA-1").digest(code.getBytes())
     val sha = new BigInteger(1, digest).toString(16)
     idOpt match {
@@ -362,7 +435,7 @@ class ${className} extends (() => Any) with java.io.Serializable {
 
 
 object Eval {
-  private val jvmId = java.lang.Math.abs(new Random().nextInt())
+  private val jvmId = java.lang.Math.abs(new java.util.Random().nextInt())
 
   class CompilerException(val messages: List[List[String]]) extends Exception(
     "Compiler exception " + messages.map(_.mkString("\n")).mkString("\n"))

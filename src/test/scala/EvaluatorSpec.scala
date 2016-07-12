@@ -18,7 +18,7 @@ class EvaluatorSpec extends FunSpec with Matchers {
       val result: EvalResult[Int] = evaluator.eval("{ 41 + 1 }").run
 
       result should matchPattern {
-        case EvalResult.Success(_, 42, _) ⇒
+        case EvalSuccess(_, 42, _) ⇒
       }
     }
 
@@ -26,7 +26,7 @@ class EvaluatorSpec extends FunSpec with Matchers {
       val result: EvalResult[Int] = evaluator.eval("{ while(true) {}; 123 }").run
 
       result should matchPattern {
-        case t: EvalResult.Timeout[_] ⇒
+        case Timeout(_) ⇒
       }
     }
 
@@ -48,7 +48,7 @@ Eval.now(42).value
       ).run
 
       result should matchPattern {
-        case EvalResult.Success(_, 42, _) =>
+        case EvalSuccess(_, 42, _) =>
       }
     }
 
@@ -77,10 +77,10 @@ Eval.now(42).value
       ).run
 
       result1 should matchPattern {
-        case EvalResult.Success(_, 42, _) =>
+        case EvalSuccess(_, 42, _) =>
       }
       result2 should matchPattern {
-        case EvalResult.Success(_, 42, _) =>
+        case EvalSuccess(_, 42, _) =>
       }
     }
 
@@ -101,7 +101,7 @@ Asserts.scalaTestAsserts(true)
       ).run
 
       result should matchPattern {
-        case EvalResult.Success(_, (), _) =>
+        case EvalSuccess(_, (), _) =>
       }
     }
 
@@ -122,7 +122,7 @@ Asserts.scalaTestAsserts(false)
       ).run
 
       result should matchPattern {
-        case EvalResult.EvalRuntimeError(_, Some(RuntimeError(err: TestFailedException, _))) =>
+        case EvalRuntimeError(_, Some(RuntimeError(err: TestFailedException, _))) =>
       }
     }
   }
