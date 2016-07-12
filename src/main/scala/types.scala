@@ -41,6 +41,8 @@ final case class CompilationError[A](complilationInfos: CI) extends EvalResult[A
 
 final case class GeneralError[A](stack: Throwable) extends EvalResult[A]
 
+final case class SecurityViolation[T](explanation: String) extends EvalResult[T]
+
 final case class Dependency(
   groupId: String,
   artifactId: String,
@@ -57,6 +59,7 @@ final case class EvalResponse(
   valueType: Option[String] = None,
   compilationInfos: CI = Map.empty)
 
+
 object EvalResponse {
 
   object messages {
@@ -71,4 +74,3 @@ object EvalResponse {
   }
 
 }
-

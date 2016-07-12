@@ -125,5 +125,13 @@ Asserts.scalaTestAsserts(false)
         case EvalRuntimeError(_, Some(RuntimeError(err: TestFailedException, _))) =>
       }
     }
+
+    it("doesn't allow code to call System.exit") {
+      val result: EvalResult[Int] = evaluator.eval("sys.exit").run
+
+      result should matchPattern {
+        case SecurityViolation(_) ⇒
+      }
+    }
   }
 }
