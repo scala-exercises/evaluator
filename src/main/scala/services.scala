@@ -26,7 +26,7 @@ object EvaluatorServer extends App {
   val ip = Option(System.getenv("EVALUATOR_SERVER_IP")).getOrElse("0.0.0.0")
 
   val port = (Option(System.getenv("EVALUATOR_SERVER_PORT")) orElse
-              Option(System.getenv("HTTP_PORT")))
+              Option(System.getProperty("http.port")))
           .map(_.toInt)
           .getOrElse(8080)
 
