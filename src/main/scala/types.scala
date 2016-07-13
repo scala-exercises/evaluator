@@ -1,26 +1,29 @@
 package org.scalaexercises.evaluator
 
 import scala.concurrent.duration._
+import io.circe._, io.circe.generic.auto._
 
-sealed trait Severity
-final case object Informational extends Severity
-final case object Warning extends Severity
-final case object Error extends Severity
+final case class RangePosition(start: Int, point: Int, end: Int)
+final case class CompilationInfo(message: String, pos: Option[RangePosition])
+final case class RuntimeError(val error: Throwable, position: Option[Int])
 
-case class RangePosition(start: Int, point: Int, end: Int)
-case class CompilationInfo(message: String, pos: Option[RangePosition])
-case class RuntimeError(val error: Throwable, position: Option[Int])
-
-sealed trait EvalResult[+T]
+sealed trait EvalResult[+A]
 
 object EvalResult {
-  type CI = Map[Severity, List[CompilationInfo]]
+  type CI = Map[String, List[CompilationInfo]]
 }
+
 import EvalResult._
 
-case class EvalSuccess[T](complilationInfos: CI, result: T, consoleOutput: String) extends EvalResult[T]
-case class Timeout[T](duration: FiniteDuration) extends EvalResult[T]
-case class UnresolvedDependency[T](explanation: String) extends EvalResult[T]
-case class EvalRuntimeError[T](complilationInfos: CI, runtimeError: Option[RuntimeError]) extends EvalResult[T]
-case class CompilationError[T](complilationInfos: CI) extends EvalResult[T]
-case class GeneralError[T](stack: Throwable) extends EvalResult[T]
+final case class EvalSuccess[A](complilationInfos: CI, result: A, consoleOutput: String) extends EvalResult[A]
+final case class Timeout[A](duration: FiniteDuration) extends EvalResult[A]
+final case class UnresolvedDependency[A](explanation: String) extends EvalResult[A]
+final case class EvalRuntimeError[A](complilationInfos: CI, runtimeError: Option[RuntimeError]) extends EvalResult[A]
+final case class CompilationError[A](complilationInfos: CI) extends EvalResult[A]
+final case class GeneralError[A](stack: Throwable) extends EvalResult[A]
+
+final case class Dependency(groupId: String, artifactId: String, version: String)
+
+final case class EvalRequest(resolvers: List[String], dependencies: List[Dependency], code: String)
+final case class EvalResponse(msg: String, value: Option[String], valueType: Option[String], compilationInfos: CI)
+

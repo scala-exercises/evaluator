@@ -38,17 +38,11 @@ import org.scalaexercises.evaluator._
 class Evaluator(timeout: FiniteDuration = 20.seconds)(
   implicit S: Scheduler
 ) {
-  type Dependency = (String, String, String)
   type Remote = String
 
-  private[this] def convert(errors: (Position, String, String)): (Severity, List[CompilationInfo]) = {
+  private[this] def convert(errors: (Position, String, String)): (String, List[CompilationInfo]) = {
     val (pos, msg, severity) = errors
-    val sev = severity match {
-      case "ERROR"   ⇒ Error
-      case "WARNING" ⇒ Warning
-      case _         ⇒ Informational
-    }
-    (sev, CompilationInfo(msg, Some(RangePosition(pos.start, pos.point, pos.end))) :: Nil)
+    (severity, CompilationInfo(msg, Some(RangePosition(pos.start, pos.point, pos.end))) :: Nil)
   }
 
   def remoteToRepository(remote: Remote): Repository =
@@ -56,7 +50,7 @@ class Evaluator(timeout: FiniteDuration = 20.seconds)(
 
   def dependencyToModule(dependency: Dependency): coursier.Dependency =
     coursier.Dependency(
-      Module(dependency._1, dependency._2), dependency._3
+      Module(dependency.groupId, dependency.artifactId), dependency.version
     )
 
   def resolveArtifacts(remotes: Seq[Remote], dependencies: Seq[Dependency]): Task[Resolution] = {
@@ -75,7 +69,7 @@ class Evaluator(timeout: FiniteDuration = 20.seconds)(
 
   def createEval(jars: Seq[File]) = {
     new Eval(jars = jars.toList) {
-      @volatile var errors: Map[Severity, List[CompilationInfo]] = Map.empty
+      @volatile var errors: Map[String, List[CompilationInfo]] = Map.empty
 
       override lazy val compilerSettings: Settings = new EvalSettings(None){
         if (!jars.isEmpty) {
