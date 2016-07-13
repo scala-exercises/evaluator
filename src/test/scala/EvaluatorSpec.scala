@@ -5,27 +5,30 @@
 
 package org.scalaexercises.evaluator
 
+import scalaz._; import Scalaz._
 import scala.concurrent.duration._
-import monix.execution.Scheduler
 import org.scalatest._
+import java.util.concurrent._
 
 class EvaluatorSpec extends FunSpec with Matchers {
-  implicit val scheduler: Scheduler = Scheduler.io("exercises-spec")
-  val evaluator = new Evaluator(20 seconds)
+  System.setSecurityManager(new SandboxedSecurityManager())
+
+  val scheduler: ExecutorService = SandboxedExecution.executor
+  val evaluator = new Evaluator(30 seconds, scheduler)
 
   describe("evaluation") {
     it("can evaluate simple expressions") {
-      val result: EvalResult[Int] = evaluator.eval("{ 41 + 1 }").run
+      val task = evaluator.eval[Int]("{ 41 + 1 }")
 
-      result should matchPattern {
-        case EvalSuccess(_, 42, _) ⇒
+      task.run should matchPattern {
+        case EvalSuccess(_, 42, _) =>
       }
     }
 
     it("fails with a timeout when takes longer than the configured timeout") {
-      val result: EvalResult[Int] = evaluator.eval("{ while(true) {}; 123 }").run
+      val task = evaluator.eval[Int]("{ while(true) {}; 123 }")
 
-      result should matchPattern {
+      task.run should matchPattern {
         case Timeout(_) ⇒
       }
     }
@@ -33,7 +36,6 @@ class EvaluatorSpec extends FunSpec with Matchers {
     it("can load dependencies for an evaluation") {
       val code = """
 import cats._
-
 Eval.now(42).value
       """
       val remotes = List("https://oss.sonatype.org/content/repositories/releases/")
@@ -127,11 +129,32 @@ Asserts.scalaTestAsserts(false)
     }
 
     it("doesn't allow code to call System.exit") {
-      val result: EvalResult[Int] = evaluator.eval("sys.exit").run
+      val result: EvalResult[Unit] = evaluator.eval("sys.exit(1)").run
 
       result should matchPattern {
         case SecurityViolation(_) ⇒
       }
     }
+
+    it("doesn't allow to install a different security manager") {
+      val code = """
+import java.security._
+
+class MaliciousSecurityManager extends SecurityManager{
+  override def checkPermission(perm: Permission): Unit = {
+    // allow anything to happen by not throwing a security exception
+  }
+}
+
+System.setSecurityManager(new MaliciousSecurityManager())
+"""
+      val result: EvalResult[Unit] = evaluator.eval(code).run
+
+      result should matchPattern {
+        case SecurityViolation(_) ⇒
+      }
+    }
+
+    // todo: set policy, launched threads sandboxed
   }
 }

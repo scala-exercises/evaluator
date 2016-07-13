@@ -13,8 +13,9 @@ import java.net.URLClassLoader
 import java.nio.file.Path
 import java.util.jar.JarFile
 import java.util.concurrent.TimeoutException
-import java.security.MessageDigest
+import java.security.{MessageDigest, Policy}
 import java.math.BigInteger
+import java.util.concurrent._
 
 import scala.tools.nsc.{ Global, Settings }
 import scala.tools.nsc.reporters._
@@ -28,18 +29,9 @@ import scala.concurrent._
 import scala.concurrent.duration._
 import scalaz.concurrent.Task
 
-import monix.execution.Scheduler
-
 import coursier._
 
-import org.scalaexercises.evaluator._
-
-
-class Evaluator(timeout: FiniteDuration = 20.seconds)(
-  implicit S: Scheduler
-) {
-  type Remote = String
-
+class Evaluator(timeout: FiniteDuration = 20.seconds, pool: ExecutorService) {
   private[this] def convert(errors: (Position, String, String)): (String, List[CompilationInfo]) = {
     val (pos, msg, severity) = errors
     (severity, CompilationInfo(msg, Some(RangePosition(pos.start, pos.point, pos.end))) :: Nil)
@@ -94,10 +86,13 @@ class Evaluator(timeout: FiniteDuration = 20.seconds)(
 
   private[this] def evaluate[T](code: String, jars: Seq[File]): EvalResult[T] = {
     val eval = createEval(jars)
+    val oldSm = System.getSecurityManager()
 
-    val result = for {
+    val result: Try[T] = for {
       _ ← Try(eval.check(code))
-      result ← Try(eval.execute[T](code, resetState = true, jars = jars))
+      result ← Try({
+        eval.execute[T](code, resetState = true, jars = jars)
+      })
     } yield result
 
     val errors = eval.errors.toMap.asInstanceOf[EvalResult.CI]
@@ -106,6 +101,7 @@ class Evaluator(timeout: FiniteDuration = 20.seconds)(
       case scala.util.Success(r) ⇒ EvalSuccess[T](errors, r, "")
       case scala.util.Failure(t) ⇒ t match {
         case e: Eval.CompilerException ⇒ CompilationError(errors)
+        case e: SecurityException => SecurityViolation(e.getMessage)
         case NonFatal(e)               ⇒ EvalRuntimeError(errors, Option(RuntimeError(e, None)))
         case e                         ⇒ GeneralError(e)
       }
@@ -120,9 +116,9 @@ class Evaluator(timeout: FiniteDuration = 20.seconds)(
     for {
       allJars <- fetchArtifacts(remotes, dependencies)
       result <- allJars match {
-        case \/-(jars) => Task({
+        case \/-(jars) => Task.fork(Task.delay({
           evaluate(code, jars)
-        }).timed(timeout).handle({
+        }))(pool).timed(timeout).handle({
           case err: TimeoutException => Timeout[T](timeout)
         })
         case -\/(fileError) => Task.now(UnresolvedDependency(fileError.describe))
@@ -318,8 +314,13 @@ class Eval(target: Option[File] = None, jars: List[File] = Nil) {
     val cls = compiler(
       wrapCodeInClass(className, code), className, resetState, classLoader
     )
+
     cls.getConstructor().newInstance().asInstanceOf[() => T].apply().asInstanceOf[T]
   }
+
+  // def runClass[T](cls: Class[_]): T = {
+  //   cls.getConstructor().newInstance().asInstanceOf[() => T].apply()
+  // }
 
   /**
    * Check if code is Eval-able.
