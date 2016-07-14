@@ -47,13 +47,28 @@ final case class Dependency(
   version: String)
 
 final case class EvalRequest(
-  resolvers: List[String],
-  dependencies: List[Dependency],
+  resolvers: List[String] = Nil,
+  dependencies: List[Dependency] = Nil,
   code: String)
 
 final case class EvalResponse(
   msg: String,
-  value: Option[String],
-  valueType: Option[String],
-  compilationInfos: CI)
+  value: Option[String] = None,
+  valueType: Option[String] = None,
+  compilationInfos: CI = Map.empty)
+
+object EvalResponse {
+
+  object messages {
+
+    val `ok` = "Ok"
+    val `Timeout Exceded` = "Timeout"
+    val `Unresolved Dependency` = "Unresolved Dependency"
+    val `Runtime Error` = "Runtime Error"
+    val `Compilation Error` = "Compilation Error"
+    val `Unforeseen Exception` = "Unforeseen Exception"
+
+  }
+
+}
 

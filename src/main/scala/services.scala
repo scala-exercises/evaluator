@@ -11,10 +11,12 @@ import scala.concurrent.duration._
 import scalaz.concurrent.Task
 import scalaz._
 
+
 object services {
 
   import codecs._
   import io.circe.generic.auto._
+  import EvalResponse.messages._
 
   private val logger = getLogger
 
@@ -33,12 +35,12 @@ object services {
         ) flatMap { result =>
           val response = result match {
             case EvalSuccess(cis, result, out) =>
-              EvalResponse("ok", Option(result.toString), Option(result.asInstanceOf[AnyRef].getClass.getName), cis)
-            case Timeout(_) => EvalResponse("Timeout", None, None, Map.empty)
-            case UnresolvedDependency(msg) => EvalResponse(s"Unresolved Dependency : $msg", None, None, Map.empty)
-            case EvalRuntimeError(cis, _) => EvalResponse("Runtime error", None, None, cis)
-            case CompilationError(cis) => EvalResponse("Compilation Error", None, None, cis)
-            case GeneralError(err) => EvalResponse("Unforeseen Exception", None, None, Map.empty)
+              EvalResponse(`ok`, Option(result.toString), Option(result.asInstanceOf[AnyRef].getClass.getName), cis)
+            case Timeout(_) => EvalResponse(`Timeout Exceded`, None, None, Map.empty)
+            case UnresolvedDependency(msg) => EvalResponse(`Unresolved Dependency` + " : " + msg, None, None, Map.empty)
+            case EvalRuntimeError(cis, _) => EvalResponse(`Runtime Error`, None, None, cis)
+            case CompilationError(cis) => EvalResponse(`Compilation Error`, None, None, cis)
+            case GeneralError(err) => EvalResponse(`Unforeseen Exception`, None, None, Map.empty)
           }
           Ok(response.asJson)
         }
