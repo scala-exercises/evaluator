@@ -38,7 +38,7 @@ Eval.now(42).value
       """
       val remotes = List("https://oss.sonatype.org/content/repositories/releases/")
       val dependencies = List(
-        ("org.typelevel", "cats_2.11", "0.6.0")
+        Dependency("org.typelevel", "cats_2.11", "0.6.0")
       )
 
       val result: EvalResult[Int] = evaluator.eval(
@@ -59,10 +59,10 @@ Eval.now(42).value
       """
       val remotes = List("https://oss.sonatype.org/content/repositories/releases/")
       val dependencies1 = List(
-        ("org.typelevel", "cats_2.11", "0.4.1")
+        Dependency("org.typelevel", "cats_2.11", "0.4.1")
       )
       val dependencies2 = List(
-        ("org.typelevel", "cats_2.11", "0.6.0")
+        Dependency("org.typelevel", "cats_2.11", "0.6.0")
       )
 
       val result1: EvalResult[Int] = evaluator.eval(
@@ -91,7 +91,7 @@ Asserts.scalaTestAsserts(true)
 """
       val remotes = List("https://oss.sonatype.org/content/repositories/releases/")
       val dependencies = List(
-        ("org.scala-exercises", "exercises-stdlib_2.11", "0.2.0")
+        Dependency("org.scala-exercises", "exercises-stdlib_2.11", "0.2.0")
       )
 
       val result: EvalResult[Unit] = evaluator.eval(
@@ -112,7 +112,7 @@ Asserts.scalaTestAsserts(false)
 """
       val remotes = List("https://oss.sonatype.org/content/repositories/releases/")
       val dependencies = List(
-        ("org.scala-exercises", "exercises-stdlib_2.11", "0.2.0")
+        Dependency("org.scala-exercises", "exercises-stdlib_2.11", "0.2.0")
       )
 
       val result: EvalResult[Unit] = evaluator.eval(
