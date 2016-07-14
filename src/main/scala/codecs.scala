@@ -4,8 +4,8 @@ import org.http4s._, org.http4s.dsl._
 import io.circe.{Encoder, Decoder, Json, Printer}
 import org.http4s.headers.`Content-Type`
 import io.circe.jawn.CirceSupportParser.facade
-import io.circe.generic.semiauto._
 
+/** Provides Json serialization codecs for the http4s services */
 trait Http4sCodecInstances {
 
   implicit val jsonDecoder: EntityDecoder[Json] = jawn.jawnDecoder(facade)
@@ -30,4 +30,3 @@ trait Http4sCodecInstances {
 }
 
 object codecs extends Http4sCodecInstances
-
