@@ -44,9 +44,6 @@ object SandboxedExecution {
 }
 
 class SandboxedSecurityManager extends SecurityManager {
-  val exitVM = "exitVM.*".r
-  val securityManager = "createSecurityManager"
-
   val enabled = new InheritableThreadLocal[Boolean]()
   enabled.set(false)
 
@@ -61,11 +58,30 @@ class SandboxedSecurityManager extends SecurityManager {
     }
   }
 
-  def sandboxedCheck(perm: Permission): Either[String, String] = {
+  // runtime
+  val exitVM = "exitVM.*".r
+  val securityManager = ".+SecurityManager".r
+  val accessEvaluatorPackage = "accessClassInPackage.org.scalaexercises.*".r
+
+  def checkRuntimePermission(perm: RuntimePermission): Either[String, String] = {
     perm.getName match {
       case exitVM() => Left("Can not exit the VM in sandboxed code")
-      case `securityManager` => Left("Can not replace the security manager in sandboxed code")
-      case other => Right(other)
+      case securityManager() => Left("Can not replace the security manager in sandboxed code")
+      case accessEvaluatorPackage() => Left("Can not access the evaluator's package")
+      case other => {
+        if (other.contains("evaluator")) {
+          println("UUU " + other)
+        }
+        Right(other)
+      }
+    }
+  }
+
+  def sandboxedCheck(perm: Permission): Either[String, String] = {
+    perm match {
+      case awt: java.awt.AWTPermission => Left("Can not access the AWT APIs in sanboxed code")
+      case rt: RuntimePermission => checkRuntimePermission(rt)
+      case other =>      Right(other.getName)
     }
   }
 }
