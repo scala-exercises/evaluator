@@ -44,15 +44,20 @@ object SandboxedExecution {
 }
 
 class SandboxedSecurityManager extends SecurityManager {
-  val enabled = new InheritableThreadLocal[Boolean]()
-  enabled.set(false)
+  val enabled = new InheritableThreadLocal[Boolean](){
+    override def initialValue: Boolean = false
+    override def set(value: Boolean): Unit = {
+      if (get()){
+        throw new SecurityException("The sandbox can't be disabled ")
+      }
+      super.set(value)
+    }
+  }
 
   override def checkPermission(perm: Permission): Unit = {
-    val isEnabled = enabled.get() // may return null
-    val inSandbox = isEnabled.asInstanceOf[Boolean] // fixme: if i use Option i get a ClassCircularityError :_[ -- al
-    if (inSandbox) {
+    if (enabled.get()) {
       sandboxedCheck(perm) match {
-        case Right(result) => ()//println("Check OK " + result)
+        case Right(result) => ()
         case Left(msg) => throw new SecurityException(msg)
       }
     }
@@ -61,19 +66,12 @@ class SandboxedSecurityManager extends SecurityManager {
   // runtime
   val exitVM = "exitVM.*".r
   val securityManager = ".+SecurityManager".r
-  val accessEvaluatorPackage = "accessClassInPackage.org.scalaexercises.*".r
 
   def checkRuntimePermission(perm: RuntimePermission): Either[String, String] = {
     perm.getName match {
       case exitVM() => Left("Can not exit the VM in sandboxed code")
       case securityManager() => Left("Can not replace the security manager in sandboxed code")
-      case accessEvaluatorPackage() => Left("Can not access the evaluator's package")
-      case other => {
-        if (other.contains("evaluator")) {
-          println("UUU " + other)
-        }
-        Right(other)
-      }
+      case other => Right(other)
     }
   }
 

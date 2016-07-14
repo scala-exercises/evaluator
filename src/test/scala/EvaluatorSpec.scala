@@ -155,7 +155,7 @@ System.setSecurityManager(new MaliciousSecurityManager())
       }
     }
 
-    ignore("doesn't allow modifying the security manager's thread local for escaping the sandbox") {
+    it("doesn't allow modifying the security manager's thread local for escaping the sandbox") {
       val code = """
 import org.scalaexercises.evaluator.SandboxedSecurityManager
 
