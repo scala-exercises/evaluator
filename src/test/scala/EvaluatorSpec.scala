@@ -155,6 +155,18 @@ System.setSecurityManager(new MaliciousSecurityManager())
       }
     }
 
-    // todo: set policy, launched threads sandboxed
+    ignore("doesn't allow modifying the security manager's thread local for escaping the sandbox") {
+      val code = """
+import org.scalaexercises.evaluator.SandboxedSecurityManager
+
+System.getSecurityManager().asInstanceOf[SandboxedSecurityManager].enabled.set(false)
+System.setSecurityManager(null)
+"""
+      val result: EvalResult[Unit] = evaluator.eval(code).run
+
+      result should matchPattern {
+        case SecurityViolation(_) ⇒
+      }
+    }
   }
 }
