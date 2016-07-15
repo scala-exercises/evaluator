@@ -24,7 +24,7 @@ object services {
 
   val evaluator = new Evaluator(20 seconds)
 
-  def service = HttpService {
+  def evalService = auth(HttpService {
     case req @ POST -> Root / "eval" =>
       import io.circe.syntax._
       req.decode[EvalRequest] { evalRequest =>
@@ -45,7 +45,7 @@ object services {
           Ok(response.asJson)
         }
       }
-  }
+  })
 
 }
 
@@ -66,7 +66,7 @@ object EvaluatorServer extends App {
 
   BlazeBuilder
     .bindHttp(port, ip)
-    .mountService(service)
+    .mountService(evalService)
     .start
     .run
     .awaitShutdown()
