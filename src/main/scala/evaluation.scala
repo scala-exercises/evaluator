@@ -32,6 +32,8 @@ import scalaz.concurrent.Task
 import coursier._
 
 class Evaluator(timeout: FiniteDuration = 20.seconds, pool: ExecutorService) {
+  type Remote = String
+
   private[this] def convert(errors: (Position, String, String)): (String, List[CompilationInfo]) = {
     val (pos, msg, severity) = errors
     (severity, CompilationInfo(msg, Some(RangePosition(pos.start, pos.point, pos.end))) :: Nil)

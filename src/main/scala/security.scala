@@ -18,8 +18,10 @@ import scala.concurrent._
 // reflection
 // serializable
 
-
 object SandboxedExecution {
+  /**
+    *  An executor for creating sandboxed threads.
+    */
   def executor: ExecutorService = {
     val threadFactory = new ThreadFactory {
 
@@ -43,6 +45,14 @@ object SandboxedExecution {
   }
 }
 
+/**
+  * A self-protecting security manager for the external code execution sandbox. It's
+  * self-protecting in the sense that doesn't allow executed code to change the sandbox
+  * settings or replace the JVM's security manager.
+  *
+  * References:
+  *  - Evaluating the flexibility of the Java Sandbox https://www.cs.cmu.edu/~clegoues/docs/coker15acsac.pdf
+  */
 class SandboxedSecurityManager extends SecurityManager {
   val enabled = new InheritableThreadLocal[Boolean](){
     override def initialValue: Boolean = false
@@ -62,6 +72,13 @@ class SandboxedSecurityManager extends SecurityManager {
       }
     }
   }
+
+  // todo: createClassLoader
+  // todo: accessClassInPackage.sun
+  // todo: suppressAccessChecks
+  // todo: write or execute any file
+  // todo: setPolicy
+  // todo: setProperty.package.access
 
   // runtime
   val exitVM = "exitVM.*".r

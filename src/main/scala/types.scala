@@ -70,6 +70,7 @@ object EvalResponse {
     val `Runtime Error` = "Runtime Error"
     val `Compilation Error` = "Compilation Error"
     val `Unforeseen Exception` = "Unforeseen Exception"
+    val `Security Violation` = "Security Violation"
 
   }
 

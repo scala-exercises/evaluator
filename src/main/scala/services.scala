@@ -1,5 +1,7 @@
 package org.scalaexercises.evaluator
 
+import java.util.concurrent._
+
 import org.http4s._, org.http4s.dsl._, org.http4s.server._
 import org.http4s.server.blaze._
 import org.log4s.getLogger
@@ -20,9 +22,8 @@ object services {
 
   private val logger = getLogger
 
-  implicit val scheduler: Scheduler = Scheduler.io("scala-evaluator")
-
-  val evaluator = new Evaluator(20 seconds)
+  val executor: ExecutorService = SandboxedExecution.executor
+  val evaluator = new Evaluator(20 seconds, executor)
 
   def service = HttpService {
     case req @ POST -> Root / "eval" =>
@@ -41,6 +42,7 @@ object services {
             case EvalRuntimeError(cis, _) => EvalResponse(`Runtime Error`, None, None, cis)
             case CompilationError(cis) => EvalResponse(`Compilation Error`, None, None, cis)
             case GeneralError(err) => EvalResponse(`Unforeseen Exception`, None, None, Map.empty)
+            case SecurityViolation(explanation) => EvalResponse(`Security Violation` + " : " + explanation, None, None, Map.empty)
           }
           Ok(response.asJson)
         }
@@ -52,6 +54,8 @@ object services {
 object EvaluatorServer extends App {
 
   import services._
+
+  System.setSecurityManager(new SandboxedSecurityManager())
 
   private[this] val logger = getLogger
 
