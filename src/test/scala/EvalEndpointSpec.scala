@@ -15,6 +15,7 @@ import scodec.bits.ByteVector
 
 import org.http4s.{Status => HttpStatus}
 
+@DoNotDiscover
 class EvalEndpointSpec extends FunSpec with Matchers {
 
   import services._
@@ -47,7 +48,7 @@ class EvalEndpointSpec extends FunSpec with Matchers {
     evalResponse.msg should be(expectedMessage)
   }
 
-  describe("evaluation") {
+  describe("evaluation endpoint") {
     it("can evaluate simple expressions") {
       verifyEvalResponse(
         response = serve(EvalRequest(code = "{ 41 + 1 }")),

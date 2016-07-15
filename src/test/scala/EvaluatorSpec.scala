@@ -10,6 +10,7 @@ import scala.concurrent.duration._
 import org.scalatest._
 import java.util.concurrent._
 
+@DoNotDiscover
 class EvaluatorSpec extends FunSpec with Matchers {
   val scheduler: ExecutorService = SandboxedExecution.executor
   val evaluator = new Evaluator(30 seconds, scheduler)
@@ -204,5 +205,36 @@ Reflection.getCallerClass(2)
         case SecurityViolation(_) ⇒
       }
     }
+
+    it("doesn't allow setting a custom policy") {
+      val code = """
+import java.security._
+
+class MaliciousPolicy extends Policy {
+  override def getPermissions(domain: ProtectionDomain): PermissionCollection = {
+    new AllPermission().newPermissionCollection()
+  }
+}
+
+Policy.setPolicy(new MaliciousPolicy())
+"""
+      val result: EvalResult[Unit] = evaluator.eval(code).run
+
+      result should matchPattern {
+        case SecurityViolation(_) ⇒
+      }
+    }
+  }
+}
+
+class AllSpecs extends Suites(new EvaluatorSpec, new EvalEndpointSpec) with BeforeAndAfterAll {
+  val oldSm = System.getSecurityManager()
+
+  def beforeAll(configMap: Map[String, Any]) = {
+    System.setSecurityManager(new SandboxedSecurityManager())
+  }
+
+  def afterAll(configMap: Map[String, Any]) = {
+    System.setSecurityManager(oldSm)
   }
 }

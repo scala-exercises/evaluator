@@ -79,7 +79,6 @@ class SandboxedSecurityManager extends SecurityManager {
   }
 
   // todo: write or execute any file
-  // todo: setPolicy
   // todo: setProperty.package.access
 
   // runtime
@@ -87,7 +86,6 @@ class SandboxedSecurityManager extends SecurityManager {
   val securityManager = ".+SecurityManager".r
   val classLoader = "createClassLoader"
   val accessDangerousPackage = "accessClassInPackage.sun.*".r
-  val suppressAccessChecks = "suppressAccessChecks"
 
   def checkRuntimePermission(perm: RuntimePermission): Either[String, String] = {
     perm.getName match {
@@ -103,9 +101,22 @@ class SandboxedSecurityManager extends SecurityManager {
 
   // reflection
 
+  val suppressAccessChecks = "suppressAccessChecks"
+
   def checkReflectionPermission(perm: java.lang.reflect.ReflectPermission): Either[String, String] = {
     perm.getName match {
       case `suppressAccessChecks` => Left("Can not suppress access checks in sandboxed code")
+      case other => Right(other)
+    }
+  }
+
+  // security
+
+  val setPolicy = "setPolicy"
+
+  def checkSecurityPermission(perm: java.security.SecurityPermission): Either[String, String] = {
+    perm.getName match {
+      case `setPolicy` => Left("Can not change security policy in sandboxed code")
       case other => Right(other)
     }
   }
@@ -114,6 +125,7 @@ class SandboxedSecurityManager extends SecurityManager {
     perm match {
       case awt: java.awt.AWTPermission => Left("Can not access the AWT APIs in sanboxed code")
       case rt: RuntimePermission => checkRuntimePermission(rt)
+      case sec: java.security.SecurityPermission => checkSecurityPermission(sec)
       case ref: java.lang.reflect.ReflectPermission => checkReflectionPermission(ref)
       case other =>      Right(other.getName)
     }

@@ -32,8 +32,6 @@ import scalaz.concurrent.Task
 import coursier._
 
 class Evaluator(timeout: FiniteDuration = 20.seconds, pool: ExecutorService) {
-  System.setSecurityManager(new SandboxedSecurityManager())
-
   type Remote = String
 
   private[this] def convert(errors: (Position, String, String)): (String, List[CompilationInfo]) = {
@@ -96,7 +94,7 @@ class Evaluator(timeout: FiniteDuration = 20.seconds, pool: ExecutorService) {
       })
     } yield result
 
-    val errors = Map.empty[String, List[CompilationInfo]]//eval.errors.toMap.asInstanceOf[EvalResult.CI]
+    val errors = Map.empty[String, List[CompilationInfo]] // fixme: eval.errors.toMap.asInstanceOf[EvalResult.CI]
 
     result match {
       case scala.util.Success(r) ⇒ EvalSuccess[T](errors, r, "")
