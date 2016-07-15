@@ -73,7 +73,6 @@ class SandboxedSecurityManager extends SecurityManager {
     }
   }
 
-  // todo: createClassLoader
   // todo: accessClassInPackage.sun
   // todo: suppressAccessChecks
   // todo: write or execute any file
@@ -83,12 +82,22 @@ class SandboxedSecurityManager extends SecurityManager {
   // runtime
   val exitVM = "exitVM.*".r
   val securityManager = ".+SecurityManager".r
+  val classLoader = "createClassLoader"
+  val accessDangerousPackage = "accessClassInPackage.sun.*".r
 
   def checkRuntimePermission(perm: RuntimePermission): Either[String, String] = {
     perm.getName match {
       case exitVM() => Left("Can not exit the VM in sandboxed code")
       case securityManager() => Left("Can not replace the security manager in sandboxed code")
-      case other => Right(other)
+      case `classLoader` => Left("Can not create a class loader in sandboxed code")
+//      case accessDangerousPackage() => Left("Can not access certain packages in sandboxed code")
+      case other => {
+        if (other.startsWith("accessClass")) {
+          println("CHECKEM' " + other)
+        }
+
+        Right(other)
+      }
     }
   }
 

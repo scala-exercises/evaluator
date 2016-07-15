@@ -61,7 +61,7 @@ class Evaluator(timeout: FiniteDuration = 20.seconds, pool: ExecutorService) {
     )
   } yield artifacts.sequenceU
 
-  def createEval(jars: Seq[File]) = {
+  def createEval(jars: Seq[File]): Eval = {
     new Eval(jars = jars.toList) {
       @volatile var errors: Map[String, List[CompilationInfo]] = Map.empty
 
@@ -86,18 +86,15 @@ class Evaluator(timeout: FiniteDuration = 20.seconds, pool: ExecutorService) {
     }
   }
 
-  private[this] def evaluate[T](code: String, jars: Seq[File]): EvalResult[T] = {
-    val eval = createEval(jars)
-    val oldSm = System.getSecurityManager()
-
+  private[this] def evaluate[T](eval: Eval, code: String, classLoader: ClassLoader): EvalResult[T] = {
     val result: Try[T] = for {
       _ ← Try(eval.check(code))
       result ← Try({
-        eval.execute[T](code, resetState = true, jars = jars)
+        eval.execute[T](code, resetState = true, classLoader = classLoader)
       })
     } yield result
 
-    val errors = eval.errors.toMap.asInstanceOf[EvalResult.CI]
+    val errors = Map.empty[String, List[CompilationInfo]]//eval.errors.toMap.asInstanceOf[EvalResult.CI]
 
     result match {
       case scala.util.Success(r) ⇒ EvalSuccess[T](errors, r, "")
@@ -115,16 +112,29 @@ class Evaluator(timeout: FiniteDuration = 20.seconds, pool: ExecutorService) {
     remotes: Seq[Remote] = Nil,
     dependencies: Seq[Dependency] = Nil
   ): Task[EvalResult[T]] = {
+
     for {
       allJars <- fetchArtifacts(remotes, dependencies)
+
       result <- allJars match {
-        case \/-(jars) => Task.fork(Task.delay({
-          evaluate(code, jars)
-        }))(pool).timed(timeout).handle({
-          case err: TimeoutException => Timeout[T](timeout)
-        })
+        case \/-(jars) => {
+          val eval = createEval(jars)
+
+          val jarUrls = jars.map(jar => new java.net.URL(s"file://${jar.getAbsolutePath}")).toArray
+          val urlClassLoader = new URLClassLoader(jarUrls , this.getClass.getClassLoader)
+          val classLoader = new AbstractFileClassLoader(eval.compilerOutputDir, urlClassLoader)
+
+          Task.fork(Task.delay({
+            evaluate(eval, code, classLoader)
+          }))(pool).timed(timeout).handle({
+            case err: TimeoutException => Timeout[T](timeout)
+          })
+        }
         case -\/(fileError) => Task.now(UnresolvedDependency(fileError.describe))
+
       }
+
+
     } yield result
   }
 }
@@ -302,17 +312,13 @@ class Eval(target: Option[File] = None, jars: List[File] = Nil) {
    * where unique is computed from the jvmID (a random number)
    * and a digest of code
    */
-  def execute[T](code: String, resetState: Boolean, jars: Seq[File]): T = {
+  def execute[T](code: String, resetState: Boolean, classLoader: ClassLoader): T = {
     val id = uniqueId(code)
     val className = "Evaluator__" + id
-    execute(className, code, resetState, jars)
+    execute(className, code, resetState, classLoader)
   }
 
-  def execute[T](className: String, code: String, resetState: Boolean, jars: Seq[File]): T = {
-    val jarUrls = jars.map(jar => new java.net.URL(s"file://${jar.getAbsolutePath}")).toArray
-    val urlClassLoader = new URLClassLoader(jarUrls , compiler.getClass.getClassLoader)
-    val classLoader = new AbstractFileClassLoader(compilerOutputDir, urlClassLoader)
-
+  def execute[T](className: String, code: String, resetState: Boolean, classLoader: ClassLoader): T = {
     val cls = compiler(
       wrapCodeInClass(className, code), className, resetState, classLoader
     )

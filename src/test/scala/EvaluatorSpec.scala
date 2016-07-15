@@ -168,5 +168,17 @@ System.setSecurityManager(null)
         case SecurityViolation(_) ⇒
       }
     }
+
+    it("doesn't allow the creation of a class loader") {
+      val code = """
+val cl = new java.net.URLClassLoader(Array())
+cl.loadClass("java.net.URLClassLoader")
+"""
+      val result: EvalResult[Unit] = evaluator.eval(code).run
+
+      result should matchPattern {
+        case SecurityViolation(_) ⇒
+      }
+    }
   }
 }
