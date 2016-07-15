@@ -28,7 +28,7 @@ class EvalEndpointSpec extends FunSpec with Matchers {
 
   val sonatypeReleases = "https://oss.sonatype.org/content/repositories/releases/" :: Nil
 
-  val validToken = Jwt.encode("""{"user":1}""", auth.secretKey, JwtAlgorithm.HS256)
+  val validToken = Jwt.encode("""{"user": "scala-exercises"}""", auth.secretKey, JwtAlgorithm.HS256)
 
   val invalidToken = java.util.UUID.randomUUID.toString 
 
