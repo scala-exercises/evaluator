@@ -69,6 +69,10 @@ class SandboxFlag extends InheritableThreadLocal[Boolean]{
 class SandboxedSecurityManager extends SecurityManager {
   val enabled = new SandboxFlag()
 
+  override def checkExec(cmd: String): Unit = {
+    throw new SecurityException("Can not execute execute arbitrary commands in sandboxed code")
+  }
+
   override def checkPermission(perm: Permission): Unit = {
     if (enabled.get()) {
       sandboxedCheck(perm) match {
@@ -78,10 +82,8 @@ class SandboxedSecurityManager extends SecurityManager {
     }
   }
 
-  // todo: write or execute any file
-  // todo: setProperty.package.access
-
   // runtime
+
   val exitVM = "exitVM.*".r
   val securityManager = ".+SecurityManager".r
   val classLoader = "createClassLoader"

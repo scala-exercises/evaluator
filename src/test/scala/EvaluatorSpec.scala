@@ -224,6 +224,24 @@ Policy.setPolicy(new MaliciousPolicy())
         case SecurityViolation(_) ⇒
       }
     }
+
+    // todo
+    ignore("doesn't allow reading files") {   }
+    ignore("doesn't allow writing files") {   }
+    ignore("doesn't allow deleting files") {   }
+    ignore("doesn't allow executing files") {   }
+    ignore("doesn't allow changing package access settings") { }
+
+    it("doesn't allow executing commands") {
+      val code = """
+Runtime.getRuntime.exec("ls /")
+"""
+      val result: EvalResult[Unit] = evaluator.eval(code).run
+
+      result should matchPattern {
+        case SecurityViolation(_) ⇒
+      }
+    }
   }
 }
 
