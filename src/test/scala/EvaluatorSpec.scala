@@ -11,8 +11,6 @@ import org.scalatest._
 import java.util.concurrent._
 
 class EvaluatorSpec extends FunSpec with Matchers {
-  System.setSecurityManager(new SandboxedSecurityManager())
-
   val scheduler: ExecutorService = SandboxedExecution.executor
   val evaluator = new Evaluator(30 seconds, scheduler)
 

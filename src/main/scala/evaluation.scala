@@ -32,6 +32,8 @@ import scalaz.concurrent.Task
 import coursier._
 
 class Evaluator(timeout: FiniteDuration = 20.seconds, pool: ExecutorService) {
+  System.setSecurityManager(new SandboxedSecurityManager())
+
   type Remote = String
 
   private[this] def convert(errors: (Position, String, String)): (String, List[CompilationInfo]) = {
@@ -112,7 +114,6 @@ class Evaluator(timeout: FiniteDuration = 20.seconds, pool: ExecutorService) {
     remotes: Seq[Remote] = Nil,
     dependencies: Seq[Dependency] = Nil
   ): Task[EvalResult[T]] = {
-
     for {
       allJars <- fetchArtifacts(remotes, dependencies)
 

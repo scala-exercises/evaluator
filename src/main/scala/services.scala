@@ -55,8 +55,6 @@ object EvaluatorServer extends App {
 
   import services._
 
-  System.setSecurityManager(new SandboxedSecurityManager())
-
   private[this] val logger = getLogger
 
   val ip = Option(System.getenv("EVALUATOR_SERVER_IP")).getOrElse("0.0.0.0")
