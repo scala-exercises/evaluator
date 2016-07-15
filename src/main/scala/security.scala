@@ -45,6 +45,17 @@ object SandboxedExecution {
   }
 }
 
+class SandboxFlag extends InheritableThreadLocal[Boolean]{
+  override def initialValue: Boolean = false
+  override def set(value: Boolean): Unit = {
+    if (get() && !value){
+      throw new SecurityException("The sandbox can't be disabled ")
+    }
+
+    super.set(value)
+  }
+}
+
 /**
   * A self-protecting security manager for the external code execution sandbox. It's
   * self-protecting in the sense that doesn't allow executed code to change the sandbox
@@ -54,15 +65,7 @@ object SandboxedExecution {
   *  - Evaluating the flexibility of the Java Sandbox https://www.cs.cmu.edu/~clegoues/docs/coker15acsac.pdf
   */
 class SandboxedSecurityManager extends SecurityManager {
-  val enabled = new InheritableThreadLocal[Boolean](){
-    override def initialValue: Boolean = false
-    override def set(value: Boolean): Unit = {
-      if (get()){
-        throw new SecurityException("The sandbox can't be disabled ")
-      }
-      super.set(value)
-    }
-  }
+  val enabled = new SandboxFlag()
 
   override def checkPermission(perm: Permission): Unit = {
     if (enabled.get()) {
@@ -74,7 +77,7 @@ class SandboxedSecurityManager extends SecurityManager {
   }
 
   // todo: accessClassInPackage.sun
-  // todo: suppressAccessChecks
+
   // todo: write or execute any file
   // todo: setPolicy
   // todo: setProperty.package.access
@@ -84,20 +87,23 @@ class SandboxedSecurityManager extends SecurityManager {
   val securityManager = ".+SecurityManager".r
   val classLoader = "createClassLoader"
   val accessDangerousPackage = "accessClassInPackage.sun.*".r
+  val suppressAccessChecks = "suppressAccessChecks"
 
   def checkRuntimePermission(perm: RuntimePermission): Either[String, String] = {
     perm.getName match {
       case exitVM() => Left("Can not exit the VM in sandboxed code")
       case securityManager() => Left("Can not replace the security manager in sandboxed code")
       case `classLoader` => Left("Can not create a class loader in sandboxed code")
-//      case accessDangerousPackage() => Left("Can not access certain packages in sandboxed code")
-      case other => {
-        if (other.startsWith("accessClass")) {
-          println("CHECKEM' " + other)
-        }
+      case other => Right(other)
+    }
+  }
 
-        Right(other)
-      }
+  // reflection
+
+  def checkReflectionPermission(perm: java.lang.reflect.ReflectPermission): Either[String, String] = {
+    perm.getName match {
+      case `suppressAccessChecks` => Left("Can not suppress access checks in sandboxed code")
+      case other => Right(other)
     }
   }
 
@@ -105,6 +111,7 @@ class SandboxedSecurityManager extends SecurityManager {
     perm match {
       case awt: java.awt.AWTPermission => Left("Can not access the AWT APIs in sanboxed code")
       case rt: RuntimePermission => checkRuntimePermission(rt)
+      case ref: java.lang.reflect.ReflectPermission => checkReflectionPermission(ref)
       case other =>      Right(other.getName)
     }
   }

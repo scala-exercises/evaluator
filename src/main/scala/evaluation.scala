@@ -387,41 +387,6 @@ class ${className} extends (() => Any) with java.io.Serializable {
     }
   }
 
-  /*
-   * Try to guess our app's classpath.
-   * This is probably fragile.
-   */
-  lazy val impliedClassPath: List[String] = {
-    def getClassPath(cl: ClassLoader, acc: List[List[String]] = List.empty): List[List[String]] = {
-      val cp = cl match {
-        case urlClassLoader: URLClassLoader => urlClassLoader.getURLs.filter(_.getProtocol == "file").
-          map(u => new File(u.toURI).getPath).toList
-        case _ => Nil
-      }
-      cl.getParent match {
-        case null => (cp :: acc).reverse
-        case parent => getClassPath(parent, cp :: acc)
-      }
-    }
-
-    val classPath = getClassPath(this.getClass.getClassLoader)
-    val currentClassPath = classPath.head
-
-    // if there's just one thing in the classpath, and it's a jar, assume an executable jar.
-    currentClassPath ::: (if (currentClassPath.size == 1 && currentClassPath(0).endsWith(".jar")) {
-      val jarFile = currentClassPath(0)
-      val relativeRoot = new File(jarFile).getParentFile()
-      val nestedClassPath = new JarFile(jarFile).getManifest.getMainAttributes.getValue("Class-Path")
-      if (nestedClassPath eq null) {
-        Nil
-      } else {
-        nestedClassPath.split(" ").map { f => new File(relativeRoot, f).getAbsolutePath }.toList
-      }
-    } else {
-      Nil
-    }) ::: classPath.tail.flatten
-  }
-
   lazy val compilerOutputDir = target match {
     case Some(dir) => AbstractFile.getDirectory(dir)
     case None => new VirtualDirectory("(memory)", None)
@@ -430,9 +395,9 @@ class ${className} extends (() => Any) with java.io.Serializable {
   class EvalSettings(targetDir: Option[File]) extends Settings {
     nowarnings.value = true // warnings are exceptions, so disable
     outputDirs.setSingleOutput(compilerOutputDir)
-    private[this] val pathList = compilerPath ::: libPath
+    private[this] val pathList  = compilerPath ::: libPath
     bootclasspath.value = pathList.mkString(File.pathSeparator)
-    classpath.value = (pathList ::: impliedClassPath).mkString(File.pathSeparator)
+    classpath.value = pathList.mkString(File.pathSeparator)
   }
 }
 

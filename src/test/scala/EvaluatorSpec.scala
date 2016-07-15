@@ -157,10 +157,11 @@ System.setSecurityManager(new MaliciousSecurityManager())
 
     it("doesn't allow modifying the security manager's thread local for escaping the sandbox") {
       val code = """
-import org.scalaexercises.evaluator.SandboxedSecurityManager
-
-System.getSecurityManager().asInstanceOf[SandboxedSecurityManager].enabled.set(false)
-System.setSecurityManager(null)
+val sm = System.getSecurityManager()
+val field = sm.getClass.getDeclaredField("enabled")
+field.setAccessible(true)
+val tl = field.get(sm).asInstanceOf[ThreadLocal[Boolean]]
+tl.set(true)
 """
       val result: EvalResult[Unit] = evaluator.eval(code).run
 
