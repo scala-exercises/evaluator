@@ -181,5 +181,30 @@ cl.loadClass("java.net.URLClassLoader")
         case SecurityViolation(_) ⇒
       }
     }
+
+    it("doesn't allow access to the Unsafe instance") {
+      val code = """
+import sun.misc.Unsafe
+
+Unsafe.getUnsafe
+"""
+      val result: EvalResult[Unit] = evaluator.eval(code).run
+
+      result should matchPattern {
+        case SecurityViolation(_) ⇒
+      }
+    }
+
+    it("doesn't allow access to the sun reflect package") {
+      val code = """
+import sun.reflect.Reflection
+Reflection.getCallerClass(2)
+"""
+      val result: EvalResult[Unit] = evaluator.eval(code).run
+
+      result should matchPattern {
+        case SecurityViolation(_) ⇒
+      }
+    }
   }
 }

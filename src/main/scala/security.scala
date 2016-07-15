@@ -76,8 +76,6 @@ class SandboxedSecurityManager extends SecurityManager {
     }
   }
 
-  // todo: accessClassInPackage.sun
-
   // todo: write or execute any file
   // todo: setPolicy
   // todo: setProperty.package.access
@@ -94,7 +92,10 @@ class SandboxedSecurityManager extends SecurityManager {
       case exitVM() => Left("Can not exit the VM in sandboxed code")
       case securityManager() => Left("Can not replace the security manager in sandboxed code")
       case `classLoader` => Left("Can not create a class loader in sandboxed code")
-      case other => Right(other)
+      case accessDangerousPackage() => Left("Can not access dangerous pacakges in sandboxed code")
+      case other => {
+        Right(other)
+      }
     }
   }
 
