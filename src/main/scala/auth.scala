@@ -6,9 +6,13 @@ import org.http4s.util._
 import scala.util.{Try, Success, Failure}
 import pdi.jwt.{Jwt, JwtAlgorithm, JwtHeader, JwtClaim, JwtOptions}
 
+import org.log4s.getLogger
+
 import scalaz.concurrent.Task
 
 object auth {
+
+  private [this] val logger = getLogger
 
   val config = ConfigFactory.load()
 
@@ -19,6 +23,9 @@ object auth {
   } else {
     throw new IllegalStateException("Missing -Deval.auth.secretKey=[YOUR_KEY_HERE] or env var [EVAL_SECRET_KEY] ")
   }
+
+  def generateToken(value : String = "{}") =
+    Jwt.encode(value, secretKey, JwtAlgorithm.HS256)
 
   object `X-Scala-Eval-Api-Token` extends HeaderKey.Singleton {
 
@@ -46,8 +53,12 @@ object auth {
     req.headers.get(`X-Scala-Eval-Api-Token`) match {
       case Some(header) =>
         Jwt.decodeRaw(header.value, secretKey, Seq(JwtAlgorithm.HS256)) match {
-          case Success(_) => service(req)
-          case Failure(_) => Task.now(Response(Status.Unauthorized))
+          case Success(tokenIdentity) =>
+            logger.info(s"Auth success with identity : $tokenIdentity")
+            service(req)
+          case Failure(ex) =>
+            logger.warn(s"Auth failed : $ex")
+            Task.now(Response(Status.Unauthorized))
         }
       case None => Task.now(Response(Status.Unauthorized))
     }
