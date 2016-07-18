@@ -17,7 +17,7 @@ The `secretKey` used for encoding/decoding is configurable as part of the servic
 
 Please change `secretKey` by overriding it or providing the `EVAL_SECRET_KEY` env var.
 
-```json
+```
 eval.auth {
   secretKey = "secretKey"	  
   secretKey = ${?EVAL_SECRET_KEY}
