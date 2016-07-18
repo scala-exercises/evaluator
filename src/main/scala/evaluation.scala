@@ -86,6 +86,12 @@ class Evaluator(timeout: FiniteDuration = 20.seconds, pool: ExecutorService) {
     }
   }
 
+  def createClassLoader(eval: Eval, jars: Seq[File]): ClassLoader = {
+    val jarUrls = jars.map(jar => new java.net.URL(s"file://${jar.getAbsolutePath}")).toArray
+    val urlClassLoader = new URLClassLoader(jarUrls , this.getClass.getClassLoader)
+    new AbstractFileClassLoader(eval.compilerOutputDir, urlClassLoader)
+  }
+
   private[this] def evaluate[T](eval: Eval, code: String, classLoader: ClassLoader): EvalResult[T] = {
     val result: Try[T] = for {
       _ ← Try(eval.check(code))
@@ -118,10 +124,7 @@ class Evaluator(timeout: FiniteDuration = 20.seconds, pool: ExecutorService) {
       result <- allJars match {
         case \/-(jars) => {
           val eval = createEval(jars)
-
-          val jarUrls = jars.map(jar => new java.net.URL(s"file://${jar.getAbsolutePath}")).toArray
-          val urlClassLoader = new URLClassLoader(jarUrls , this.getClass.getClassLoader)
-          val classLoader = new AbstractFileClassLoader(eval.compilerOutputDir, urlClassLoader)
+          val classLoader = createClassLoader(eval, jars)
 
           Task.fork(Task.delay({
             evaluate(eval, code, classLoader)

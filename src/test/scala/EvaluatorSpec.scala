@@ -5,6 +5,8 @@
 
 package org.scalaexercises.evaluator
 
+import org.scalaexercises.evaluator.sandbox._
+
 import scalaz._; import Scalaz._
 import scala.concurrent.duration._
 import org.scalatest._
@@ -12,22 +14,21 @@ import java.util.concurrent._
 
 @DoNotDiscover
 class EvaluatorSpec extends FunSpec with Matchers {
-  val scheduler: ExecutorService = SandboxedExecution.executor
-  val evaluator = new Evaluator(30 seconds, scheduler)
+  val evaluator = new Evaluator(10 seconds, executor)
 
   describe("evaluation") {
     it("can evaluate simple expressions") {
-      val task = evaluator.eval[Int]("{ 41 + 1 }")
+      val result = evaluator.eval[Int]("{ 41 + 1 }").run
 
-      task.run should matchPattern {
+      result should matchPattern {
         case EvalSuccess(_, 42, _) =>
       }
     }
 
     it("fails with a timeout when takes longer than the configured timeout") {
-      val task = evaluator.eval[Int]("{ while(true) {}; 123 }")
+      val result = evaluator.eval[Int]("{ while(true) {}; 123 }").run
 
-      task.run should matchPattern {
+      result should matchPattern {
         case Timeout(_) ⇒
       }
     }
@@ -128,7 +129,7 @@ Asserts.scalaTestAsserts(false)
     }
 
     it("doesn't allow code to call System.exit") {
-      val result: EvalResult[Unit] = evaluator.eval("sys.exit(1)").run
+      val result: EvalResult[Unit] = evaluator.eval("System.exit(1)").run
 
       result should matchPattern {
         case SecurityViolation(_) ⇒
@@ -146,21 +147,6 @@ class MaliciousSecurityManager extends SecurityManager{
 }
 
 System.setSecurityManager(new MaliciousSecurityManager())
-"""
-      val result: EvalResult[Unit] = evaluator.eval(code).run
-
-      result should matchPattern {
-        case SecurityViolation(_) ⇒
-      }
-    }
-
-    it("doesn't allow modifying the security manager's thread local for escaping the sandbox") {
-      val code = """
-val sm = System.getSecurityManager()
-val field = sm.getClass.getDeclaredField("enabled")
-field.setAccessible(true)
-val tl = field.get(sm).asInstanceOf[ThreadLocal[Boolean]]
-tl.set(true)
 """
       val result: EvalResult[Unit] = evaluator.eval(code).run
 
@@ -225,13 +211,6 @@ Policy.setPolicy(new MaliciousPolicy())
       }
     }
 
-    // todo
-    ignore("doesn't allow reading files") {   }
-    ignore("doesn't allow writing files") {   }
-    ignore("doesn't allow deleting files") {   }
-    ignore("doesn't allow executing files") {   }
-    ignore("doesn't allow changing package access settings") { }
-
     it("doesn't allow executing commands") {
       val code = """
 Runtime.getRuntime.exec("ls /")
@@ -246,13 +225,12 @@ Runtime.getRuntime.exec("ls /")
 }
 
 class AllSpecs extends Suites(new EvaluatorSpec, new EvalEndpointSpec) with BeforeAndAfterAll {
-  val oldSm = System.getSecurityManager()
-
-  def beforeAll(configMap: Map[String, Any]) = {
+  override def beforeAll = {
     System.setSecurityManager(new SandboxedSecurityManager())
   }
 
-  def afterAll(configMap: Map[String, Any]) = {
-    System.setSecurityManager(oldSm)
+  override def afterAll = {
+    System.setSecurityManager(null)
   }
 }
+

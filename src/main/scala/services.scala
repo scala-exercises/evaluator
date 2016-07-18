@@ -1,12 +1,11 @@
 package org.scalaexercises.evaluator
 
+import org.scalaexercises.evaluator.sandbox._
 import java.util.concurrent._
 
 import org.http4s._, org.http4s.dsl._, org.http4s.server._
 import org.http4s.server.blaze._
 import org.log4s.getLogger
-
-import monix.execution.Scheduler
 
 import scala.concurrent.duration._
 
@@ -15,14 +14,12 @@ import scalaz._
 
 
 object services {
-
   import codecs._
   import io.circe.generic.auto._
   import EvalResponse.messages._
 
   private val logger = getLogger
 
-  val executor: ExecutorService = SandboxedExecution.executor
   val evaluator = new Evaluator(20 seconds, executor)
 
   def service = HttpService {
