@@ -443,8 +443,8 @@ object Eval {
   }
 
   def disableSandbox = {
-    // Policy.setPolicy(null)
-    // System.setSecurityManager(null)
+    Policy.setPolicy(null)
+    System.setSecurityManager(null)
   }
 
   class CompilerException(val messages: List[List[String]]) extends Exception(
