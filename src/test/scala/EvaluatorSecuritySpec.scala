@@ -19,10 +19,6 @@ class EvaluatorSecuritySpec extends FunSpec with Matchers with BeforeAndAfter {
     Eval.enableSandbox
   }
 
-  after {
-    Eval.disableSandbox
-  }
-
   describe("evaluation security") {
     it("doesn't allow code to call System.exit") {
       val result: EvalResult[Unit] = evaluator.eval("System.exit(1)").run

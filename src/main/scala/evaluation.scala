@@ -442,11 +442,6 @@ object Eval {
     System.setSecurityManager(new SandboxSecurityManager())
   }
 
-  def disableSandbox = {
-    Policy.setPolicy(null)
-    System.setSecurityManager(null)
-  }
-
   class CompilerException(val messages: List[List[String]]) extends Exception(
     "Compiler exception " + messages.map(_.mkString("\n")).mkString("\n"))
 }
