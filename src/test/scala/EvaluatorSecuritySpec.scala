@@ -11,13 +11,10 @@ import org.scalatest._
 import java.util.concurrent._
 import java.security._
 
+@DoNotDiscover
 class EvaluatorSecuritySpec extends FunSpec with Matchers with BeforeAndAfter {
-  val evaluator = new Evaluator(10 seconds)
+  val evaluator = new Evaluator(20 seconds)
 
-  before {
-    Policy.setPolicy(new SandboxPolicy())
-    System.setSecurityManager(new SecurityManager())
-  }
 
   describe("evaluation security") {
     it("doesn't allow code to call System.exit") {

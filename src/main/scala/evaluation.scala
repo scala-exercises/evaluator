@@ -432,6 +432,11 @@ class ${className} extends (() => Any) with java.io.Serializable {
 object Eval {
   private val jvmId = java.lang.Math.abs(new java.util.Random().nextInt())
 
+  def enableSandbox = {
+    Policy.setPolicy(new SandboxPolicy())
+    System.setSecurityManager(new SecurityManager())
+  }
+
   class CompilerException(val messages: List[List[String]]) extends Exception(
     "Compiler exception " + messages.map(_.mkString("\n")).mkString("\n"))
 }

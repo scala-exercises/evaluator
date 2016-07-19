@@ -10,8 +10,9 @@ import scala.concurrent.duration._
 import org.scalatest._
 import java.util.concurrent._
 
+@DoNotDiscover
 class EvaluatorSpec extends FunSpec with Matchers {
-  val evaluator = new Evaluator(10 seconds)
+  val evaluator = new Evaluator(20 seconds)
 
   describe("evaluation") {
     it("can evaluate simple expressions") {
