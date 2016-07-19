@@ -1,10 +1,11 @@
 package org.scalaexercises.evaluator
 
+import org.scalaexercises.evaluator.sandbox._
+import java.util.concurrent._
+
 import org.http4s._, org.http4s.dsl._, org.http4s.server._
 import org.http4s.server.blaze._
 import org.log4s.getLogger
-
-import monix.execution.Scheduler
 
 import scala.concurrent.duration._
 
@@ -13,14 +14,11 @@ import scalaz._
 
 
 object services {
-
   import codecs._
   import io.circe.generic.auto._
   import EvalResponse.messages._
 
   private val logger = getLogger
-
-  implicit val scheduler: Scheduler = Scheduler.io("scala-evaluator")
 
   val evaluator = new Evaluator(20 seconds)
 
@@ -41,6 +39,7 @@ object services {
             case EvalRuntimeError(cis, _) => EvalResponse(`Runtime Error`, None, None, cis)
             case CompilationError(cis) => EvalResponse(`Compilation Error`, None, None, cis)
             case GeneralError(err) => EvalResponse(`Unforeseen Exception`, None, None, Map.empty)
+            case SecurityViolation(explanation) => EvalResponse(`Security Violation` + " : " + explanation, None, None, Map.empty)
           }
           Ok(response.asJson)
         }

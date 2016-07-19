@@ -7,6 +7,7 @@ lazy val evaluator = (project in file("."))
     name := "evaluator",
     scalaVersion := "2.11.8",
     resolvers += Resolver.sonatypeRepo("snapshots"),
+    fork in Test := false,
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "io.monix" %% "monix" % "2.0-RC8",

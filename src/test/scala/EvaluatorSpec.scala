@@ -5,25 +5,26 @@
 
 package org.scalaexercises.evaluator
 
+import scalaz._; import Scalaz._
 import scala.concurrent.duration._
-import monix.execution.Scheduler
 import org.scalatest._
+import java.util.concurrent._
 
+@DoNotDiscover
 class EvaluatorSpec extends FunSpec with Matchers {
-  implicit val scheduler: Scheduler = Scheduler.io("exercises-spec")
   val evaluator = new Evaluator(20 seconds)
 
   describe("evaluation") {
     it("can evaluate simple expressions") {
-      val result: EvalResult[Int] = evaluator.eval("{ 41 + 1 }").run
+      val result = evaluator.eval[Int]("{ 41 + 1 }").run
 
       result should matchPattern {
-        case EvalSuccess(_, 42, _) ⇒
+        case EvalSuccess(_, 42, _) =>
       }
     }
 
     it("fails with a timeout when takes longer than the configured timeout") {
-      val result: EvalResult[Int] = evaluator.eval("{ while(true) {}; 123 }").run
+      val result = evaluator.eval[Int]("{ while(true) {}; 123 }").run
 
       result should matchPattern {
         case Timeout(_) ⇒
@@ -33,7 +34,6 @@ class EvaluatorSpec extends FunSpec with Matchers {
     it("can load dependencies for an evaluation") {
       val code = """
 import cats._
-
 Eval.now(42).value
       """
       val remotes = List("https://oss.sonatype.org/content/repositories/releases/")

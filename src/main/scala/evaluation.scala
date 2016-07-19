@@ -5,6 +5,7 @@
 
 package org.scalaexercises.evaluator
 
+import org.log4s.getLogger
 
 import scala.language.reflectiveCalls
 
@@ -13,8 +14,9 @@ import java.net.URLClassLoader
 import java.nio.file.Path
 import java.util.jar.JarFile
 import java.util.concurrent.TimeoutException
-import java.security.MessageDigest
 import java.math.BigInteger
+import java.util.concurrent._
+import java.security._
 
 import scala.tools.nsc.{ Global, Settings }
 import scala.tools.nsc.reporters._
@@ -28,16 +30,36 @@ import scala.concurrent._
 import scala.concurrent.duration._
 import scalaz.concurrent.Task
 
-import monix.execution.Scheduler
-
 import coursier._
 
-import org.scalaexercises.evaluator._
+class SandboxClassLoader(root: AbstractFile, parent: ClassLoader) extends AbstractFileClassLoader(root, parent){
+}
 
+class SandboxPolicy extends Policy{
+  override def getPermissions(domain: ProtectionDomain): PermissionCollection = {
+    val cl = domain.getClassLoader
 
-class Evaluator(timeout: FiniteDuration = 20.seconds)(
-  implicit S: Scheduler
-) {
+    cl match {
+      case sandbox: SandboxClassLoader => sandboxPermissions
+      case _ => allPermissions
+    }
+  }
+
+  def sandboxPermissions: PermissionCollection = {
+    new Permissions()
+  }
+
+  def allPermissions: PermissionCollection = {
+    val pc = new Permissions()
+    pc.add(new AllPermission())
+    pc.setReadOnly()
+    pc
+  }
+}
+
+class SandboxSecurityManager() extends SecurityManager{}
+
+class Evaluator(timeout: FiniteDuration = 20.seconds) {
   type Remote = String
 
   private[this] def convert(errors: (Position, String, String)): (String, List[CompilationInfo]) = {
@@ -56,7 +78,7 @@ class Evaluator(timeout: FiniteDuration = 20.seconds)(
   def resolveArtifacts(remotes: Seq[Remote], dependencies: Seq[Dependency]): Task[Resolution] = {
     val resolution = Resolution(dependencies.map(dependencyToModule).toSet)
     val repositories: Seq[Repository] = remotes.map(remoteToRepository)
-    val fetch = Fetch.from(repositories, Cache.fetch())
+    val fetch = Fetch.from(repositories, Cache.fetch(new File("/tmp"))) // fixme
     resolution.process.run(fetch)
   }
 
@@ -67,7 +89,7 @@ class Evaluator(timeout: FiniteDuration = 20.seconds)(
     )
   } yield artifacts.sequenceU
 
-  def createEval(jars: Seq[File]) = {
+  def createEval(jars: Seq[File]): Eval = {
     new Eval(jars = jars.toList) {
       @volatile var errors: Map[String, List[CompilationInfo]] = Map.empty
 
@@ -92,20 +114,27 @@ class Evaluator(timeout: FiniteDuration = 20.seconds)(
     }
   }
 
-  private[this] def evaluate[T](code: String, jars: Seq[File]): EvalResult[T] = {
-    val eval = createEval(jars)
+  def createClassLoader(eval: Eval, jars: Seq[File]): ClassLoader = {
+    val jarUrls = jars.map(jar => new java.net.URL(s"file://${jar.getAbsolutePath}")).toArray
+    val urlClassLoader = new URLClassLoader(jarUrls , this.getClass.getClassLoader)
+    new SandboxClassLoader(eval.compilerOutputDir, urlClassLoader)
+  }
 
-    val result = for {
-      _ ← Try(eval.check(code))
-      result ← Try(eval.execute[T](code, resetState = true, jars = jars))
+  private[this] def evaluate[T](eval: Eval, code: String, classLoader: ClassLoader): EvalResult[T] = {
+    val result: Try[T] = for {
+      _ ← Try(eval.check(code, classLoader))
+      result ← Try({
+        eval.execute[T](code, resetState = true, classLoader = classLoader)
+      })
     } yield result
 
-    val errors = eval.errors.toMap.asInstanceOf[EvalResult.CI]
+    val errors = Map.empty[String, List[CompilationInfo]] // fixme: eval.errors.toMap.asInstanceOf[EvalResult.CI]
 
     result match {
       case scala.util.Success(r) ⇒ EvalSuccess[T](errors, r, "")
       case scala.util.Failure(t) ⇒ t match {
         case e: Eval.CompilerException ⇒ CompilationError(errors)
+        case e: SecurityException => SecurityViolation(e.getMessage)
         case NonFatal(e)               ⇒ EvalRuntimeError(errors, Option(RuntimeError(e, None)))
         case e                         ⇒ GeneralError(e)
       }
@@ -119,14 +148,23 @@ class Evaluator(timeout: FiniteDuration = 20.seconds)(
   ): Task[EvalResult[T]] = {
     for {
       allJars <- fetchArtifacts(remotes, dependencies)
+
       result <- allJars match {
-        case \/-(jars) => Task({
-          evaluate(code, jars)
-        }).timed(timeout).handle({
-          case err: TimeoutException => Timeout[T](timeout)
-        })
+        case \/-(jars) => {
+          val eval = createEval(jars)
+          val classLoader = createClassLoader(eval, jars)
+
+          Task.fork(Task.delay({
+            evaluate(eval, code, classLoader)
+          })).timed(timeout).handle({
+            case err: TimeoutException => Timeout[T](timeout)
+          })
+        }
         case -\/(fileError) => Task.now(UnresolvedDependency(fileError.describe))
+
       }
+
+
     } yield result
   }
 }
@@ -142,8 +180,6 @@ private class StringCompiler(
   settings: Settings,
   messageHandler: Option[Reporter]
 ) {
-
-  val cache = new scala.collection.mutable.HashMap[String, Class[_]]()
 
   trait MessageCollector {
     val messages: Seq[List[String]]
@@ -202,20 +238,15 @@ private class StringCompiler(
         }
       }
     }
-    cache.clear()
     reporter.reset()
   }
 
   def findClass(className: String, classLoader: ClassLoader): Option[Class[_]] = {
     synchronized {
-      cache.get(className).orElse {
-        try {
-          val cls = classLoader.loadClass(className)
-          cache(className) = cls
-          Some(cls)
-        } catch {
-          case e: ClassNotFoundException => None
-        }
+      try {
+        Option(Class.forName(className, true, classLoader))
+      } catch {
+        case e: ClassNotFoundException => None
       }
     }
   }
@@ -223,7 +254,7 @@ private class StringCompiler(
   /**
     * Compile scala code. It can be found using the above class loader.
     */
-  def apply(code: String) {
+  def apply(code: String, classLoader: ClassLoader) = {
     // if you're looking for the performance hit, it's 1/2 this line...
     val compiler = new global.Run
     val sourceFiles = List(new BatchSourceFile("(inline)", code))
@@ -248,8 +279,8 @@ private class StringCompiler(
     synchronized {
       if (resetState) reset()
 
-      apply(code)
-      findClass(className, classLoader).get // fixme
+      apply(code, classLoader)
+      Class.forName(className, true, classLoader)
     }
   }
 }
@@ -304,32 +335,35 @@ class Eval(target: Option[File] = None, jars: List[File] = Nil) {
    * where unique is computed from the jvmID (a random number)
    * and a digest of code
    */
-  def execute[T](code: String, resetState: Boolean, jars: Seq[File]): T = {
+  def execute[T](code: String, resetState: Boolean, classLoader: ClassLoader): T = {
     val id = uniqueId(code)
     val className = "Evaluator__" + id
-    execute(className, code, resetState, jars)
+    execute(className, code, resetState, classLoader)
   }
 
-  def execute[T](className: String, code: String, resetState: Boolean, jars: Seq[File]): T = {
-    val jarUrls = jars.map(jar => new java.net.URL(s"file://${jar.getAbsolutePath}")).toArray
-    val urlClassLoader = new URLClassLoader(jarUrls , compiler.getClass.getClassLoader)
-    val classLoader = new AbstractFileClassLoader(compilerOutputDir, urlClassLoader)
-
+  def execute[T](className: String, code: String, resetState: Boolean, classLoader: ClassLoader): T = {
     val cls = compiler(
       wrapCodeInClass(className, code), className, resetState, classLoader
     )
-    cls.getConstructor().newInstance().asInstanceOf[() => T].apply().asInstanceOf[T]
+
+    val thunk = cls.getConstructor().newInstance().asInstanceOf[() => T]
+
+    thunk.apply()
   }
+
+  // def runClass[T](cls: Class[_]): T = {
+  //   cls.getConstructor().newInstance().asInstanceOf[() => T].apply()
+  // }
 
   /**
    * Check if code is Eval-able.
    * @throws CompilerException if not Eval-able.
    */
-  def check(code: String) {
+  def check(code: String, classLoader: ClassLoader) {
     val id = uniqueId(code)
     val className = "Evaluator__" + id
     val wrappedCode = wrapCodeInClass(className, code)
-    compiler(wrappedCode)
+    compiler(wrappedCode, classLoader)
   }
 
   private[this] def uniqueId(code: String, idOpt: Option[Int] = Some(Eval.jvmId)): String = {
@@ -378,41 +412,6 @@ class ${className} extends (() => Any) with java.io.Serializable {
     }
   }
 
-  /*
-   * Try to guess our app's classpath.
-   * This is probably fragile.
-   */
-  lazy val impliedClassPath: List[String] = {
-    def getClassPath(cl: ClassLoader, acc: List[List[String]] = List.empty): List[List[String]] = {
-      val cp = cl match {
-        case urlClassLoader: URLClassLoader => urlClassLoader.getURLs.filter(_.getProtocol == "file").
-          map(u => new File(u.toURI).getPath).toList
-        case _ => Nil
-      }
-      cl.getParent match {
-        case null => (cp :: acc).reverse
-        case parent => getClassPath(parent, cp :: acc)
-      }
-    }
-
-    val classPath = getClassPath(this.getClass.getClassLoader)
-    val currentClassPath = classPath.head
-
-    // if there's just one thing in the classpath, and it's a jar, assume an executable jar.
-    currentClassPath ::: (if (currentClassPath.size == 1 && currentClassPath(0).endsWith(".jar")) {
-      val jarFile = currentClassPath(0)
-      val relativeRoot = new File(jarFile).getParentFile()
-      val nestedClassPath = new JarFile(jarFile).getManifest.getMainAttributes.getValue("Class-Path")
-      if (nestedClassPath eq null) {
-        Nil
-      } else {
-        nestedClassPath.split(" ").map { f => new File(relativeRoot, f).getAbsolutePath }.toList
-      }
-    } else {
-      Nil
-    }) ::: classPath.tail.flatten
-  }
-
   lazy val compilerOutputDir = target match {
     case Some(dir) => AbstractFile.getDirectory(dir)
     case None => new VirtualDirectory("(memory)", None)
@@ -421,9 +420,9 @@ class ${className} extends (() => Any) with java.io.Serializable {
   class EvalSettings(targetDir: Option[File]) extends Settings {
     nowarnings.value = true // warnings are exceptions, so disable
     outputDirs.setSingleOutput(compilerOutputDir)
-    private[this] val pathList = compilerPath ::: libPath
+    private[this] val pathList  = compilerPath ::: libPath
     bootclasspath.value = pathList.mkString(File.pathSeparator)
-    classpath.value = (pathList ::: impliedClassPath).mkString(File.pathSeparator)
+    classpath.value = pathList.mkString(File.pathSeparator)
   }
 }
 
@@ -431,6 +430,15 @@ class ${className} extends (() => Any) with java.io.Serializable {
 object Eval {
   private val jvmId = java.lang.Math.abs(new java.util.Random().nextInt())
 
+  val logger = getLogger
+
+  def enableSandbox = {
+    logger.info("Enabling sandbox")
+    Policy.setPolicy(new SandboxPolicy())
+    System.setSecurityManager(new SandboxSecurityManager())
+  }
+
   class CompilerException(val messages: List[List[String]]) extends Exception(
     "Compiler exception " + messages.map(_.mkString("\n")).mkString("\n"))
 }
+
