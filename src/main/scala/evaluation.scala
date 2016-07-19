@@ -5,6 +5,7 @@
 
 package org.scalaexercises.evaluator
 
+import org.log4s.getLogger
 
 import scala.language.reflectiveCalls
 
@@ -31,24 +32,21 @@ import scalaz.concurrent.Task
 
 import coursier._
 
-class SandboxClassLoader(root: AbstractFile, parent: ClassLoader) extends AbstractFileClassLoader(root, parent){}
+class SandboxClassLoader(root: AbstractFile, parent: ClassLoader) extends AbstractFileClassLoader(root, parent){
+}
 
 class SandboxPolicy extends Policy{
   override def getPermissions(domain: ProtectionDomain): PermissionCollection = {
-    domain.getClassLoader match {
-      case sandbox: SandboxClassLoader => {
-        sandboxPermissions
-      }
-      case _ => {
-        allPermissions
-      }
+    val cl = domain.getClassLoader
+
+    cl match {
+      case sandbox: SandboxClassLoader => sandboxPermissions
+      case _ => allPermissions
     }
   }
 
   def sandboxPermissions: PermissionCollection = {
-    val pc = new Permissions()
-    pc.setReadOnly()
-    pc
+    new Permissions()
   }
 
   def allPermissions: PermissionCollection = {
@@ -124,7 +122,7 @@ class Evaluator(timeout: FiniteDuration = 20.seconds) {
 
   private[this] def evaluate[T](eval: Eval, code: String, classLoader: ClassLoader): EvalResult[T] = {
     val result: Try[T] = for {
-      _ ← Try(eval.check(code))
+      _ ← Try(eval.check(code, classLoader))
       result ← Try({
         eval.execute[T](code, resetState = true, classLoader = classLoader)
       })
@@ -183,8 +181,6 @@ private class StringCompiler(
   messageHandler: Option[Reporter]
 ) {
 
-  val cache = new scala.collection.mutable.HashMap[String, Class[_]]()
-
   trait MessageCollector {
     val messages: Seq[List[String]]
   }
@@ -242,20 +238,15 @@ private class StringCompiler(
         }
       }
     }
-    cache.clear()
     reporter.reset()
   }
 
   def findClass(className: String, classLoader: ClassLoader): Option[Class[_]] = {
     synchronized {
-      cache.get(className).orElse {
-        try {
-          val cls = classLoader.loadClass(className)
-          cache(className) = cls
-          Some(cls)
-        } catch {
-          case e: ClassNotFoundException => None
-        }
+      try {
+        Option(Class.forName(className, true, classLoader))
+      } catch {
+        case e: ClassNotFoundException => None
       }
     }
   }
@@ -263,7 +254,7 @@ private class StringCompiler(
   /**
     * Compile scala code. It can be found using the above class loader.
     */
-  def apply(code: String) {
+  def apply(code: String, classLoader: ClassLoader) = {
     // if you're looking for the performance hit, it's 1/2 this line...
     val compiler = new global.Run
     val sourceFiles = List(new BatchSourceFile("(inline)", code))
@@ -288,8 +279,8 @@ private class StringCompiler(
     synchronized {
       if (resetState) reset()
 
-      apply(code)
-      findClass(className, classLoader).get // fixme
+      apply(code, classLoader)
+      Class.forName(className, true, classLoader)
     }
   }
 }
@@ -355,7 +346,9 @@ class Eval(target: Option[File] = None, jars: List[File] = Nil) {
       wrapCodeInClass(className, code), className, resetState, classLoader
     )
 
-    cls.getConstructor().newInstance().asInstanceOf[() => T].apply().asInstanceOf[T]
+    val thunk = cls.getConstructor().newInstance().asInstanceOf[() => T]
+
+    thunk.apply()
   }
 
   // def runClass[T](cls: Class[_]): T = {
@@ -366,11 +359,11 @@ class Eval(target: Option[File] = None, jars: List[File] = Nil) {
    * Check if code is Eval-able.
    * @throws CompilerException if not Eval-able.
    */
-  def check(code: String) {
+  def check(code: String, classLoader: ClassLoader) {
     val id = uniqueId(code)
     val className = "Evaluator__" + id
     val wrappedCode = wrapCodeInClass(className, code)
-    compiler(wrappedCode)
+    compiler(wrappedCode, classLoader)
   }
 
   private[this] def uniqueId(code: String, idOpt: Option[Int] = Some(Eval.jvmId)): String = {
@@ -437,7 +430,10 @@ class ${className} extends (() => Any) with java.io.Serializable {
 object Eval {
   private val jvmId = java.lang.Math.abs(new java.util.Random().nextInt())
 
+  val logger = getLogger
+
   def enableSandbox = {
+    logger.info("Enabling sandbox")
     Policy.setPolicy(new SandboxPolicy())
     System.setSecurityManager(new SandboxSecurityManager())
   }

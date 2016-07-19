@@ -12,12 +12,8 @@ import java.util.concurrent._
 import java.security._
 
 @DoNotDiscover
-class EvaluatorSecuritySpec extends FunSpec with Matchers with BeforeAndAfter {
+class EvaluatorSecuritySpec extends FunSpec with Matchers {
   val evaluator = new Evaluator(20 seconds)
-
-  before {
-    Eval.enableSandbox
-  }
 
   describe("evaluation security") {
     it("doesn't allow code to call System.exit") {

@@ -13,4 +13,8 @@ class AllSpecs extends Suites(
   new EvaluatorSpec,
   new EvalEndpointSpec,
   new EvaluatorSecuritySpec
-) {}
+) with BeforeAndAfterAll {
+  override def beforeAll = {
+    Eval.enableSandbox
+  }
+}
