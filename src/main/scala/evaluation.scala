@@ -13,9 +13,9 @@ import java.net.URLClassLoader
 import java.nio.file.Path
 import java.util.jar.JarFile
 import java.util.concurrent.TimeoutException
-import java.security.{MessageDigest, Policy}
 import java.math.BigInteger
 import java.util.concurrent._
+import java.security._
 
 import scala.tools.nsc.{ Global, Settings }
 import scala.tools.nsc.reporters._
@@ -31,7 +31,32 @@ import scalaz.concurrent.Task
 
 import coursier._
 
-class Evaluator(timeout: FiniteDuration = 20.seconds, pool: ExecutorService) {
+class SandboxedClassLoader(root: AbstractFile, parent: ClassLoader) extends AbstractFileClassLoader(root, parent){}
+
+class SandboxPolicy extends Policy{
+  override def getPermissions(domain: ProtectionDomain): PermissionCollection = {
+    if (domain.getClassLoader.isInstanceOf[SandboxedClassLoader]) {
+      sandboxPermissions
+    } else {
+      allPermissions
+    }
+  }
+
+  val sandboxPermissions: PermissionCollection = {
+    val pc = new Permissions()
+    pc.setReadOnly()
+    pc
+  }
+
+  def allPermissions: PermissionCollection = {
+    val pc = new Permissions()
+    pc.add(new AllPermission())
+    pc.setReadOnly()
+    pc
+  }
+}
+
+class Evaluator(timeout: FiniteDuration = 20.seconds) {
   type Remote = String
 
   private[this] def convert(errors: (Position, String, String)): (String, List[CompilationInfo]) = {
@@ -50,7 +75,7 @@ class Evaluator(timeout: FiniteDuration = 20.seconds, pool: ExecutorService) {
   def resolveArtifacts(remotes: Seq[Remote], dependencies: Seq[Dependency]): Task[Resolution] = {
     val resolution = Resolution(dependencies.map(dependencyToModule).toSet)
     val repositories: Seq[Repository] = remotes.map(remoteToRepository)
-    val fetch = Fetch.from(repositories, Cache.fetch())
+    val fetch = Fetch.from(repositories, Cache.fetch(new File("/tmp"))) // fixme
     resolution.process.run(fetch)
   }
 
@@ -89,7 +114,7 @@ class Evaluator(timeout: FiniteDuration = 20.seconds, pool: ExecutorService) {
   def createClassLoader(eval: Eval, jars: Seq[File]): ClassLoader = {
     val jarUrls = jars.map(jar => new java.net.URL(s"file://${jar.getAbsolutePath}")).toArray
     val urlClassLoader = new URLClassLoader(jarUrls , this.getClass.getClassLoader)
-    new AbstractFileClassLoader(eval.compilerOutputDir, urlClassLoader)
+    new SandboxedClassLoader(eval.compilerOutputDir, urlClassLoader)
   }
 
   private[this] def evaluate[T](eval: Eval, code: String, classLoader: ClassLoader): EvalResult[T] = {
@@ -128,7 +153,7 @@ class Evaluator(timeout: FiniteDuration = 20.seconds, pool: ExecutorService) {
 
           Task.fork(Task.delay({
             evaluate(eval, code, classLoader)
-          }))(pool).timed(timeout).handle({
+          })).timed(timeout).handle({
             case err: TimeoutException => Timeout[T](timeout)
           })
         }

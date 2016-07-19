@@ -6,57 +6,6 @@ import scala.concurrent._
 import java.util.concurrent._
 
 package object sandbox {
-  def isSandboxEnabled: Boolean = {
-    System.getSecurityManager match {
-      case sm: SandboxedSecurityManager => sm.enabled.get()
-      case _ => false
-    }
-  }
-
-  def enableSandbox =
-    System.getSecurityManager match {
-      case sm: SandboxedSecurityManager => sm.enabled.set(true)
-      case _ => ()
-    }
-
-  class SandboxFlag(initial: Boolean = false) extends InheritableThreadLocal[Boolean]{
-    override def initialValue: Boolean = initial
-
-    override def set(value: Boolean): Unit = {
-      if (get() && !value){
-        val ex = new SecurityException("The sandbox can't be disabled ")
-        println("SECEX " + ex.getStackTrace)
-        throw ex
-      } else {
-        super.set(value)
-      }
-    }
-  }
-
-  /**
-    *  An executor for creating sandboxed threads.
-    */
-  def executor: ExecutorService = {
-    val threadFactory = new ThreadFactory {
-
-      override def newThread(r: Runnable): Thread = {
-        val th = new Thread(r){
-          override def run() = {
-            enableSandbox
-            super.run()
-          }
-        }
-
-        th.setName(s"sandboxed-thread")
-
-        th
-      }
-    }
-
-    Executors.newCachedThreadPool(threadFactory)
-  }
-
-
   /**
     * A self-protecting security manager for the external code execution sandbox. It's
     * self-protecting in the sense that doesn't allow executed code to change the sandbox
@@ -66,28 +15,24 @@ package object sandbox {
     *  - Evaluating the flexibility of the Java Sandbox https://www.cs.cmu.edu/~clegoues/docs/coker15acsac.pdf
     */
   class SandboxedSecurityManager extends SecurityManager {
-    val enabled: InheritableThreadLocal[Boolean] = new SandboxFlag(false)
-
     override def checkExec(cmd: String): Unit = {
       throw new SecurityException("Can not execute execute arbitrary commands in sandboxed code")
     }
 
     override def checkPermission(perm: Permission): Unit = {
-      if (enabled.get()) {
-        val result = sandboxedCheck(perm)
+      val result = sandboxedCheck(perm)
 
-        if (result.isRight) {
-          //println(s"OK ${perm.getName}")
-        } else {
-          //println(s"NOPE ${perm.getName}")
+      if (result.isRight) {
+        //println(s"OK ${perm.getName}")
+      } else {
+        //println(s"NOPE ${perm.getName}")
+      }
+
+      result match {
+        case Right(result) => {
         }
-
-        result match {
-          case Right(result) => {
-          }
-          case Left(msg) => {
-            throw new SecurityException(msg)
-          }
+        case Left(msg) => {
+          throw new SecurityException(msg)
         }
       }
     }
@@ -141,5 +86,4 @@ package object sandbox {
       }
     }
   }
-
 }

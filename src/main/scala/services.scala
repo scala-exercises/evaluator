@@ -20,7 +20,7 @@ object services {
 
   private val logger = getLogger
 
-  val evaluator = new Evaluator(20 seconds, executor)
+  val evaluator = new Evaluator(20 seconds)
 
   def service = HttpService {
     case req @ POST -> Root / "eval" =>

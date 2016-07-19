@@ -15,7 +15,6 @@ import scodec.bits.ByteVector
 
 import org.http4s.{Status => HttpStatus}
 
-@DoNotDiscover
 class EvalEndpointSpec extends FunSpec with Matchers {
 
   import services._
