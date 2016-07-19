@@ -31,18 +31,21 @@ import scalaz.concurrent.Task
 
 import coursier._
 
-class SandboxedClassLoader(root: AbstractFile, parent: ClassLoader) extends AbstractFileClassLoader(root, parent){}
+class SandboxClassLoader(root: AbstractFile, parent: ClassLoader) extends AbstractFileClassLoader(root, parent){}
 
 class SandboxPolicy extends Policy{
   override def getPermissions(domain: ProtectionDomain): PermissionCollection = {
-    if (domain.getClassLoader.isInstanceOf[SandboxedClassLoader]) {
-      sandboxPermissions
-    } else {
-      allPermissions
+    domain.getClassLoader match {
+      case sandbox: SandboxClassLoader => {
+        sandboxPermissions
+      }
+      case _ => {
+        allPermissions
+      }
     }
   }
 
-  val sandboxPermissions: PermissionCollection = {
+  def sandboxPermissions: PermissionCollection = {
     val pc = new Permissions()
     pc.setReadOnly()
     pc
@@ -55,6 +58,8 @@ class SandboxPolicy extends Policy{
     pc
   }
 }
+
+class SandboxSecurityManager() extends SecurityManager{}
 
 class Evaluator(timeout: FiniteDuration = 20.seconds) {
   type Remote = String
@@ -114,7 +119,7 @@ class Evaluator(timeout: FiniteDuration = 20.seconds) {
   def createClassLoader(eval: Eval, jars: Seq[File]): ClassLoader = {
     val jarUrls = jars.map(jar => new java.net.URL(s"file://${jar.getAbsolutePath}")).toArray
     val urlClassLoader = new URLClassLoader(jarUrls , this.getClass.getClassLoader)
-    new SandboxedClassLoader(eval.compilerOutputDir, urlClassLoader)
+    new SandboxClassLoader(eval.compilerOutputDir, urlClassLoader)
   }
 
   private[this] def evaluate[T](eval: Eval, code: String, classLoader: ClassLoader): EvalResult[T] = {
@@ -434,9 +439,15 @@ object Eval {
 
   def enableSandbox = {
     Policy.setPolicy(new SandboxPolicy())
-    System.setSecurityManager(new SecurityManager())
+    System.setSecurityManager(new SandboxSecurityManager())
+  }
+
+  def disableSandbox = {
+    // Policy.setPolicy(null)
+    // System.setSecurityManager(null)
   }
 
   class CompilerException(val messages: List[List[String]]) extends Exception(
     "Compiler exception " + messages.map(_.mkString("\n")).mkString("\n"))
 }
+

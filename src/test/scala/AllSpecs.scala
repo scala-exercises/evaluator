@@ -13,8 +13,4 @@ class AllSpecs extends Suites(
   new EvaluatorSpec,
   new EvalEndpointSpec,
   new EvaluatorSecuritySpec
-) with BeforeAndAfter {
-  before {
-    Eval.enableSandbox
-  }
-}
+) {}

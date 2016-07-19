@@ -15,6 +15,13 @@ import java.security._
 class EvaluatorSecuritySpec extends FunSpec with Matchers with BeforeAndAfter {
   val evaluator = new Evaluator(20 seconds)
 
+  before {
+    Eval.enableSandbox
+  }
+
+  after {
+    Eval.disableSandbox
+  }
 
   describe("evaluation security") {
     it("doesn't allow code to call System.exit") {
