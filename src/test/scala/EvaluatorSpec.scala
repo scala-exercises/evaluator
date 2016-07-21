@@ -122,7 +122,7 @@ Asserts.scalaTestAsserts(false)
       ).run
 
       result should matchPattern {
-        case EvalRuntimeError(_, Some(RuntimeError(err: TestFailedException, _))) =>
+        case EvalRuntimeError(_, RuntimeError(err: TestFailedException, _)) =>
       }
     }
   }

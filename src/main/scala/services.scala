@@ -1,6 +1,5 @@
 package org.scalaexercises.evaluator
 
-import org.scalaexercises.evaluator.sandbox._
 import java.util.concurrent._
 
 import org.http4s._, org.http4s.dsl._, org.http4s.server._
@@ -25,6 +24,7 @@ object services {
   def service = HttpService {
     case req @ POST -> Root / "eval" =>
       import io.circe.syntax._
+
       req.decode[EvalRequest] { evalRequest =>
         evaluator.eval[Any](
           code = evalRequest.code,
@@ -33,10 +33,10 @@ object services {
         ) flatMap { result =>
           val response = result match {
             case EvalSuccess(cis, result, out) =>
-              EvalResponse(`ok`, Option(result.toString), Option(result.asInstanceOf[AnyRef].getClass.getName), cis)
+              EvalResponse(`ok`, Option(result).map(_.toString), Option(result).map(_.asInstanceOf[AnyRef].getClass.getName), cis)
             case Timeout(_) => EvalResponse(`Timeout Exceded`, None, None, Map.empty)
             case UnresolvedDependency(msg) => EvalResponse(`Unresolved Dependency` + " : " + msg, None, None, Map.empty)
-            case EvalRuntimeError(cis, _) => EvalResponse(`Runtime Error`, None, None, cis)
+            case EvalRuntimeError(cis, re) => EvalResponse(`Runtime Error` + " : [" + re.error.getClass.getName + "] " + re.error.getMessage, None, None, cis)
             case CompilationError(cis) => EvalResponse(`Compilation Error`, None, None, cis)
             case GeneralError(err) => EvalResponse(`Unforeseen Exception`, None, None, Map.empty)
             case SecurityViolation(explanation) => EvalResponse(`Security Violation` + " : " + explanation, None, None, Map.empty)
@@ -46,6 +46,13 @@ object services {
       }
   }
 
+
+  def makeServer(host: String, port: Int) = {
+    BlazeBuilder
+      .bindHttp(port, host)
+      .mountService(service)
+      .start
+  }
 }
 
 object EvaluatorServer extends App {
@@ -54,20 +61,12 @@ object EvaluatorServer extends App {
 
   private[this] val logger = getLogger
 
-  val ip = Option(System.getenv("EVALUATOR_SERVER_IP")).getOrElse("0.0.0.0")
+  val host = Option(System.getenv("EVALUATOR_SERVER_IP")).getOrElse("0.0.0.0")
 
   val port = (Option(System.getenv("EVALUATOR_SERVER_PORT")) orElse
     Option(System.getProperty("http.port")))
     .map(_.toInt)
     .getOrElse(8080)
 
-  logger.info(s"Initializing Evaluator at $ip:$port")
-
-  BlazeBuilder
-    .bindHttp(port, ip)
-    .mountService(service)
-    .start
-    .run
-    .awaitShutdown()
-
+  makeServer(host, port).map(srv => srv.awaitShutdown()).run
 }

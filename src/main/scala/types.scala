@@ -13,7 +13,7 @@ final case class CompilationInfo(
   pos: Option[RangePosition])
 
 final case class RuntimeError(
-  val error: Throwable,
+  error: Throwable,
   position: Option[Int])
 
 sealed trait EvalResult[+A]
@@ -35,7 +35,7 @@ final case class UnresolvedDependency[A](explanation: String) extends EvalResult
 
 final case class EvalRuntimeError[A](
   complilationInfos: CI,
-  runtimeError: Option[RuntimeError]) extends EvalResult[A]
+  runtimeError: RuntimeError) extends EvalResult[A]
 
 final case class CompilationError[A](complilationInfos: CI) extends EvalResult[A]
 

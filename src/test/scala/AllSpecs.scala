@@ -8,13 +8,3 @@ package org.scalaexercises.evaluator
 import org.scalatest._
 
 import java.security.Policy
-
-class AllSpecs extends Suites(
-  new EvaluatorSpec,
-  new EvalEndpointSpec,
-  new EvaluatorSecuritySpec
-) with BeforeAndAfterAll {
-  override def beforeAll = {
-    Eval.enableSandbox
-  }
-}

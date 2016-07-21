@@ -32,32 +32,27 @@ import scalaz.concurrent.Task
 
 import coursier._
 
+object Sandbox {
+  val allPermissions: PermissionCollection = {
+    val p = new Permissions()
+    p.add(new AllPermission())
+    p.setReadOnly()
+    p
+  }
+
+  val noPermissions: PermissionCollection = {
+    val p = new Permissions()
+    p.setReadOnly()
+    p
+  }
+}
+
 class SandboxClassLoader(root: AbstractFile, parent: ClassLoader) extends AbstractFileClassLoader(root, parent){
-}
-
-class SandboxPolicy extends Policy{
-  override def getPermissions(domain: ProtectionDomain): PermissionCollection = {
-    val cl = domain.getClassLoader
-
-    cl match {
-      case sandbox: SandboxClassLoader => sandboxPermissions
-      case _ => allPermissions
-    }
-  }
-
-  def sandboxPermissions: PermissionCollection = {
-    new Permissions()
-  }
-
-  def allPermissions: PermissionCollection = {
-    val pc = new Permissions()
-    pc.add(new AllPermission())
-    pc.setReadOnly()
-    pc
+  override lazy val protectionDomain = {
+    val cs = new CodeSource(root.toURL, Array.empty[java.security.cert.Certificate])
+    new ProtectionDomain(cs, Sandbox.noPermissions)
   }
 }
-
-class SandboxSecurityManager() extends SecurityManager{}
 
 class Evaluator(timeout: FiniteDuration = 20.seconds) {
   type Remote = String
@@ -115,16 +110,30 @@ class Evaluator(timeout: FiniteDuration = 20.seconds) {
   }
 
   def createClassLoader(eval: Eval, jars: Seq[File]): ClassLoader = {
-    val jarUrls = jars.map(jar => new java.net.URL(s"file://${jar.getAbsolutePath}")).toArray
-    val urlClassLoader = new URLClassLoader(jarUrls , this.getClass.getClassLoader)
-    new SandboxClassLoader(eval.compilerOutputDir, urlClassLoader)
+    val predefCl = Predef.getClass.getClassLoader
+
+    val predefURLs = predefCl match {
+      case ucl: URLClassLoader => ucl.getURLs
+      case _ => Array.empty[java.net.URL]
+    }
+
+    val jarPaths = jars.map(jar => s"file://${jar.getAbsolutePath}")
+    val jarURLs = jarPaths.map(path => new java.net.URL(path))
+
+    val urls = predefURLs ++ jarURLs
+
+    val urlCl = new URLClassLoader(urls.toArray, null){
+      override def getPermissions(cs: CodeSource): PermissionCollection = {
+        Sandbox.noPermissions
+      }
+    }
+    new SandboxClassLoader(eval.compilerOutputDir, urlCl)
   }
 
   private[this] def evaluate[T](eval: Eval, code: String, classLoader: ClassLoader): EvalResult[T] = {
     val result: Try[T] = for {
-      _ ← Try(eval.check(code, classLoader))
       result ← Try({
-        eval.execute[T](code, resetState = true, classLoader = classLoader)
+        eval.execute[T](code, classLoader = classLoader)
       })
     } yield result
 
@@ -135,7 +144,7 @@ class Evaluator(timeout: FiniteDuration = 20.seconds) {
       case scala.util.Failure(t) ⇒ t match {
         case e: Eval.CompilerException ⇒ CompilationError(errors)
         case e: SecurityException => SecurityViolation(e.getMessage)
-        case NonFatal(e)               ⇒ EvalRuntimeError(errors, Option(RuntimeError(e, None)))
+        case NonFatal(e)               ⇒ EvalRuntimeError(errors, RuntimeError(e, None))
         case e                         ⇒ GeneralError(e)
       }
     }
@@ -146,8 +155,13 @@ class Evaluator(timeout: FiniteDuration = 20.seconds) {
     remotes: Seq[Remote] = Nil,
     dependencies: Seq[Dependency] = Nil
   ): Task[EvalResult[T]] = {
+
+    val deps = List(
+      Dependency("org.scala-lang", "scala-library", "2.11.8")
+    ) ++ dependencies
+
     for {
-      allJars <- fetchArtifacts(remotes, dependencies)
+      allJars <- fetchArtifacts(remotes, deps)
 
       result <- allJars match {
         case \/-(jars) => {
@@ -241,20 +255,10 @@ private class StringCompiler(
     reporter.reset()
   }
 
-  def findClass(className: String, classLoader: ClassLoader): Option[Class[_]] = {
-    synchronized {
-      try {
-        Option(Class.forName(className, true, classLoader))
-      } catch {
-        case e: ClassNotFoundException => None
-      }
-    }
-  }
-
   /**
     * Compile scala code. It can be found using the above class loader.
     */
-  def apply(code: String, classLoader: ClassLoader) = {
+  def performCompilation(code: String) = {
     // if you're looking for the performance hit, it's 1/2 this line...
     val compiler = new global.Run
     val sourceFiles = List(new BatchSourceFile("(inline)", code))
@@ -275,12 +279,10 @@ private class StringCompiler(
   /**
     * Compile a new class, load it, and return it. Thread-safe.
     */
-  def apply(code: String, className: String, resetState: Boolean = true, classLoader: ClassLoader): Class[_] = {
+  def compile(code: String, className: String) = {
     synchronized {
-      if (resetState) reset()
-
-      apply(code, classLoader)
-      Class.forName(className, true, classLoader)
+      reset()
+      performCompilation(code)
     }
   }
 }
@@ -335,35 +337,25 @@ class Eval(target: Option[File] = None, jars: List[File] = Nil) {
    * where unique is computed from the jvmID (a random number)
    * and a digest of code
    */
-  def execute[T](code: String, resetState: Boolean, classLoader: ClassLoader): T = {
+  def execute[T](code: String, classLoader: ClassLoader): T = {
     val id = uniqueId(code)
     val className = "Evaluator__" + id
-    execute(className, code, resetState, classLoader)
+    execute(className, code, classLoader)
   }
 
-  def execute[T](className: String, code: String, resetState: Boolean, classLoader: ClassLoader): T = {
-    val cls = compiler(
-      wrapCodeInClass(className, code), className, resetState, classLoader
+  def execute[T](className: String, code: String, classLoader: ClassLoader): T = {
+    compiler.compile(
+      wrapCodeInClass(className, code), className
     )
-
-    val thunk = cls.getConstructor().newInstance().asInstanceOf[() => T]
-
-    thunk.apply()
+    val cls = classLoader.loadClass(className)
+    runClass(cls)
   }
 
-  // def runClass[T](cls: Class[_]): T = {
-  //   cls.getConstructor().newInstance().asInstanceOf[() => T].apply()
-  // }
-
-  /**
-   * Check if code is Eval-able.
-   * @throws CompilerException if not Eval-able.
-   */
-  def check(code: String, classLoader: ClassLoader) {
-    val id = uniqueId(code)
-    val className = "Evaluator__" + id
-    val wrappedCode = wrapCodeInClass(className, code)
-    compiler(wrappedCode, classLoader)
+  def runClass[T](cls: Class[_]): T = {
+    val method = cls.getMethod("apply")
+    val instance = cls.getConstructor().newInstance()
+    val result = method.invoke(instance)
+    result.asInstanceOf[T]
   }
 
   private[this] def uniqueId(code: String, idOpt: Option[Int] = Some(Eval.jvmId)): String = {
@@ -381,7 +373,7 @@ class Eval(target: Option[File] = None, jars: List[File] = Nil) {
    */
   private[this] def wrapCodeInClass(className: String, code: String) = {
     s"""
-class ${className} extends (() => Any) with java.io.Serializable {
+class ${className} extends scala.Function0[Any] with java.io.Serializable {
   def apply() = {
     $code
   }
@@ -432,13 +424,6 @@ object Eval {
 
   val logger = getLogger
 
-  def enableSandbox = {
-    logger.info("Enabling sandbox")
-    Policy.setPolicy(new SandboxPolicy())
-    System.setSecurityManager(new SandboxSecurityManager())
-  }
-
   class CompilerException(val messages: List[List[String]]) extends Exception(
     "Compiler exception " + messages.map(_.mkString("\n")).mkString("\n"))
 }
-

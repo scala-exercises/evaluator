@@ -4,6 +4,8 @@
  */
 package org.scalaexercises.evaluator
 
+import scala.util.matching.Regex
+
 import org.scalatest._
 import org.http4s._, org.http4s.dsl._, org.http4s.server._
 
@@ -15,9 +17,7 @@ import scodec.bits.ByteVector
 
 import org.http4s.{Status => HttpStatus}
 
-@DoNotDiscover
 class EvalEndpointSpec extends FunSpec with Matchers {
-
   import services._
   import codecs._
   import EvalResponse.messages._
@@ -39,31 +39,37 @@ class EvalEndpointSpec extends FunSpec with Matchers {
     response: Response,
     expectedStatus: HttpStatus,
     expectedValue: Option[String] = None,
-    expectedMessage: String
+    expectedMessage: Regex
   ) = {
 
     response.status should be(expectedStatus)
     val evalResponse = response.as[EvalResponse].run
     evalResponse.value should be(expectedValue)
-    evalResponse.msg should be(expectedMessage)
+    evalResponse.msg should include regex expectedMessage
   }
 
   describe("evaluation endpoint") {
     it("can evaluate simple expressions") {
       verifyEvalResponse(
-        response = serve(EvalRequest(code = "{ 41 + 1 }")),
+        response = serve(EvalRequest(
+          code = "{ 41 + 1 }",
+          resolvers = sonatypeReleases
+        )),
         expectedStatus = HttpStatus.Ok,
         expectedValue = Some("42"),
-        expectedMessage = `ok`
+        expectedMessage = `ok`.r
       )
     }
 
     it("fails with a timeout when takes longer than the configured timeout") {
       verifyEvalResponse(
-        response = serve(EvalRequest(code = "{ while(true) {}; 123 }")),
+        response = serve(EvalRequest(
+          code = "{ while(true) {}; 123 }",
+          resolvers = sonatypeReleases
+        )),
         expectedStatus = HttpStatus.Ok,
         expectedValue = None,
-        expectedMessage = `Timeout Exceded`
+        expectedMessage = `Timeout Exceded`.r
       )
     }
 
@@ -76,7 +82,7 @@ class EvalEndpointSpec extends FunSpec with Matchers {
         )),
         expectedStatus = HttpStatus.Ok,
         expectedValue = Some("42"),
-        expectedMessage = `ok`
+        expectedMessage = `ok`.r
       )
     }
 
@@ -93,7 +99,7 @@ class EvalEndpointSpec extends FunSpec with Matchers {
           )),
           expectedStatus = HttpStatus.Ok,
           expectedValue = Some("42"),
-          expectedMessage = `ok`
+          expectedMessage = `ok`.r
         )
       }
 
@@ -108,7 +114,7 @@ class EvalEndpointSpec extends FunSpec with Matchers {
         )),
         expectedStatus = HttpStatus.Ok,
         expectedValue = Some("()"),
-        expectedMessage = `ok`
+        expectedMessage = `ok`.r
       )
     }
 
@@ -121,10 +127,125 @@ class EvalEndpointSpec extends FunSpec with Matchers {
         )),
         expectedStatus = HttpStatus.Ok,
         expectedValue = None,
-        expectedMessage = `Runtime Error`
+        expectedMessage = `Runtime Error`.r
       )
     }
 
+    ignore("doesn't allow code to call System.exit") {
+      verifyEvalResponse(
+        response = serve(EvalRequest(
+          code = "System.exit(1)",
+          resolvers = sonatypeReleases
+        )),
+        expectedStatus = HttpStatus.Ok,
+        expectedValue = None,
+        expectedMessage = `Security Violation`.r
+      )
+    }
+
+    it("doesn't allow to install a security manager"){
+      verifyEvalResponse(
+        response = serve(EvalRequest(
+          code = """
+import java.security._
+
+class MaliciousSecurityManager extends SecurityManager{
+  override def checkPermission(perm: Permission): Unit = {
+    // allow anything to happen by not throwing a security exception
+  }
+}
+
+System.setSecurityManager(new MaliciousSecurityManager())
+""",
+          resolvers = sonatypeReleases
+        )),
+        expectedStatus = HttpStatus.Ok,
+        expectedValue = None,
+        expectedMessage = `Security Violation`.r
+      )
+    }
+
+    it("doesn't allow setting a custom policy"){
+      verifyEvalResponse(
+        response = serve(EvalRequest(
+          code = """
+import java.security._
+
+class MaliciousPolicy extends Policy {
+  override def getPermissions(domain: ProtectionDomain): PermissionCollection = {
+    new AllPermission().newPermissionCollection()
+  }
+}
+
+Policy.setPolicy(new MaliciousPolicy())
+""",
+          resolvers = sonatypeReleases
+        )),
+        expectedStatus = HttpStatus.Ok,
+        expectedValue = None,
+        expectedMessage = `Security Violation`.r
+      )
+    }
+
+    it("doesn't allow executing commands"){
+      verifyEvalResponse(
+        response = serve(EvalRequest(
+          code = """
+Runtime.getRuntime.exec("ls /")
+""",
+          resolvers = sonatypeReleases
+        )),
+        expectedStatus = HttpStatus.Ok,
+        expectedValue = None,
+        expectedMessage = `Security Violation`.r
+      )
+    }
+
+    it("doesn't allow the creation of a class loader"){
+      verifyEvalResponse(
+        response = serve(EvalRequest(
+          code = """
+val cl = new java.net.URLClassLoader(Array())
+cl.loadClass("java.net.URLClassLoader")
+""",
+          resolvers = sonatypeReleases
+        )),
+        expectedStatus = HttpStatus.Ok,
+        expectedValue = None,
+        expectedMessage = `Security Violation`.r
+      )
+    }
+
+    it("doesn't allow access to the Unsafe instance"){
+      verifyEvalResponse(
+        response = serve(EvalRequest(
+          code = """
+import sun.misc.Unsafe
+
+Unsafe.getUnsafe
+""",
+          resolvers = sonatypeReleases
+        )),
+        expectedStatus = HttpStatus.Ok,
+        expectedValue = None,
+        expectedMessage = `Security Violation`.r
+      )
+    }
+
+    it("doesn't allow access to the sun reflect package"){
+      verifyEvalResponse(
+        response = serve(EvalRequest(
+          code = """
+import sun.reflect.Reflection
+Reflection.getCallerClass(2)
+""",
+          resolvers = sonatypeReleases
+        )),
+        expectedStatus = HttpStatus.Ok,
+        expectedValue = None,
+        expectedMessage = `Security Violation`.r
+      )
+    }
   }
 }
 

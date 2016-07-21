@@ -22,15 +22,8 @@ package object sandbox {
     override def checkPermission(perm: Permission): Unit = {
       val result = sandboxedCheck(perm)
 
-      if (result.isRight) {
-        //println(s"OK ${perm.getName}")
-      } else {
-        //println(s"NOPE ${perm.getName}")
-      }
-
       result match {
-        case Right(result) => {
-        }
+        case Right(result) =>
         case Left(msg) => {
           throw new SecurityException(msg)
         }
