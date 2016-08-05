@@ -3,11 +3,13 @@ val http4sVersion = "0.14.1"
 val circeVersion = "0.4.1"
 
 lazy val evaluator = (project in file("."))
+  .enablePlugins(JavaAppPackaging)
   .settings(
     name := "evaluator",
     scalaVersion := "2.11.8",
     resolvers += Resolver.sonatypeRepo("snapshots"),
     libraryDependencies ++= Seq(
+      "org.scala-exercises" %% "evaluator-types" % "0.1-SNAPSHOT",
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "io.monix" %% "monix" % "2.0-RC8",
       "org.http4s" %% "http4s-dsl" % http4sVersion,
@@ -26,8 +28,6 @@ lazy val evaluator = (project in file("."))
       "org.scalatest" %% "scalatest" % "2.2.4" % "test"
     )
   )
-
-enablePlugins(JavaAppPackaging)
 
 addCompilerPlugin(
   "org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full
