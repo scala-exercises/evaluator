@@ -1,11 +1,13 @@
 import org.scalafmt.sbt.ScalaFmtPlugin
 import org.scalafmt.sbt.ScalaFmtPlugin.autoImport._
+import de.heikoseeberger.sbtheader.{HeaderPattern, HeaderPlugin}
+import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
 import sbt.Keys._
 import sbt._
 
 object EvaluatorBuild extends AutoPlugin {
 
-  override def requires = plugins.JvmPlugin && ScalaFmtPlugin
+  override def requires = plugins.JvmPlugin && ScalaFmtPlugin && HeaderPlugin
 
   override def trigger = allRequirements
 
@@ -69,6 +71,16 @@ object EvaluatorBuild extends AutoPlugin {
   )
 
   private[this] def miscSettings = Seq(
+    headers <<= (name, version) { (name, version) => Map(
+      "scala" -> (
+        HeaderPattern.cStyleBlockComment,
+        s"""|/*
+            | * scala-exercises-$name
+            | * Copyright (C) 2015-2016 47 Degrees, LLC. <http://www.47deg.com>
+            | */
+            |
+          |""".stripMargin)
+    )},
     shellPrompt := { s: State =>
       val c = scala.Console
       val blue = c.RESET + c.BLUE + c.BOLD

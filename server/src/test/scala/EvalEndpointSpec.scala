@@ -1,7 +1,8 @@
 /*
- * scala-exercises-evaluator
+ * scala-exercises-evaluator-server
  * Copyright (C) 2015-2016 47 Degrees, LLC. <http://www.47deg.com>
  */
+
 package org.scalaexercises.evaluator
 
 import org.scalatest._
