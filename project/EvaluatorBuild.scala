@@ -3,7 +3,7 @@ import org.scalafmt.sbt.ScalaFmtPlugin.autoImport._
 import sbt.Keys._
 import sbt._
 
-object BuildCommon extends AutoPlugin {
+object EvaluatorBuild extends AutoPlugin {
 
   override def requires = plugins.JvmPlugin && ScalaFmtPlugin
 
