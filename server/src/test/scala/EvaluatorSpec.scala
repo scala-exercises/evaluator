@@ -11,7 +11,7 @@ import org.scalatest._
 
 class EvaluatorSpec extends FunSpec with Matchers {
   implicit val scheduler: Scheduler = Scheduler.io("exercises-spec")
-  val evaluator = new Evaluator(20 seconds)
+  val evaluator                     = new Evaluator(20 seconds)
 
   describe("evaluation") {
     it("can evaluate simple expressions") {
@@ -23,7 +23,8 @@ class EvaluatorSpec extends FunSpec with Matchers {
     }
 
     it("fails with a timeout when takes longer than the configured timeout") {
-      val result: EvalResult[Int] = evaluator.eval("{ while(true) {}; 123 }").run
+      val result: EvalResult[Int] =
+        evaluator.eval("{ while(true) {}; 123 }").run
 
       result should matchPattern {
         case Timeout(_) ⇒
@@ -36,16 +37,19 @@ import cats._
 
 Eval.now(42).value
       """
-      val remotes = List("https://oss.sonatype.org/content/repositories/releases/")
+      val remotes =
+        List("https://oss.sonatype.org/content/repositories/releases/")
       val dependencies = List(
         Dependency("org.typelevel", "cats_2.11", "0.6.0")
       )
 
-      val result: EvalResult[Int] = evaluator.eval(
-        code,
-        remotes = remotes,
-        dependencies = dependencies
-      ).run
+      val result: EvalResult[Int] = evaluator
+        .eval(
+          code,
+          remotes = remotes,
+          dependencies = dependencies
+        )
+        .run
 
       result should matchPattern {
         case EvalSuccess(_, 42, _) =>
@@ -57,7 +61,8 @@ Eval.now(42).value
 import cats._
 Eval.now(42).value
       """
-      val remotes = List("https://oss.sonatype.org/content/repositories/releases/")
+      val remotes =
+        List("https://oss.sonatype.org/content/repositories/releases/")
       val dependencies1 = List(
         Dependency("org.typelevel", "cats_2.11", "0.4.1")
       )
@@ -65,16 +70,20 @@ Eval.now(42).value
         Dependency("org.typelevel", "cats_2.11", "0.6.0")
       )
 
-      val result1: EvalResult[Int] = evaluator.eval(
-        code,
-        remotes = remotes,
-        dependencies = dependencies1
-      ).run
-      val result2: EvalResult[Int] = evaluator.eval(
-        code,
-        remotes = remotes,
-        dependencies = dependencies2
-      ).run
+      val result1: EvalResult[Int] = evaluator
+        .eval(
+          code,
+          remotes = remotes,
+          dependencies = dependencies1
+        )
+        .run
+      val result2: EvalResult[Int] = evaluator
+        .eval(
+          code,
+          remotes = remotes,
+          dependencies = dependencies2
+        )
+        .run
 
       result1 should matchPattern {
         case EvalSuccess(_, 42, _) =>
@@ -89,16 +98,19 @@ Eval.now(42).value
 import stdlib._
 Asserts.scalaTestAsserts(true)
 """
-      val remotes = List("https://oss.sonatype.org/content/repositories/releases/")
+      val remotes =
+        List("https://oss.sonatype.org/content/repositories/releases/")
       val dependencies = List(
         Dependency("org.scala-exercises", "exercises-stdlib_2.11", "0.2.0")
       )
 
-      val result: EvalResult[Unit] = evaluator.eval(
-        code,
-        remotes = remotes,
-        dependencies = dependencies
-      ).run
+      val result: EvalResult[Unit] = evaluator
+        .eval(
+          code,
+          remotes = remotes,
+          dependencies = dependencies
+        )
+        .run
 
       result should matchPattern {
         case EvalSuccess(_, (), _) =>
@@ -110,19 +122,24 @@ Asserts.scalaTestAsserts(true)
 import stdlib._
 Asserts.scalaTestAsserts(false)
 """
-      val remotes = List("https://oss.sonatype.org/content/repositories/releases/")
+      val remotes =
+        List("https://oss.sonatype.org/content/repositories/releases/")
       val dependencies = List(
         Dependency("org.scala-exercises", "exercises-stdlib_2.11", "0.2.0")
       )
 
-      val result: EvalResult[Unit] = evaluator.eval(
-        code,
-        remotes = remotes,
-        dependencies = dependencies
-      ).run
+      val result: EvalResult[Unit] = evaluator
+        .eval(
+          code,
+          remotes = remotes,
+          dependencies = dependencies
+        )
+        .run
 
       result should matchPattern {
-        case EvalRuntimeError(_, Some(RuntimeError(err: TestFailedException, _))) =>
+        case EvalRuntimeError(
+            _,
+            Some(RuntimeError(err: TestFailedException, _))) =>
       }
     }
   }

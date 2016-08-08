@@ -1,35 +1,51 @@
-val http4sVersion = "0.14.1"
+lazy val root = (project in file("."))
+  .aggregate(`evaluator-server`, `evaluator-shared`, `evaluator-client`)
 
-val circeVersion = "0.4.1"
+lazy val `evaluator-shared` = (project in file("shared"))
+  .settings(name := "evaluator-shared")
 
-lazy val evaluator = (project in file("."))
+lazy val `evaluator-client` = (project in file("client"))
+  .dependsOn(`evaluator-shared`)
+  .settings(
+    name := "evaluator-client",
+    libraryDependencies <++= libraryVersions { v => Seq(
+      "org.typelevel" %% "cats-free" % v('cats),
+      "io.circe" %% "circe-core" %  v('circe),
+      "io.circe" %% "circe-generic" %  v('circe),
+      "io.circe" %% "circe-parser" %  v('circe),
+      "org.log4s" %% "log4s" % v('log4s),
+      "org.scalaj" %% "scalaj-http" % v('scalajhttp),
+      "org.slf4j" % "slf4j-simple" % v('slf4j),
+      // Testing libraries
+      "org.scalatest" %% "scalatest" % v('scalaTest) % "test"
+    )
+    }
+ )
+
+lazy val `evaluator-server` = (project in file("server"))
+  .dependsOn(`evaluator-shared`)
   .enablePlugins(JavaAppPackaging)
   .settings(
-    name := "evaluator",
-    scalaVersion := "2.11.8",
-    resolvers += Resolver.sonatypeRepo("snapshots"),
-    libraryDependencies ++= Seq(
-      "org.scala-exercises" %% "evaluator-types" % version.value,
-      "org.scala-lang" % "scala-compiler" % scalaVersion.value,
-      "io.monix" %% "monix" % "2.0-RC8",
-      "org.http4s" %% "http4s-dsl" % http4sVersion,
-      "org.http4s" %% "http4s-blaze-server" % http4sVersion,
-      "org.http4s" %% "http4s-blaze-client" % http4sVersion,
-      "org.http4s" %% "http4s-circe" % http4sVersion,
-      "io.circe" %% "circe-core" % circeVersion,
-      "io.circe" %% "circe-generic" % circeVersion,
-      "io.circe" %% "circe-parser" % circeVersion,
-      "com.typesafe" % "config" % "1.3.0",
-      "com.pauldijou" %% "jwt-core" % "0.8.0",
-      "org.log4s" %% "log4s" % "1.3.0",
-      "org.slf4j" % "slf4j-simple" % "1.7.21",
-      "io.get-coursier" %% "coursier" % "1.0.0-M12",
-      "io.get-coursier" %% "coursier-cache" % "1.0.0-M12",
-      "org.scalatest" %% "scalatest" % "2.2.4" % "test"
+    name := "evaluator-server",
+    libraryDependencies <++= libraryVersions { v => Seq(
+      "io.monix" %% "monix" % v('monix),
+      "org.http4s" %% "http4s-dsl" % v('http4s),
+      "org.http4s" %% "http4s-blaze-server" % v('http4s),
+      "org.http4s" %% "http4s-blaze-client" % v('http4s),
+      "org.http4s" %% "http4s-circe" % v('http4s),
+      "io.circe" %% "circe-core" % v('circe),
+      "io.circe" %% "circe-generic" % v('circe),
+      "io.circe" %% "circe-parser" % v('circe),
+      "com.typesafe" % "config" % v('config),
+      "com.pauldijou" %% "jwt-core" % v('jwtcore),
+      "org.log4s" %% "log4s" % v('log4s),
+      "org.slf4j" % "slf4j-simple" % v('slf4j),
+      "io.get-coursier" %% "coursier" % v('coursier),
+      "io.get-coursier" %% "coursier-cache" % v('coursier),
+      "org.scalatest" %% "scalatest" % v('scalaTest) % "test"
     )
+    }
   )
+  .settings(compilerDependencySettings: _*)
 
-addCompilerPlugin(
-  "org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full
-)
-
+onLoad in Global := (Command.process("project evaluator-server", _: State)) compose (onLoad in Global).value

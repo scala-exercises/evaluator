@@ -12,7 +12,7 @@ import scalaz.concurrent.Task
 
 object auth {
 
-  private [this] val logger = getLogger
+  private[this] val logger = getLogger
 
   val config = ConfigFactory.load()
 
@@ -21,10 +21,11 @@ object auth {
   val secretKey = if (config.hasPath(SecretKeyPath)) {
     config.getString(SecretKeyPath)
   } else {
-    throw new IllegalStateException("Missing -Deval.auth.secretKey=[YOUR_KEY_HERE] or env var [EVAL_SECRET_KEY] ")
+    throw new IllegalStateException(
+      "Missing -Deval.auth.secretKey=[YOUR_KEY_HERE] or env var [EVAL_SECRET_KEY] ")
   }
 
-  def generateToken(value : String = "{}") =
+  def generateToken(value: String = "{}") =
     Jwt.encode(value, secretKey, JwtAlgorithm.HS256)
 
   object `X-Scala-Eval-Api-Token` extends HeaderKey.Singleton {
@@ -43,7 +44,8 @@ object auth {
 
   }
 
-  final case class `X-Scala-Eval-Api-Token`(token: String) extends Header.Parsed {
+  final case class `X-Scala-Eval-Api-Token`(token: String)
+      extends Header.Parsed {
     override def key = `X-Scala-Eval-Api-Token`
     override def renderValue(writer: Writer): writer.type =
       writer.append(token)
