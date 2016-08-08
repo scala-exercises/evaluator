@@ -77,7 +77,7 @@ class Evaluator(timeout: FiniteDuration = 20.seconds)(
       @volatile var errors: Map[String, List[CompilationInfo]] = Map.empty
 
       override lazy val compilerSettings: Settings = new EvalSettings(None) {
-        if (!jars.isEmpty) {
+        if (jars.nonEmpty) {
           val newJars = jars.mkString(File.pathSeparator)
           classpath.value = newJars + File.pathSeparator + classpath.value
         }

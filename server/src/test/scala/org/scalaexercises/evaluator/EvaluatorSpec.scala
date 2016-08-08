@@ -12,7 +12,7 @@ import org.scalatest._
 
 class EvaluatorSpec extends FunSpec with Matchers {
   implicit val scheduler: Scheduler = Scheduler.io("exercises-spec")
-  val evaluator                     = new Evaluator(20 seconds)
+  val evaluator                     = new Evaluator(60 seconds)
 
   describe("evaluation") {
     it("can evaluate simple expressions") {
