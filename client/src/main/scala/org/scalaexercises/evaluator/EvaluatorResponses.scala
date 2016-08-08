@@ -6,32 +6,36 @@
 package org.scalaexercises.evaluator
 
 import cats.data.Xor
+import cats.free.Free
 import cats.syntax.xor._
 import io.circe.Decoder
 import io.circe.parser._
 import io.circe.generic.auto._
+import org.scalaexercises.evaluator.free.algebra.EvaluatorOp
 
 import scala.language.higherKinds
 import scalaj.http.HttpResponse
 
 object EvaluatorResponses {
 
-  type EvaluationResponse[A] = EvalException Xor EvaluationResult[A]
+  type EvalIO[A] = Free[EvaluatorOp, A]
+
+  type EvaluationResponse[A] = EvaluationException Xor EvaluationResult[A]
 
   case class EvaluationResult[A](result: A,
                                  statusCode: Int,
                                  headers: Map[String, IndexedSeq[String]])
 
-  sealed abstract class EvalException(msg: String,
-                                      cause: Option[Throwable] = None)
+  sealed abstract class EvaluationException(msg: String,
+                                            cause: Option[Throwable] = None)
       extends Throwable(msg) {
     cause foreach initCause
   }
 
   case class JsonParsingException(msg: String, json: String)
-      extends EvalException(msg)
+      extends EvaluationException(msg)
 
-  case class UnexpectedException(msg: String) extends EvalException(msg)
+  case class UnexpectedException(msg: String) extends EvaluationException(msg)
 
   def toEntity[A](response: HttpResponse[String])(
     implicit D: Decoder[A]): EvaluationResponse[A] = response match {

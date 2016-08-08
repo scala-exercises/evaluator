@@ -6,7 +6,7 @@
 package org.scalaexercises.evaluator.api
 
 import org.scalaexercises.evaluator.EvaluatorResponses.EvaluationResponse
-import org.scalaexercises.evaluator.{Decoders, EvalRequest, EvalResponse}
+import org.scalaexercises.evaluator.{Decoders, Dependency, EvalRequest, EvalResponse}
 import org.scalaexercises.evaluator.http.HttpClient
 import io.circe.generic.auto._
 import io.circe.syntax._
@@ -19,8 +19,12 @@ class Evaluator {
 
   def eval(url: String,
            authKey: String,
-           evalRequest: EvalRequest): EvaluationResponse[EvalResponse] =
-    httpClient
-      .post[EvalResponse](url, authKey, data = evalRequest.asJson.noSpaces)
+           resolvers: List[String] = Nil,
+           dependencies: List[Dependency] = Nil,
+           code: String): EvaluationResponse[EvalResponse] =
+    httpClient.post[EvalResponse](
+      url,
+      authKey,
+      data = EvalRequest(resolvers, dependencies, code).asJson.noSpaces)
 
 }
