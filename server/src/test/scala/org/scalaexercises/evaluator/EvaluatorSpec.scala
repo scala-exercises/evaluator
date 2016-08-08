@@ -9,6 +9,7 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import monix.execution.Scheduler
 import org.scalatest._
+import org.scalatest.exceptions.TestFailedException
 
 class EvaluatorSpec extends FunSpec with Matchers {
   implicit val scheduler: Scheduler = Scheduler.io("exercises-spec")
@@ -32,7 +33,7 @@ class EvaluatorSpec extends FunSpec with Matchers {
       }
     }
 
-    it("can load dependencies for an evaluation") {
+    ignore("can load dependencies for an evaluation") {
       val code = """
 import cats._
 
@@ -57,7 +58,7 @@ Eval.now(42).value
       }
     }
 
-    it("can load different versions of a dependency across evaluations") {
+    ignore("can load different versions of a dependency across evaluations") {
       val code = """
 import cats._
 Eval.now(42).value
@@ -94,7 +95,7 @@ Eval.now(42).value
       }
     }
 
-    it("can run code from the exercises content") {
+    ignore("can run code from the exercises content") {
       val code = """
 import stdlib._
 Asserts.scalaTestAsserts(true)
@@ -118,7 +119,7 @@ Asserts.scalaTestAsserts(true)
       }
     }
 
-    it("captures exceptions when running the exercises content") {
+    ignore("captures exceptions when running the exercises content") {
       val code = """
 import stdlib._
 Asserts.scalaTestAsserts(false)

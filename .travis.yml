@@ -15,3 +15,5 @@ env:
     SBT_OPTS="-XX:+UseConcMarkSweepGC -XX:MaxPermSize=512m"
 script:
   - sbt test
+after_success:
+  - bash deploy.sh
