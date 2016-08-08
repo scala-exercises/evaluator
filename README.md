@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/scala-exercises/evaluator.svg?branch=master)](https://travis-ci.org/scala-exercises/evaluator)
+
 # Remote Scala Eval
 
 The remote Scala evaluator is a server based application that
