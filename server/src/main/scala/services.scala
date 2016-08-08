@@ -7,10 +7,10 @@ import org.log4s.getLogger
 import monix.execution.Scheduler
 
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
 import scalaz.concurrent.Task
 import scalaz._
-
 
 object services {
 
@@ -24,28 +24,44 @@ object services {
 
   val evaluator = new Evaluator(20 seconds)
 
-  def evalService = auth(HttpService {
-    case req @ POST -> Root / "eval" =>
-      import io.circe.syntax._
-      req.decode[EvalRequest] { evalRequest =>
-        evaluator.eval[Any](
-          code = evalRequest.code,
-          remotes = evalRequest.resolvers,
-          dependencies = evalRequest.dependencies
-        ) flatMap { result =>
-          val response = result match {
-            case EvalSuccess(cis, result, out) =>
-              EvalResponse(`ok`, Option(result.toString), Option(result.asInstanceOf[AnyRef].getClass.getName), cis)
-            case Timeout(_) => EvalResponse(`Timeout Exceded`, None, None, Map.empty)
-            case UnresolvedDependency(msg) => EvalResponse(`Unresolved Dependency` + " : " + msg, None, None, Map.empty)
-            case EvalRuntimeError(cis, _) => EvalResponse(`Runtime Error`, None, None, cis)
-            case CompilationError(cis) => EvalResponse(`Compilation Error`, None, None, cis)
-            case GeneralError(err) => EvalResponse(`Unforeseen Exception`, None, None, Map.empty)
-          }
-          Ok(response.asJson)
+  def evalService =
+    auth(HttpService {
+      case req @ POST -> Root / "eval" =>
+        import io.circe.syntax._
+        req.decode[EvalRequest] {
+          evalRequest =>
+            evaluator.eval[Any](
+              code = evalRequest.code,
+              remotes = evalRequest.resolvers,
+              dependencies = evalRequest.dependencies
+            ) flatMap {
+              result =>
+                val response = result match {
+                  case EvalSuccess(cis, result, out) =>
+                    EvalResponse(
+                      `ok`,
+                      Option(result.toString),
+                      Option(result.asInstanceOf[AnyRef].getClass.getName),
+                      cis)
+                  case Timeout(_) =>
+                    EvalResponse(`Timeout Exceded`, None, None, Map.empty)
+                  case UnresolvedDependency(msg) =>
+                    EvalResponse(
+                      `Unresolved Dependency` + " : " + msg,
+                      None,
+                      None,
+                      Map.empty)
+                  case EvalRuntimeError(cis, _) =>
+                    EvalResponse(`Runtime Error`, None, None, cis)
+                  case CompilationError(cis) =>
+                    EvalResponse(`Compilation Error`, None, None, cis)
+                  case GeneralError(err) =>
+                    EvalResponse(`Unforeseen Exception`, None, None, Map.empty)
+                }
+                Ok(response.asJson)
+            }
         }
-      }
-  })
+    })
 
 }
 
@@ -58,9 +74,7 @@ object EvaluatorServer extends App {
   val ip = Option(System.getenv("EVALUATOR_SERVER_IP")).getOrElse("0.0.0.0")
 
   val port = (Option(System.getenv("EVALUATOR_SERVER_PORT")) orElse
-    Option(System.getProperty("http.port")))
-    .map(_.toInt)
-    .getOrElse(8080)
+        Option(System.getProperty("http.port"))).map(_.toInt).getOrElse(8080)
 
   logger.info(s"Initializing Evaluator at $ip:$port")
 
