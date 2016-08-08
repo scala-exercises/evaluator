@@ -2,10 +2,12 @@ lazy val root = (project in file("."))
   .aggregate(`evaluator-server`, `evaluator-shared`, `evaluator-client`)
 
 lazy val `evaluator-shared` = (project in file("shared"))
+  .enablePlugins(AutomateHeaderPlugin)
   .settings(name := "evaluator-shared")
 
 lazy val `evaluator-client` = (project in file("client"))
   .dependsOn(`evaluator-shared`)
+  .enablePlugins(AutomateHeaderPlugin)
   .settings(
     name := "evaluator-client",
     libraryDependencies <++= libraryVersions { v => Seq(
@@ -25,6 +27,7 @@ lazy val `evaluator-client` = (project in file("client"))
 lazy val `evaluator-server` = (project in file("server"))
   .dependsOn(`evaluator-shared`)
   .enablePlugins(JavaAppPackaging)
+  .enablePlugins(AutomateHeaderPlugin)
   .settings(
     name := "evaluator-server",
     libraryDependencies <++= libraryVersions { v => Seq(
