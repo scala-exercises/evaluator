@@ -6,7 +6,7 @@ jdk:
   - oraclejdk8
 cache:
   directories:
-    - $HOME/.coursier/cache	
+    - $HOME/.coursier/cache/v1
     - $HOME/.ivy2/cache
     - $HOME/.sbt/boot/
 env:
