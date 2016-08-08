@@ -67,9 +67,14 @@ class Evaluator(timeout: FiniteDuration = 20.seconds)(
     dependencies: Seq[Dependency]): Task[coursier.FileError \/ List[File]] =
     for {
       resolution <- resolveArtifacts(remotes, dependencies)
-      artifacts <- Task.gatherUnordered(
-                    resolution.artifacts.map(Cache.file(_).run)
-                  )
+      artifacts <- {
+        println(s"resolution.dependencies = ${resolution.dependencies}")
+        println(s"resolution.isDone = ${resolution.isDone}")
+        println(s"resolution.artifacts = ${resolution.artifacts}")
+        Task.gatherUnordered(
+          resolution.artifacts.map(Cache.file(_).run)
+        )
+      }
     } yield artifacts.sequenceU
 
   def createEval(jars: Seq[File]) = {
