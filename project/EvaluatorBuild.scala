@@ -2,6 +2,7 @@ import org.scalafmt.sbt.ScalaFmtPlugin
 import org.scalafmt.sbt.ScalaFmtPlugin.autoImport._
 import de.heikoseeberger.sbtheader.{HeaderPattern, HeaderPlugin}
 import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
+import com.typesafe.sbt.SbtPgp.autoImport._
 import sbt.Keys._
 import sbt._
 
@@ -31,6 +32,7 @@ object EvaluatorBuild extends AutoPlugin {
     baseSettings ++
       reformatOnCompileSettings ++
       dependencySettings ++
+      publishSettings ++
       miscSettings
 
 
@@ -89,6 +91,41 @@ object EvaluatorBuild extends AutoPlugin {
       val projectName = Project.extract(s).currentProject.id
 
       s"$blue$projectName$white>${c.RESET}"
+    }
+  )
+
+  private[this] lazy val gpgFolder = sys.env.getOrElse("SE_GPG_FOLDER", ".")
+
+  private[this] lazy val publishSettings = Seq(
+    organizationName := "Scala Exercises",
+    organizationHomepage := Some(new URL("http://scala-exercises.org")),
+    startYear := Some(2016),
+    description := "Scala Exercises: The path to enlightenment",
+    homepage := Some(url("http://scala-exercises.org")),
+    pgpPassphrase := Some(sys.env.getOrElse("SE_GPG_PASSPHRASE", "").toCharArray),
+    pgpPublicRing := file(s"$gpgFolder/pubring.gpg"),
+    pgpSecretRing := file(s"$gpgFolder/secring.gpg"),
+    credentials += Credentials(
+      "Sonatype Nexus Repository Manager",
+      "oss.sonatype.org",
+      sys.env.getOrElse("PUBLISH_USERNAME", ""),
+      sys.env.getOrElse("PUBLISH_PASSWORD", "")),
+    scmInfo := Some(
+      ScmInfo(
+        url("https://github.com/scala-exercises/evaluator"),
+        "https://github.com/scala-exercises/evaluator.git"
+      )
+    ),
+    licenses := Seq("Apache License, Version 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
+    publishMavenStyle := true,
+    publishArtifact in Test := false,
+    pomIncludeRepository := Function.const(false),
+    publishTo := {
+      val nexus = "https://oss.sonatype.org/"
+      if (isSnapshot.value)
+        Some("Snapshots" at nexus + "content/repositories/snapshots")
+      else
+        Some("Releases" at nexus + "service/local/staging/deploy/maven2")
     }
   )
 }

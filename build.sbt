@@ -52,3 +52,4 @@ lazy val `evaluator-server` = (project in file("server"))
   .settings(compilerDependencySettings: _*)
 
 onLoad in Global := (Command.process("project evaluator-server", _: State)) compose (onLoad in Global).value
+addCommandAlias("publishSignedAll", ";evaluator-shared/publishSigned;evaluator-client/publishSigned")
