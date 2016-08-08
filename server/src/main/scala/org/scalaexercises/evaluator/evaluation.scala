@@ -7,6 +7,7 @@ package org.scalaexercises.evaluator
 
 import scala.language.reflectiveCalls
 
+import java.nio.file.Files
 import java.io.{File, InputStream}
 import java.net.URLClassLoader
 import java.nio.file.Path
@@ -62,19 +63,46 @@ class Evaluator(timeout: FiniteDuration = 20.seconds)(
     resolution.process.run(fetch)
   }
 
+  val tempDirectory = Files.createTempDirectory("dependency-downloads").toFile
+
+  println(s"tempDirectory = $tempDirectory")
+
+  val path = tempDirectory.getAbsolutePath
+
+  println(s"path = $path")
+
+  val cleanPath = if (path.endsWith("/")) path else path + "/"
+
+  println(s"cleanpath = $cleanPath")
+
+  val dir = new File(cleanPath)
+
+  println(s"dir = $dir")
+
+  val downloadLocations =
+    if ((dir.exists() || dir.mkdirs()) && dir.isDirectory) {
+      new File(dir.toURI).getAbsoluteFile
+    } else {
+      println(s"Dir $dir couldn't be created!")
+      println(s"Configured as default = ${coursier.Cache.default}")
+      coursier.Cache.default
+    }
+
   def fetchArtifacts(
     remotes: Seq[Remote],
     dependencies: Seq[Dependency]): Task[coursier.FileError \/ List[File]] =
     for {
       resolution <- resolveArtifacts(remotes, dependencies)
-      artifacts <- {
-        println(s"resolution.dependencies = ${resolution.dependencies}")
-        println(s"resolution.isDone = ${resolution.isDone}")
-        println(s"resolution.artifacts = ${resolution.artifacts}")
-        Task.gatherUnordered(
-          resolution.artifacts.map(Cache.file(_).run)
-        )
-      }
+      artifacts <- Task.gatherUnordered(
+                    resolution.artifacts.map(
+                      a =>
+                        Cache
+                          .file(
+                            artifact = a,
+                            cache = downloadLocations
+                          )
+                          .run)
+                  )
     } yield artifacts.sequenceU
 
   def createEval(jars: Seq[File]) = {

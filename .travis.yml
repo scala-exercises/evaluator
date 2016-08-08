@@ -4,18 +4,15 @@ scala:
   - 2.11.8
 jdk:
   - oraclejdk8
-env:
-  global:
-  - COURSIER_NO_TERM=1
 cache:
-  directories:
   directories:
   - $HOME/.ivy2/cache
   - $HOME/.sbt/boot/
   - $HOME/.coursier/cache/v1
 env:
   global:
-    JAVA_OPTS=-Xmx2g
-    SBT_OPTS="-XX:+UseConcMarkSweepGC -XX:MaxPermSize=512m"
+  - COURSIER_NO_TERM=1
+  - JAVA_OPTS=-Xmx2g
+  - SBT_OPTS="-XX:+UseConcMarkSweepGC -XX:MaxPermSize=512m"
 script:
   - sbt test
