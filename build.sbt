@@ -13,7 +13,6 @@ lazy val `evaluator-server` = (project in file("server"))
   .settings(
     name := "evaluator-server",
     libraryDependencies <++= libraryVersions { v => Seq(
-      "org.scala-exercises" %% "evaluator-types" % "0.1-SNAPSHOT",
       "io.monix" %% "monix" % v('monix),
       "org.http4s" %% "http4s-dsl" % v('http4s),
       "org.http4s" %% "http4s-blaze-server" % v('http4s),
