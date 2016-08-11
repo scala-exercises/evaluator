@@ -7,11 +7,15 @@ package org.scalaexercises.evaluator.http
 
 import org.scalaexercises.evaluator.http.HttpClient._
 
-import scalaj.http.Http
+import scala.concurrent.duration.Duration
+import scalaj.http.{Http, HttpOptions}
 
 case class HttpRequestBuilder(
   url: String,
   httpVerb: String,
+  connTimeout: Duration,
+  readTimeout: Duration,
+  followRedirects: Boolean = true,
   headers: Headers = Map.empty[String, String],
   body: Option[String] = None
 ) {
@@ -25,7 +29,11 @@ case class HttpRequestBuilder(
 
     body
       .fold(request)(
-        request.postData(_).header("content-type", "application/json"))
+        request
+          .postData(_)
+          .option(HttpOptions.connTimeout(connTimeout.toMillis.toInt))
+          .option(HttpOptions.readTimeout(readTimeout.toMillis.toInt))
+          .header("content-type", "application/json"))
       .asString
   }
 }

@@ -11,6 +11,8 @@ import org.scalaexercises.evaluator.http.HttpClient
 import io.circe.generic.auto._
 import io.circe.syntax._
 
+import scala.concurrent.duration.Duration
+
 class Evaluator {
 
   import Decoders._
@@ -19,6 +21,8 @@ class Evaluator {
 
   def eval(url: String,
            authKey: String,
+           connTimeout: Duration,
+           readTimeout: Duration,
            resolvers: List[String] = Nil,
            dependencies: List[Dependency] = Nil,
            code: String): EvaluationResponse[EvalResponse] =
