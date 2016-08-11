@@ -15,8 +15,8 @@ import scala.concurrent.duration.Duration
 sealed trait EvaluatorOp[A]
 final case class Evaluates(url: String,
                            authKey: String,
-                           connTimeout: Duration = 1.second,
-                           readTimeout: Duration = 10.seconds,
+                           connTimeout: Duration,
+                           readTimeout: Duration,
                            resolvers: List[String] = Nil,
                            dependencies: List[Dependency] = Nil,
                            code: String)
@@ -27,8 +27,8 @@ class EvaluatorOps[F[_]](implicit I: Inject[EvaluatorOp, F]) {
   def evaluates(
     url: String,
     authKey: String,
-    connTimeout: Duration = 1.second,
-    readTimeout: Duration = 10.seconds,
+    connTimeout: Duration,
+    readTimeout: Duration,
     resolvers: List[String] = Nil,
     dependencies: List[Dependency] = Nil,
     code: String

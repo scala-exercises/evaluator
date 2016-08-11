@@ -26,8 +26,8 @@ class HttpClient {
     url: String,
     secretKey: String,
     method: String = "post",
-    connTimeout: Duration = 1.second,
-    readTimeout: Duration = 10.seconds,
+    connTimeout: Duration,
+    readTimeout: Duration,
     headers: Headers = Map.empty,
     data: String
   )(implicit D: Decoder[A]): EvaluationResponse[A] =
