@@ -24,7 +24,11 @@ class EvaluatorClient(url: String,
 
 object EvaluatorClient {
 
-  def apply(url: String, authKey: String) = new EvaluatorClient(url, authKey)
+  def apply(url: String,
+            authKey: String,
+            connTimeout: Duration = 1.second,
+            readTimeout: Duration = 10.seconds) =
+    new EvaluatorClient(url, authKey, connTimeout, readTimeout)
 
   implicit class EvaluationIOSyntaxXOR[A](
     evalIO: EvalIO[EvaluationResponse[A]]) {
