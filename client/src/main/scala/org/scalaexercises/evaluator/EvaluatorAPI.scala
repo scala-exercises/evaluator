@@ -5,13 +5,28 @@
 
 package org.scalaexercises.evaluator
 
+import cats.free.Free
+import org.scalaexercises.evaluator.EvaluatorResponses.EvaluationResponse
 import org.scalaexercises.evaluator.free.algebra.{EvaluatorOp, EvaluatorOps}
 
-class EvaluatorAPI(url: String, authKey: String)(
-  implicit O: EvaluatorOps[EvaluatorOp]) {
+import scala.concurrent.duration.Duration
 
-  def evaluates(resolvers: List[String] = Nil,
-                dependencies: List[Dependency] = Nil,
-                code: String) =
-    O.evaluates(url, authKey, resolvers, dependencies, code)
+class EvaluatorAPI(
+  url: String,
+  authKey: String,
+  connTimeout: Duration,
+  readTimeout: Duration)(implicit O: EvaluatorOps[EvaluatorOp]) {
+
+  def evaluates(
+    resolvers: List[String] = Nil,
+    dependencies: List[Dependency] = Nil,
+    code: String): Free[EvaluatorOp, EvaluationResponse[EvalResponse]] =
+    O.evaluates(
+      url,
+      authKey,
+      connTimeout,
+      readTimeout,
+      resolvers,
+      dependencies,
+      code)
 }

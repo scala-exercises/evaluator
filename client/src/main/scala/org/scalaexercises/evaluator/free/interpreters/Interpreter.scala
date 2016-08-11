@@ -27,10 +27,24 @@ trait Interpreter {
       val evaluator = new Evaluator()
 
       def apply[A](fa: EvaluatorOp[A]): M[A] = fa match {
-        case Evaluates(url, authKey, resolvers, dependencies, code) ⇒
+        case Evaluates(
+            url,
+            authKey,
+            connTimeout,
+            readTimeout,
+            resolvers,
+            dependencies,
+            code) ⇒
           A.pureEval(
             Eval.later(
-              evaluator.eval(url, authKey, resolvers, dependencies, code)))
+              evaluator.eval(
+                url,
+                authKey,
+                connTimeout,
+                readTimeout,
+                resolvers,
+                dependencies,
+                code)))
       }
 
     }

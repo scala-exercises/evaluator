@@ -7,12 +7,18 @@ package org.scalaexercises.evaluator
 
 import cats.data.XorT
 import cats.{MonadError, ~>}
-import org.scalaexercises.evaluator.EvaluatorResponses.{EvaluationException, EvaluationResponse, EvaluationResult, EvalIO}
+import org.scalaexercises.evaluator.EvaluatorResponses.{EvalIO, EvaluationException, EvaluationResponse, EvaluationResult}
 import org.scalaexercises.evaluator.free.algebra.EvaluatorOp
 
-class EvaluatorClient(url: String, authKey: String) {
+import scala.concurrent.duration._
+import scala.concurrent.duration.Duration
 
-  lazy val api = new EvaluatorAPI(url, authKey)
+class EvaluatorClient(url: String,
+                      authKey: String,
+                      connTimeout: Duration = 1.second,
+                      readTimeout: Duration = 10.seconds) {
+
+  lazy val api = new EvaluatorAPI(url, authKey, connTimeout, readTimeout)
 
 }
 

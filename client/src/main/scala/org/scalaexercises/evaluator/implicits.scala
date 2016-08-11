@@ -10,10 +10,7 @@ import cats.std.future._
 import cats.{Eval, MonadError}
 import org.scalaexercises.evaluator.free.interpreters.Interpreter
 
-object implicits
-    extends Interpreter
-    with EvalInstances
-    with FutureInstances
+object implicits extends Interpreter with EvalInstances with FutureInstances
 
 trait EvalInstances {
 

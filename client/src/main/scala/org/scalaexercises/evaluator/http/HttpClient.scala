@@ -9,6 +9,9 @@ import io.circe.Decoder
 import org.scalaexercises.evaluator.EvaluatorResponses
 import org.scalaexercises.evaluator.EvaluatorResponses.EvaluationResponse
 
+import scala.concurrent.duration._
+import scala.concurrent.duration.Duration
+
 object HttpClient {
 
   val authHeaderName = "x-scala-eval-api-token"
@@ -23,11 +26,17 @@ class HttpClient {
     url: String,
     secretKey: String,
     method: String = "post",
+    connTimeout: Duration = 1.second,
+    readTimeout: Duration = 10.seconds,
     headers: Headers = Map.empty,
     data: String
   )(implicit D: Decoder[A]): EvaluationResponse[A] =
     EvaluatorResponses.toEntity(
-      HttpRequestBuilder(url = url, httpVerb = method)
+      HttpRequestBuilder(
+        url = url,
+        httpVerb = method,
+        connTimeout = connTimeout,
+        readTimeout = readTimeout)
         .withHeaders(headers + (authHeaderName -> secretKey))
         .withBody(data)
         .run)
