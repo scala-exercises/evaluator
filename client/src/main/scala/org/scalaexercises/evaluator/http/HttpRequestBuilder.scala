@@ -30,9 +30,9 @@ case class HttpRequestBuilder(
     body
       .fold(request)(
         request
-          .postData(_)
           .option(HttpOptions.connTimeout(connTimeout.toMillis.toInt))
           .option(HttpOptions.readTimeout(readTimeout.toMillis.toInt))
+          .postData(_)
           .header("content-type", "application/json"))
       .asString
   }

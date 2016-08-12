@@ -27,8 +27,10 @@ class Evaluator {
            dependencies: List[Dependency] = Nil,
            code: String): EvaluationResponse[EvalResponse] =
     httpClient.post[EvalResponse](
-      url,
-      authKey,
+      url = url,
+      secretKey = authKey,
+      connTimeout = connTimeout,
+      readTimeout = readTimeout,
       data = EvalRequest(resolvers, dependencies, code).asJson.noSpaces)
 
 }
