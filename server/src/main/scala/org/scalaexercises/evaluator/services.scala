@@ -68,6 +68,15 @@ object services {
         }
     })
 
+  def loaderIOService = HttpService {
+
+    case _ -> Root =>
+      MethodNotAllowed()
+
+    case GET -> Root / "loaderio-1318d1b3e06b7bc96dd5de5716f57496" =>
+      Ok("loaderio-1318d1b3e06b7bc96dd5de5716f57496")
+  }
+
 }
 
 object EvaluatorServer extends App {
@@ -86,6 +95,7 @@ object EvaluatorServer extends App {
   BlazeBuilder
     .bindHttp(port, ip)
     .mountService(evalService)
+    .mountService(loaderIOService)
     .start
     .run
     .awaitShutdown()
