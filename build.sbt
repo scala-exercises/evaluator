@@ -1,4 +1,6 @@
 lazy val root = (project in file("."))
+  .settings(mainClass in Universal := Some("org.scalaexercises.evaluator.EvaluatorServer"))
+  .settings(stage <<= (stage in Universal in `evaluator-server`))
   .aggregate(`evaluator-server`, `evaluator-shared`, `evaluator-client`)
 
 lazy val `evaluator-shared` = (project in file("shared"))
