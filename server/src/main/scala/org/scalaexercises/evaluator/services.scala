@@ -85,9 +85,9 @@ object EvaluatorServer extends App {
 
   private[this] val logger = getLogger
 
-  val ip = Option(System.getenv("EVALUATOR_SERVER_IP")).getOrElse("0.0.0.0")
+  val ip = Option(System.getenv("HOST")).getOrElse("0.0.0.0")
 
-  val port = (Option(System.getenv("EVALUATOR_SERVER_PORT")) orElse
+  val port = (Option(System.getenv("PORT")) orElse
         Option(System.getProperty("http.port"))).map(_.toInt).getOrElse(8080)
 
   logger.info(s"Initializing Evaluator at $ip:$port")
