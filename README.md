@@ -8,14 +8,14 @@ allows remote evaluation of arbitrary Scala code.
 # Run from sources
 
 ```bash
-sbt run
+sbt "project evaluator-server" "run"
 ```
 
 # Authentication
 
 The remote Scala eval uses [JWT](https://jwt.io/) to encode / decode tokens.
 The `secretKey` used for encoding/decoding is configurable as part of the service configuration in 
-`src/main/resources/application.conf`.
+`server/src/main/resources/application.conf`.
 
 Please change `secretKey` by overriding it or providing the `EVAL_SECRET_KEY` env var.
 
@@ -32,7 +32,7 @@ In order to generate an auth token you may use the scala console and invoke
 the `org.scalaexercises.evaluator.auth#generateToken` like so
 
 ```
-sbt console
+sbt "project evaluator-server" "console"
 
 scala> import org.scalaexercises.evaluator.auth._
 
