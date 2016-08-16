@@ -18,7 +18,8 @@ class EvaluatorClient(url: String,
                       connTimeout: Duration = 1.second,
                       readTimeout: Duration = 10.seconds) {
 
-  lazy val api = new EvaluatorAPI(url, authKey, connTimeout, readTimeout)
+  lazy val api: EvaluatorAPI[EvaluatorOp] =
+    new EvaluatorAPI(url, authKey, connTimeout, readTimeout)
 
 }
 
