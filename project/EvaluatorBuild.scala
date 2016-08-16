@@ -37,7 +37,7 @@ object EvaluatorBuild extends AutoPlugin {
 
 
   private[this] def baseSettings = Seq(
-    version := "0.0.2-SNAPSHOT",
+    version := "0.0.3-SNAPSHOT",
     organization := "org.scala-exercises",
     scalaVersion := "2.11.8",
     scalafmtConfig in ThisBuild := Some(file(".scalafmt")),
