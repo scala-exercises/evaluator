@@ -11,16 +11,14 @@ import org.scalaexercises.evaluator.free.algebra.{EvaluatorOp, EvaluatorOps}
 
 import scala.concurrent.duration.Duration
 
-class EvaluatorAPI(
-  url: String,
-  authKey: String,
-  connTimeout: Duration,
-  readTimeout: Duration)(implicit O: EvaluatorOps[EvaluatorOp]) {
+class EvaluatorAPI[F[_]](url: String,
+                         authKey: String,
+                         connTimeout: Duration,
+                         readTimeout: Duration)(implicit O: EvaluatorOps[F]) {
 
-  def evaluates(
-    resolvers: List[String] = Nil,
-    dependencies: List[Dependency] = Nil,
-    code: String): Free[EvaluatorOp, EvaluationResponse[EvalResponse]] =
+  def evaluates(resolvers: List[String] = Nil,
+                dependencies: List[Dependency] = Nil,
+                code: String): Free[F, EvaluationResponse[EvalResponse]] =
     O.evaluates(
       url,
       authKey,
