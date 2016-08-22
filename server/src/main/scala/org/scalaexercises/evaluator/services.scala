@@ -42,11 +42,11 @@ object services {
             ) flatMap {
               result =>
                 val response = result match {
-                  case EvalSuccess(cis, result, out) =>
+                  case EvalSuccess(cis, res, out) =>
                     EvalResponse(
                       `ok`,
-                      Option(result.toString),
-                      Option(result.asInstanceOf[AnyRef].getClass.getName),
+                      Option(res.toString),
+                      Option(res.asInstanceOf[AnyRef].getClass.getName),
                       cis)
                   case Timeout(_) =>
                     EvalResponse(`Timeout Exceded`, None, None, Map.empty)
@@ -56,8 +56,12 @@ object services {
                       None,
                       None,
                       Map.empty)
-                  case EvalRuntimeError(cis, _) =>
-                    EvalResponse(`Runtime Error`, None, None, cis)
+                  case EvalRuntimeError(cis, runtimeError) =>
+                    EvalResponse(
+                      `Runtime Error`,
+                      runtimeError map (_.error.getMessage),
+                      runtimeError map (_.error.getClass.getName),
+                      cis)
                   case CompilationError(cis) =>
                     EvalResponse(`Compilation Error`, None, None, cis)
                   case GeneralError(err) =>
