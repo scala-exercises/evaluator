@@ -108,7 +108,7 @@ class Evaluator(timeout: FiniteDuration = 20.seconds)(
       result ← Try(eval.execute[T](code, resetState = true, jars = jars))
     } yield result
 
-    val errors = eval.errors.toMap.asInstanceOf[EvalResult.CI]
+    val errors = eval.errors
 
     result match {
       case scala.util.Success(r) ⇒ EvalSuccess[T](errors, r, "")

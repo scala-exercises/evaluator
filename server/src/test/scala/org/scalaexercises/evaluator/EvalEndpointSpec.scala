@@ -157,7 +157,7 @@ class EvalEndpointSpec extends FunSpec with Matchers {
           ),
           `X-Scala-Eval-Api-Token`(validToken)),
         expectedStatus = HttpStatus.Ok,
-        expectedValue = None,
+        expectedValue = Some("true was not false"),
         expectedMessage = `Runtime Error`
       )
     }
