@@ -5,46 +5,25 @@
 
 package org.scalaexercises.evaluator.free.interpreters
 
-import cats.{ApplicativeError, Eval, MonadError, ~>}
+import cats.~>
 import org.scalaexercises.evaluator.api.Evaluator
 import org.scalaexercises.evaluator.free.algebra.{Evaluates, EvaluatorOp}
 
-import scala.language.higherKinds
+import scala.concurrent.Future
 
 trait Interpreter {
-
-  implicit def interpreter[M[_]](
-    implicit A: MonadError[M, Throwable]
-  ): EvaluatorOp ~> M = evaluatorOpsInterpreter[M]
 
   /**
     * Lifts Evaluator Ops to an effect capturing Monad such as Task via natural transformations
     */
-  def evaluatorOpsInterpreter[M[_]](
-    implicit A: ApplicativeError[M, Throwable]): EvaluatorOp ~> M =
-    new (EvaluatorOp ~> M) {
+  implicit def evaluatorOpsInterpreter: EvaluatorOp ~> Future =
+    new (EvaluatorOp ~> Future) {
 
       val evaluator = new Evaluator()
 
-      def apply[A](fa: EvaluatorOp[A]): M[A] = fa match {
-        case Evaluates(
-            url,
-            authKey,
-            connTimeout,
-            readTimeout,
-            resolvers,
-            dependencies,
-            code) ⇒
-          A.pureEval(
-            Eval.later(
-              evaluator.eval(
-                url,
-                authKey,
-                connTimeout,
-                readTimeout,
-                resolvers,
-                dependencies,
-                code)))
+      def apply[A](fa: EvaluatorOp[A]): Future[A] = fa match {
+        case Evaluates(url, authKey, resolvers, dependencies, code) ⇒
+          evaluator.eval(url, authKey, resolvers, dependencies, code)
       }
 
     }

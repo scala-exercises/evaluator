@@ -7,33 +7,30 @@ package org.scalaexercises.evaluator.http
 
 import org.scalaexercises.evaluator.http.HttpClient._
 
-import scala.concurrent.duration.Duration
-import scalaj.http.{Http, HttpOptions}
+import scala.concurrent.Future
+
+import fr.hmil.roshttp.body.Implicits._
+import fr.hmil.roshttp.{HttpRequest, Method, HttpResponse}
+import fr.hmil.roshttp.body.JSONBody
 
 case class HttpRequestBuilder(
   url: String,
   httpVerb: String,
-  connTimeout: Duration,
-  readTimeout: Duration,
-  followRedirects: Boolean = true,
   headers: Headers = Map.empty[String, String],
-  body: Option[String] = None
+  body: String = ""
 ) {
 
   def withHeaders(headers: Headers) = copy(headers = headers)
 
-  def withBody(body: String) = copy(body = Option(body))
+  def withBody(body: String) = copy(body = body)
 
-  def run = {
-    val request = Http(url).method(httpVerb).headers(headers)
+  def run: Future[HttpResponse] = {
 
-    body
-      .fold(request)(
-        request
-          .option(HttpOptions.connTimeout(connTimeout.toMillis.toInt))
-          .option(HttpOptions.readTimeout(readTimeout.toMillis.toInt))
-          .postData(_)
-          .header("content-type", "application/json"))
-      .asString
+    val request = HttpRequest(url)
+      .withMethod(Method(httpVerb))
+      .withHeaders(headers.toList: _*)
+      .withHeader("content.type", "application/json")
+
+    request.post(JSONBody(body))
   }
 }

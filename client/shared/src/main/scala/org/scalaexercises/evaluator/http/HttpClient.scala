@@ -8,9 +8,7 @@ package org.scalaexercises.evaluator.http
 import io.circe.Decoder
 import org.scalaexercises.evaluator.EvaluatorResponses
 import org.scalaexercises.evaluator.EvaluatorResponses.EvaluationResponse
-
-import scala.concurrent.duration._
-import scala.concurrent.duration.Duration
+import scala.concurrent.Future
 
 object HttpClient {
 
@@ -26,17 +24,11 @@ class HttpClient {
     url: String,
     secretKey: String,
     method: String = "post",
-    connTimeout: Duration,
-    readTimeout: Duration,
     headers: Headers = Map.empty,
     data: String
-  )(implicit D: Decoder[A]): EvaluationResponse[A] =
+  )(implicit D: Decoder[A]): Future[EvaluationResponse[A]] =
     EvaluatorResponses.toEntity(
-      HttpRequestBuilder(
-        url = url,
-        httpVerb = method,
-        connTimeout = connTimeout,
-        readTimeout = readTimeout)
+      HttpRequestBuilder(url = url, httpVerb = method)
         .withHeaders(headers + (authHeaderName -> secretKey))
         .withBody(data)
         .run)

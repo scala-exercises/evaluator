@@ -6,36 +6,30 @@
 package org.scalaexercises.evaluator
 
 import cats.data.XorT
-import cats.{MonadError, ~>}
+import cats.~>
+import cats._, cats.std.all._
 import org.scalaexercises.evaluator.EvaluatorResponses.{EvalIO, EvaluationException, EvaluationResponse, EvaluationResult}
 import org.scalaexercises.evaluator.free.algebra.EvaluatorOp
 
-import scala.concurrent.duration._
-import scala.concurrent.duration.Duration
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
 
-class EvaluatorClient(url: String,
-                      authKey: String,
-                      connTimeout: Duration = 1.second,
-                      readTimeout: Duration = 10.seconds) {
+class EvaluatorClient(url: String, authKey: String) {
 
-  lazy val api: EvaluatorAPI[EvaluatorOp] =
-    new EvaluatorAPI(url, authKey, connTimeout, readTimeout)
+  lazy val api: EvaluatorAPI[EvaluatorOp] = new EvaluatorAPI(url, authKey)
 
 }
 
 object EvaluatorClient {
 
-  def apply(url: String,
-            authKey: String,
-            connTimeout: Duration = 1.second,
-            readTimeout: Duration = 10.seconds) =
-    new EvaluatorClient(url, authKey, connTimeout, readTimeout)
+  def apply(url: String, authKey: String) =
+    new EvaluatorClient(url, authKey)
 
   implicit class EvaluationIOSyntaxXOR[A](
     evalIO: EvalIO[EvaluationResponse[A]]) {
 
-    def exec[M[_]](implicit I: (EvaluatorOp ~> M),
-                   A: MonadError[M, Throwable]): M[EvaluationResponse[A]] =
+    def exec(
+      implicit I: (EvaluatorOp ~> Future)): Future[EvaluationResponse[A]] =
       evalIO foldMap I
 
     def liftEvaluator: XorT[EvalIO, EvaluationException, EvaluationResult[A]] =
