@@ -9,9 +9,10 @@ import org.scalaexercises.evaluator.http.HttpClient._
 
 import scala.concurrent.Future
 
-import fr.hmil.roshttp.body.Implicits._
 import fr.hmil.roshttp.{HttpRequest, Method, HttpResponse}
-import fr.hmil.roshttp.body.JSONBody
+import fr.hmil.roshttp.body.BodyPart
+
+import java.nio.ByteBuffer
 
 case class HttpRequestBuilder(
   url: String,
@@ -19,6 +20,12 @@ case class HttpRequestBuilder(
   headers: Headers = Map.empty[String, String],
   body: String = ""
 ) {
+
+  case class CirceJSONBody(value: String) extends BodyPart {
+    override def contentType: String = s"application/json; charset=utf-8"
+
+    override def content: ByteBuffer = ByteBuffer.wrap(value.getBytes("utf-8"))
+  }
 
   def withHeaders(headers: Headers) = copy(headers = headers)
 
@@ -28,9 +35,9 @@ case class HttpRequestBuilder(
 
     val request = HttpRequest(url)
       .withMethod(Method(httpVerb))
+      .withHeader("content-type", "application/json")
       .withHeaders(headers.toList: _*)
-      .withHeader("content.type", "application/json")
 
-    request.post(JSONBody(body))
+    request.send(CirceJSONBody(body))
   }
 }

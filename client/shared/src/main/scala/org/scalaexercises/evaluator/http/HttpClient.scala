@@ -8,6 +8,7 @@ package org.scalaexercises.evaluator.http
 import io.circe.Decoder
 import org.scalaexercises.evaluator.EvaluatorResponses
 import org.scalaexercises.evaluator.EvaluatorResponses.EvaluationResponse
+
 import scala.concurrent.Future
 
 object HttpClient {
