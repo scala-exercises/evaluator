@@ -20,7 +20,14 @@ lazy val `evaluator-shared-js` = `evaluator-shared`.js
 lazy val scalaJSSettings = Seq(
   requiresDOM := false,
   scalaJSUseRhino := false,
-  jsEnv := NodeJSEnv().value
+  jsEnv := NodeJSEnv().value,
+  libraryDependencies ++= Seq(
+    "fr.hmil" %%% "roshttp" % v('roshttp),
+    "org.typelevel" %%% "cats-free" % v('cats),
+    "io.circe" %%% "circe-core" % v('circe),
+    "io.circe" %%% "circe-generic" % v('circe),
+    "io.circe" %%% "circe-parser" % v('circe)
+  )
 )
 
 lazy val `evaluator-client` = (crossProject in file("client"))
@@ -28,7 +35,8 @@ lazy val `evaluator-client` = (crossProject in file("client"))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(
     name := "evaluator-client",
-    libraryDependencies <++= libraryVersions { v => Seq(
+    libraryDependencies ++= Seq(
+      "fr.hmil" %% "roshttp" % v('roshttp),
       "org.typelevel" %% "cats-free" % v('cats),
       "io.circe" %% "circe-core" % v('circe),
       "io.circe" %% "circe-generic" % v('circe),
@@ -38,8 +46,6 @@ lazy val `evaluator-client` = (crossProject in file("client"))
       // Testing libraries
       "org.scalatest" %% "scalatest" % v('scalaTest) % "test"
     )
-    },
-    libraryDependencies += "fr.hmil" %%% "roshttp" % "1.1.0"
 )
   .jsSettings(scalaJSSettings: _*)
 
@@ -53,7 +59,7 @@ lazy val `evaluator-server` = (project in file("server"))
   .settings(noPublishSettings: _*)
   .settings(
     name := "evaluator-server",
-    libraryDependencies <++= libraryVersions { v => Seq(
+    libraryDependencies ++= Seq(
       "io.monix" %% "monix" % v('monix),
       "org.http4s" %% "http4s-dsl" % v('http4s),
       "org.http4s" %% "http4s-blaze-server" % v('http4s),
@@ -70,7 +76,6 @@ lazy val `evaluator-server` = (project in file("server"))
       "io.get-coursier" %% "coursier-cache" % v('coursier),
       "org.scalatest" %% "scalatest" % v('scalaTest) % "test"
     )
-    }
   )
   .settings(compilerDependencySettings: _*)
 
