@@ -48,7 +48,7 @@ class EvalEndpointSpec extends FunSpec with Matchers {
             )
           )
         ).putHeaders(authHeader))
-      .run
+      .unsafePerformSync
 
   def verifyEvalResponse(
     response: Response,
@@ -58,7 +58,7 @@ class EvalEndpointSpec extends FunSpec with Matchers {
   ) = {
 
     response.status should be(expectedStatus)
-    val evalResponse = response.as[EvalResponse].run
+    val evalResponse = response.as[EvalResponse].unsafePerformSync
     evalResponse.value should be(expectedValue)
     evalResponse.msg should be(expectedMessage)
   }

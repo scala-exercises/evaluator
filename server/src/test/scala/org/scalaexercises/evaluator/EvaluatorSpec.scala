@@ -17,7 +17,8 @@ class EvaluatorSpec extends FunSpec with Matchers {
 
   describe("evaluation") {
     it("can evaluate simple expressions") {
-      val result: EvalResult[Int] = evaluator.eval("{ 41 + 1 }").run
+      val result: EvalResult[Int] =
+        evaluator.eval("{ 41 + 1 }").unsafePerformSync
 
       result should matchPattern {
         case EvalSuccess(_, 42, _) ⇒
@@ -26,7 +27,7 @@ class EvaluatorSpec extends FunSpec with Matchers {
 
     it("fails with a timeout when takes longer than the configured timeout") {
       val result: EvalResult[Int] =
-        evaluator.eval("{ while(true) {}; 123 }").run
+        evaluator.eval("{ while(true) {}; 123 }").unsafePerformSync
 
       result should matchPattern {
         case Timeout(_) ⇒
@@ -51,7 +52,7 @@ Eval.now(42).value
           remotes = remotes,
           dependencies = dependencies
         )
-        .run
+        .unsafePerformSync
 
       result should matchPattern {
         case EvalSuccess(_, 42, _) =>
@@ -78,14 +79,14 @@ Eval.now(42).value
           remotes = remotes,
           dependencies = dependencies1
         )
-        .run
+        .unsafePerformSync
       val result2: EvalResult[Int] = evaluator
         .eval(
           code,
           remotes = remotes,
           dependencies = dependencies2
         )
-        .run
+        .unsafePerformSync
 
       result1 should matchPattern {
         case EvalSuccess(_, 42, _) =>
@@ -112,7 +113,7 @@ Asserts.scalaTestAsserts(true)
           remotes = remotes,
           dependencies = dependencies
         )
-        .run
+        .unsafePerformSync
 
       result should matchPattern {
         case EvalSuccess(_, (), _) =>
@@ -136,7 +137,7 @@ Asserts.scalaTestAsserts(false)
           remotes = remotes,
           dependencies = dependencies
         )
-        .run
+        .unsafePerformSync
 
       result should matchPattern {
         case EvalRuntimeError(

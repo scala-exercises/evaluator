@@ -7,7 +7,7 @@ package org.scalaexercises.evaluator
 
 import cats.data.XorT
 import cats.~>
-import cats._, cats.std.all._
+import cats.implicits._
 import org.scalaexercises.evaluator.EvaluatorResponses.{EvalIO, EvaluationException, EvaluationResponse, EvaluationResult}
 import org.scalaexercises.evaluator.free.algebra.EvaluatorOp
 
