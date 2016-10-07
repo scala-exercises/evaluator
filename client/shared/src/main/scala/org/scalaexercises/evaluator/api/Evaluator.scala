@@ -11,7 +11,7 @@ import org.scalaexercises.evaluator.http.HttpClient
 import io.circe.generic.auto._
 import io.circe.syntax._
 
-import scala.concurrent.duration.Duration
+import scala.concurrent.Future
 
 class Evaluator {
 
@@ -21,16 +21,12 @@ class Evaluator {
 
   def eval(url: String,
            authKey: String,
-           connTimeout: Duration,
-           readTimeout: Duration,
            resolvers: List[String] = Nil,
            dependencies: List[Dependency] = Nil,
-           code: String): EvaluationResponse[EvalResponse] =
+           code: String): Future[EvaluationResponse[EvalResponse]] =
     httpClient.post[EvalResponse](
       url = url,
       secretKey = authKey,
-      connTimeout = connTimeout,
-      readTimeout = readTimeout,
       data = EvalRequest(resolvers, dependencies, code).asJson.noSpaces)
 
 }

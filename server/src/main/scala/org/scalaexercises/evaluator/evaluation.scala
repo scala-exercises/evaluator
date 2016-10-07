@@ -57,7 +57,8 @@ class Evaluator(timeout: FiniteDuration = 20.seconds)(
   def resolveArtifacts(remotes: Seq[Remote],
                        dependencies: Seq[Dependency]): Task[Resolution] = {
     val resolution = Resolution(dependencies.map(dependencyToModule).toSet)
-    val repositories: Seq[Repository] = Cache.ivy2Local +: remotes.map(remoteToRepository)
+    val repositories: Seq[Repository] = Cache.ivy2Local +: remotes.map(
+        remoteToRepository)
     val fetch = Fetch.from(repositories, Cache.fetch())
     resolution.process.run(fetch)
   }

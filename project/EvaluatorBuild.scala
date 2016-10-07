@@ -14,7 +14,21 @@ object EvaluatorBuild extends AutoPlugin {
 
   object autoImport {
 
-    val libraryVersions = settingKey[Map[Symbol, String]]("Common versions to be used for dependencies")
+    val v = Map(
+      'cats -> "0.6.1",
+      'circe -> "0.5.0-M2",
+      'config -> "1.3.0",
+      'coursier -> "1.0.0-M12",
+      'http4s -> "0.14.1",
+      'jwtcore -> "0.8.0",
+      'log4s -> "1.3.0",
+      'monix -> "2.0-RC8",
+      'roshttp -> "1.1.0",
+      'scalacheck -> "1.12.5",
+      'scalaTest -> "2.2.6",
+      'slf4j -> "1.7.21"
+    )
+
 
     def compilerDependencySettings = Seq(
       libraryDependencies ++= Seq(
@@ -31,13 +45,12 @@ object EvaluatorBuild extends AutoPlugin {
   override def projectSettings =
     baseSettings ++
       reformatOnCompileSettings ++
-      dependencySettings ++
       publishSettings ++
       miscSettings
 
 
   private[this] def baseSettings = Seq(
-    version := "0.0.3-SNAPSHOT",
+    version := "0.1.0-SNAPSHOT",
     organization := "org.scala-exercises",
     scalaVersion := "2.11.8",
     scalafmtConfig in ThisBuild := Some(file(".scalafmt")),
@@ -53,23 +66,6 @@ object EvaluatorBuild extends AutoPlugin {
       "-language:implicitConversions",
       "-language:higherKinds"),
     javacOptions ++= Seq("-encoding", "UTF-8", "-Xlint:-options")
-  )
-
-  private[this] def dependencySettings = Seq(
-    libraryVersions := Map(
-      'cats -> "0.6.1",
-      'circe -> "0.5.0-M2",
-      'config -> "1.3.0",
-      'coursier -> "1.0.0-M12",
-      'http4s -> "0.14.1",
-      'jwtcore -> "0.8.0",
-      'log4s -> "1.3.0",
-      'monix -> "2.0-RC8",
-      'scalajhttp -> "2.3.0",
-      'scalacheck -> "1.12.5",
-      'scalaTest -> "2.2.6",
-      'slf4j -> "1.7.21"
-    )
   )
 
   private[this] def miscSettings = Seq(

@@ -9,14 +9,9 @@ import cats.free.{Free, Inject}
 import org.scalaexercises.evaluator.{Dependency, EvalResponse}
 import org.scalaexercises.evaluator.EvaluatorResponses.EvaluationResponse
 
-import scala.concurrent.duration._
-import scala.concurrent.duration.Duration
-
 sealed trait EvaluatorOp[A]
 final case class Evaluates(url: String,
                            authKey: String,
-                           connTimeout: Duration,
-                           readTimeout: Duration,
                            resolvers: List[String] = Nil,
                            dependencies: List[Dependency] = Nil,
                            code: String)
@@ -27,21 +22,12 @@ class EvaluatorOps[F[_]](implicit I: Inject[EvaluatorOp, F]) {
   def evaluates(
     url: String,
     authKey: String,
-    connTimeout: Duration,
-    readTimeout: Duration,
     resolvers: List[String] = Nil,
     dependencies: List[Dependency] = Nil,
     code: String
   ): Free[F, EvaluationResponse[EvalResponse]] =
     Free.inject[EvaluatorOp, F](
-      Evaluates(
-        url,
-        authKey,
-        connTimeout,
-        readTimeout,
-        resolvers,
-        dependencies,
-        code))
+      Evaluates(url, authKey, resolvers, dependencies, code))
 
 }
 
