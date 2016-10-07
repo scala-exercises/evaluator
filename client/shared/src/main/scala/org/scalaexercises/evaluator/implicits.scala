@@ -5,7 +5,6 @@
 
 package org.scalaexercises.evaluator
 
-import cats.std.FutureInstances
 import org.scalaexercises.evaluator.free.interpreters.Interpreter
 
-object implicits extends Interpreter with FutureInstances
+object implicits extends Interpreter
