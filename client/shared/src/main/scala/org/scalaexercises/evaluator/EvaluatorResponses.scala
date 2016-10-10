@@ -7,7 +7,7 @@ package org.scalaexercises.evaluator
 
 import cats.data.Xor
 import cats.free.Free
-import cats.syntax.xor._
+import cats.implicits._
 import io.circe.Decoder
 import io.circe.parser._
 import io.circe.generic.auto._
@@ -23,7 +23,7 @@ object EvaluatorResponses {
 
   type EvalIO[A] = Free[EvaluatorOp, A]
 
-  type EvaluationResponse[A] = EvaluationException Xor EvaluationResult[A]
+  type EvaluationResponse[A] = Either[EvaluationException, EvaluationResult[A]]
 
   case class EvaluationResult[A](result: A,
                                  statusCode: Int,
@@ -44,18 +44,17 @@ object EvaluatorResponses {
     implicit D: Decoder[A]): Future[EvaluationResponse[A]] =
     futureResponse map {
       case r if isSuccess(r.statusCode) ⇒
-        decode[A](r.body).fold(
-          e ⇒
-            JsonParsingException(e.getMessage, r.body)
-              .left[EvaluationResult[A]],
-          result ⇒
-            Xor.Right(
+        decode[A](r.body) match {
+          case Xor.Left(e) =>
+            Either.left(JsonParsingException(e.getMessage, r.body))
+          case Xor.Right(result) =>
+            Either.right(
               EvaluationResult(result, r.statusCode, r.headers.toLowerCase))
-        )
+        }
       case r ⇒
-        UnexpectedException(
-          s"Failed invoking get with status : ${r.statusCode}, body : \n ${r.body}")
-          .left[EvaluationResult[A]]
+        Either.left(
+          UnexpectedException(
+            s"Failed i(nvoking get with status : ${r.statusCode}, body : \n ${r.body}"))
     }
 
   private[this] def isSuccess(statusCode: Int) =

@@ -183,7 +183,7 @@ private class StringCompiler(
       }
       messages += (severityName + lineMessage + ": " + message) ::
         (if (pos.isDefined) {
-           pos.inUltimateSource(pos.source).lineContent.stripLineEnd ::
+           pos.finalPosition.lineContent.stripLineEnd ::
              (" " * (pos.column - 1) + "^") ::
                Nil
          } else {

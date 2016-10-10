@@ -5,9 +5,9 @@
 
 package org.scalaexercises.evaluator
 
-import cats.data.XorT
+import cats.data.EitherT
 import cats.~>
-import cats._, cats.std.all._
+import cats.implicits._
 import org.scalaexercises.evaluator.EvaluatorResponses.{EvalIO, EvaluationException, EvaluationResponse, EvaluationResult}
 import org.scalaexercises.evaluator.free.algebra.EvaluatorOp
 
@@ -25,15 +25,17 @@ object EvaluatorClient {
   def apply(url: String, authKey: String) =
     new EvaluatorClient(url, authKey)
 
-  implicit class EvaluationIOSyntaxXOR[A](
+  implicit class EvaluationIOSyntaxEither[A](
     evalIO: EvalIO[EvaluationResponse[A]]) {
 
     def exec(
       implicit I: (EvaluatorOp ~> Future)): Future[EvaluationResponse[A]] =
       evalIO foldMap I
 
-    def liftEvaluator: XorT[EvalIO, EvaluationException, EvaluationResult[A]] =
-      XorT[EvalIO, EvaluationException, EvaluationResult[A]](evalIO)
+    def liftEvaluator: EitherT[EvalIO,
+                               EvaluationException,
+                               EvaluationResult[A]] =
+      EitherT[EvalIO, EvaluationException, EvaluationResult[A]](evalIO)
 
   }
 }
