@@ -90,7 +90,7 @@ object EvaluatorBuild extends AutoPlugin {
     }
   )
 
-  private[this] lazy val gpgFolder = sys.env.getOrElse("SE_GPG_FOLDER", ".")
+  private[this] lazy val gpgFolder = sys.env.getOrElse("PGP_FOLDER", ".")
 
   private[this] lazy val publishSettings = Seq(
     organizationName := "Scala Exercises",
@@ -98,7 +98,7 @@ object EvaluatorBuild extends AutoPlugin {
     startYear := Some(2016),
     description := "Scala Exercises: The path to enlightenment",
     homepage := Some(url("http://scala-exercises.org")),
-    pgpPassphrase := Some(sys.env.getOrElse("SE_GPG_PASSPHRASE", "").toCharArray),
+    pgpPassphrase := Some(sys.env.getOrElse("PGP_PASSPHRASE", "").toCharArray),
     pgpPublicRing := file(s"$gpgFolder/pubring.gpg"),
     pgpSecretRing := file(s"$gpgFolder/secring.gpg"),
     credentials += Credentials(
