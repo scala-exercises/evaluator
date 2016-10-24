@@ -25,15 +25,18 @@ after_success:
      sbt publishSignedAll;
      echo "Deploying to Heroku";
      docker login --username=noel.m@47deg.com --password=b0ac5a0c-1703-4615-b6f8-d995482ee5a2 registry.heroku.com;
+     docker build -t scala-evaluator-sandbox/web;
      docker push registry.heroku.com/scala-evaluator-sandbox/web;
   fi
 - if [ "$TRAVIS_PULL_REQUEST" = "true" ]; then
      echo "Not in master branch, skipping deploy and release";
      echo "Deploying to Heroku. Deploying on-branch for testing the deployment. Will remove this configuration.";
      docker login --username=noel.m@47deg.com --password=b0ac5a0c-1703-4615-b6f8-d995482ee5a2 registry.heroku.com;
+     docker build -t scala-evaluator-sandbox/web;
      docker push registry.heroku.com/scala-evaluator-sandbox/web;
   else
      echo "Deploying to Heroku. Deploying on-branch for testing the deployment. Will remove this configuration.";
      docker login --username=noel.m@47deg.com --password=b0ac5a0c-1703-4615-b6f8-d995482ee5a2 registry.heroku.com;
+     docker build -t scala-evaluator-sandbox/web;
      docker push registry.heroku.com/scala-evaluator-sandbox/web;
   fi
