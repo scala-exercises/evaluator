@@ -30,13 +30,4 @@ after_success:
   fi
 - if [ "$TRAVIS_PULL_REQUEST" = "true" ]; then
      echo "Not in master branch, skipping deploy and release";
-     echo "Deploying to Heroku. Deploying on-branch for testing the deployment. Will remove this configuration.";
-     docker login --username=noel.m@47deg.com --password=$heroku_token registry.heroku.com;
-     docker build -t registry.heroku.com/scala-evaluator-sandbox/web .;
-     docker push registry.heroku.com/scala-evaluator-sandbox/web;
-  else
-     echo "Deploying to Heroku. Deploying on-branch for testing the deployment. Will remove this configuration.";
-     docker login --username=noel.m@47deg.com --password=$heroku_token registry.heroku.com;
-     docker build -t registry.heroku.com/scala-evaluator-sandbox/web .;
-     docker push registry.heroku.com/scala-evaluator-sandbox/web;
   fi
