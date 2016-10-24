@@ -75,7 +75,8 @@ lazy val `evaluator-server` = (project in file("server"))
       "io.get-coursier" %% "coursier" % v('coursier),
       "io.get-coursier" %% "coursier-cache" % v('coursier),
       "org.scalatest" %% "scalatest" % v('scalaTest) % "test"
-    )
+    ),
+    assemblyJarName in assembly := "evaluator-server.jar"
   )
   .settings(compilerDependencySettings: _*)
 
