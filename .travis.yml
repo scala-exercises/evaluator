@@ -14,7 +14,7 @@ cache:
 env:
   global: JAVA_OPTS=-Xmx2g SBT_OPTS="-XX:+UseConcMarkSweepGC -XX:MaxPermSize=512m"
 script:
-- sbt assembly
+- sbt test
 
 before_install:
 - openssl aes-256-cbc -K $encrypted_98b97a2f355e_key -iv $encrypted_98b97a2f355e_iv
