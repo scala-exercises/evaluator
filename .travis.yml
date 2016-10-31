@@ -1,5 +1,7 @@
 language: scala
 sudo: required
+services:
+- docker
 scala:
 - 2.11.8
 jdk:
@@ -21,6 +23,9 @@ before_install:
 after_success:
 - if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" ]; then
      sbt publishSignedAll;
+     echo "Deploying to Heroku";
+     docker login --username=noel.m@47deg.com --password=$heroku_token registry.heroku.com;
+     sbt dockerBuildAndPush;
   fi
 - if [ "$TRAVIS_PULL_REQUEST" = "true" ]; then
      echo "Not in master branch, skipping deploy and release";

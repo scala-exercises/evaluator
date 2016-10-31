@@ -86,7 +86,7 @@ object EvaluatorBuild extends AutoPlugin {
 
       val projectName = Project.extract(s).currentProject.id
 
-      s"$blue$projectName$white>${c.RESET}"
+      s"$blue$projectName$white>${c.RESET} "
     }
   )
 
