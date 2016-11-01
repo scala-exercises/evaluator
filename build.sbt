@@ -82,6 +82,22 @@ lazy val `evaluator-server` = (project in file("server"))
   .settings(dockerSettings)
   .settings(compilerDependencySettings: _*)
 
+lazy val `smoketests` = (project in file("smoketests"))
+  .dependsOn(`evaluator-server`)
+  .settings(
+    name := "evaluator-server-smoke-tests",
+    libraryDependencies ++= Seq(
+      "org.scalatest" %% "scalatest" % v('scalaTest) % "test",
+      "org.http4s" %% "http4s-blaze-client" % v('http4s),
+      "org.http4s" %% "http4s-circe" % v('http4s),
+      "io.circe" %% "circe-core" % v('circe),
+      "io.circe" %% "circe-generic" % v('circe),
+      "io.circe" %% "circe-parser" % v('circe),
+      "com.pauldijou" %% "jwt-core" % v('jwtcore)
+    )
+
+  )
+
 onLoad in Global := (Command.process("project evaluator-server", _: State)) compose (onLoad in Global).value
 addCommandAlias("publishSignedAll", ";evaluator-sharedJS/publishSigned;evaluator-sharedJVM/publishSigned;evaluator-clientJS/publishSigned;evaluator-clientJVM/publishSigned")
 
@@ -99,7 +115,7 @@ lazy val dockerSettings = Seq(
       .run("useradd", "-m", "evaluator")
       .user("evaluator")
       .add(artifact, artifactTargetPath)
-      .cmdRaw(s"java -Dhttp.port=$$PORT -jar $artifactTargetPath")
+      .cmdRaw(s"java -Dhttp.port=$$PORT -Deval.auth.secretKey=$$EVAL_SECRET_KEY -jar $artifactTargetPath")
   },
   imageNames in docker := Seq(ImageName(repository = "registry.heroku.com/scala-evaluator-sandbox/web"))
 )
