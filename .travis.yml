@@ -26,6 +26,7 @@ after_success:
      echo "Deploying to Heroku";
      docker login --username=noel.m@47deg.com --password=$heroku_token registry.heroku.com;
      sbt dockerBuildAndPush;
+     sbt smoketests/test;
   fi
 - if [ "$TRAVIS_PULL_REQUEST" = "true" ]; then
      echo "Not in master branch, skipping deploy and release";
