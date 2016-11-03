@@ -23,7 +23,7 @@ object EvaluatorBuild extends AutoPlugin {
       'jwtcore -> "0.8.0",
       'log4s -> "1.3.0",
       'monix -> "2.0.3",
-      'roshttp -> "1.1.0",
+      'roshttp -> "2.0.0-RC1",
       'scalacheck -> "1.12.5",
       'scalaTest -> "2.2.6",
       'slf4j -> "1.7.21"
@@ -50,7 +50,7 @@ object EvaluatorBuild extends AutoPlugin {
 
 
   private[this] def baseSettings = Seq(
-    version := "0.1.1-SNAPSHOT",
+    version := "0.1.2-SNAPSHOT",
     organization := "org.scala-exercises",
     scalaVersion := "2.11.8",
     scalafmtConfig in ThisBuild := Some(file(".scalafmt")),

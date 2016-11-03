@@ -15,9 +15,8 @@ import org.scalaexercises.evaluator.free.algebra.EvaluatorOp
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
-
-import fr.hmil.roshttp.HttpResponse
-import fr.hmil.roshttp.HeaderMap
+import fr.hmil.roshttp.response.SimpleHttpResponse
+import fr.hmil.roshttp.util.HeaderMap
 
 object EvaluatorResponses {
 
@@ -40,7 +39,7 @@ object EvaluatorResponses {
 
   case class UnexpectedException(msg: String) extends EvaluationException(msg)
 
-  def toEntity[A](futureResponse: Future[HttpResponse])(
+  def toEntity[A](futureResponse: Future[SimpleHttpResponse])(
     implicit D: Decoder[A]): Future[EvaluationResponse[A]] =
     futureResponse map {
       case r if isSuccess(r.statusCode) ⇒
