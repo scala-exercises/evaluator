@@ -8,11 +8,12 @@ package org.scalaexercises.evaluator.http
 import org.scalaexercises.evaluator.http.HttpClient._
 
 import scala.concurrent.Future
-
-import fr.hmil.roshttp.{HttpRequest, Method, HttpResponse}
-import fr.hmil.roshttp.body.BodyPart
-
+import fr.hmil.roshttp.{HttpRequest, Method}
+import fr.hmil.roshttp.body.BulkBodyPart
+import fr.hmil.roshttp.response.SimpleHttpResponse
 import java.nio.ByteBuffer
+
+import monix.execution.Scheduler.Implicits.global
 
 case class HttpRequestBuilder(
   url: String,
@@ -21,17 +22,17 @@ case class HttpRequestBuilder(
   body: String = ""
 ) {
 
-  case class CirceJSONBody(value: String) extends BodyPart {
+  case class CirceJSONBody(value: String) extends BulkBodyPart {
     override def contentType: String = s"application/json; charset=utf-8"
-
-    override def content: ByteBuffer = ByteBuffer.wrap(value.getBytes("utf-8"))
+    override def contentData: ByteBuffer =
+      ByteBuffer.wrap(value.getBytes("utf-8"))
   }
 
   def withHeaders(headers: Headers) = copy(headers = headers)
 
   def withBody(body: String) = copy(body = body)
 
-  def run: Future[HttpResponse] = {
+  def run: Future[SimpleHttpResponse] = {
 
     val request = HttpRequest(url)
       .withMethod(Method(httpVerb))
