@@ -31,7 +31,7 @@ class Smoketests extends FunSpec with Matchers with CirceInstances {
 
     val request = new Request(
       method = Method.POST,
-      uri = Uri.uri("http://scala-evaluator-sandbox.herokuapp.com/eval"),
+      uri = Uri.uri("http://scala-evaluator.herokuapp.com/eval"),
       headers = Headers(headers)
     ).withBody(
       s"""{"resolvers" : [], "dependencies" : [], "code" : "$code"}""")

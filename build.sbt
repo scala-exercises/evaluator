@@ -117,5 +117,5 @@ lazy val dockerSettings = Seq(
       .add(artifact, artifactTargetPath)
       .cmdRaw(s"java -Dhttp.port=$$PORT -Deval.auth.secretKey=$$EVAL_SECRET_KEY -jar $artifactTargetPath")
   },
-  imageNames in docker := Seq(ImageName(repository = "registry.heroku.com/scala-evaluator-sandbox/web"))
+  imageNames in docker := Seq(ImageName(repository = "registry.heroku.com/scala-evaluator/web"))
 )
