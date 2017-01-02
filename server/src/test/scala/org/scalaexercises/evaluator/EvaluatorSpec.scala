@@ -33,7 +33,7 @@ class EvaluatorSpec extends FunSpec with Matchers {
       }
     }
 
-    ignore("can load dependencies for an evaluation") {
+    it("can load dependencies for an evaluation") {
       val code = """
 import cats._
 
@@ -58,7 +58,7 @@ Eval.now(42).value
       }
     }
 
-    ignore("can load different versions of a dependency across evaluations") {
+    it("can load different versions of a dependency across evaluations") {
       val code = """
 import cats._
 Eval.now(42).value
@@ -95,7 +95,7 @@ Eval.now(42).value
       }
     }
 
-    ignore("can run code from the exercises content") {
+    it("can run code from the exercises content") {
       val code = """
 import stdlib._
 Asserts.scalaTestAsserts(true)
@@ -119,7 +119,7 @@ Asserts.scalaTestAsserts(true)
       }
     }
 
-    ignore("captures exceptions when running the exercises content") {
+    it("captures exceptions when running the exercises content") {
       val code = """
 import stdlib._
 Asserts.scalaTestAsserts(false)
