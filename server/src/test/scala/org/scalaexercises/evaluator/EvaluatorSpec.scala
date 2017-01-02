@@ -35,9 +35,9 @@ class EvaluatorSpec extends FunSpec with Matchers {
 
     it("can load dependencies for an evaluation") {
       val code = """
-import cats._
+import cats.data.Xor
 
-Eval.now(42).value
+Xor.Right(42).toOption.get
       """
       val remotes =
         List("https://oss.sonatype.org/content/repositories/releases/")
