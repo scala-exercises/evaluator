@@ -15,8 +15,8 @@ object EvaluatorBuild extends AutoPlugin {
   object autoImport {
 
     val v = Map(
-      'cats -> "0.8.1",
-      'circe -> "0.6.1",
+      'cats -> "0.7.2",
+      'circe -> "0.5.2",
       'config -> "1.3.0",
       'coursier -> "1.0.0-M14-2",
       'http4s -> "0.14.10a",
