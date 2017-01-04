@@ -9,15 +9,33 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import monix.execution.Scheduler
 import org.scalatest._
-import org.scalatest.exceptions.TestFailedException
+import helper._
 
 class EvaluatorSpec extends FunSpec with Matchers {
   implicit val scheduler: Scheduler = Scheduler.io("exercises-spec")
   val evaluator                     = new Evaluator(20 seconds)
 
   describe("evaluation") {
-    it("can evaluate simple expressions") {
-      val result: EvalResult[Int] = evaluator.eval("{ 41 + 1 }").run
+    it("can evaluate simple expressions, for Scala 2.11") {
+      val result: EvalResult[Int] = evaluator
+        .eval(
+          "{ 41 + 1 }",
+          remotes = commonResolvers,
+          dependencies = scalaDependencies(Scala211))
+        .run
+
+      result should matchPattern {
+        case EvalSuccess(_, 42, _) ⇒
+      }
+    }
+
+    it("can evaluate simple expressions, for Scala 2.12") {
+      val result: EvalResult[Int] = evaluator
+        .eval(
+          "{ 41 + 1 }",
+          remotes = commonResolvers,
+          dependencies = scalaDependencies(Scala212))
+        .run
 
       result should matchPattern {
         case EvalSuccess(_, 42, _) ⇒
@@ -25,19 +43,23 @@ class EvaluatorSpec extends FunSpec with Matchers {
     }
 
     it("fails with a timeout when takes longer than the configured timeout") {
-      val result: EvalResult[Int] =
-        evaluator.eval("{ while(true) {}; 123 }").run
+      val result: EvalResult[Int] = evaluator
+        .eval(
+          "{ while(true) {}; 123 }",
+          remotes = commonResolvers,
+          dependencies = scalaDependencies(Scala211))
+        .run
 
       result should matchPattern {
         case Timeout(_) ⇒
       }
     }
 
-    ignore("can load dependencies for an evaluation") {
+    it("can load dependencies for an evaluation") {
       val code = """
-import cats._
+import cats.data.Xor
 
-Eval.now(42).value
+Xor.Right(42).toOption.get
       """
       val remotes =
         List("https://oss.sonatype.org/content/repositories/releases/")
@@ -58,7 +80,39 @@ Eval.now(42).value
       }
     }
 
-    ignore("can load different versions of a dependency across evaluations") {
+    it(
+      "can load binary incompatible dependencies for an evaluation, for scala 2.11") {
+
+      val result: EvalResult[Int] = evaluator
+        .eval(
+          fetchCode,
+          remotes = commonResolvers,
+          dependencies = fetchLibraryDependencies(Scala211)
+        )
+        .run
+
+      result should matchPattern {
+        case EvalSuccess(_, _, _) =>
+      }
+    }
+
+    it(
+      "can load binary incompatible dependencies for an evaluation, for scala 2.12") {
+
+      val result: EvalResult[Int] = evaluator
+        .eval(
+          fetchCode,
+          remotes = commonResolvers,
+          dependencies = fetchLibraryDependencies(Scala212)
+        )
+        .run
+
+      result should matchPattern {
+        case EvalSuccess(_, _, _) =>
+      }
+    }
+
+    it("can load different versions of a dependency across evaluations") {
       val code = """
 import cats._
 Eval.now(42).value
@@ -66,11 +120,11 @@ Eval.now(42).value
       val remotes =
         List("https://oss.sonatype.org/content/repositories/releases/")
       val dependencies1 = List(
-        Dependency("org.typelevel", "cats_2.11", "0.4.1")
-      )
+          Dependency("org.typelevel", "cats_2.11", "0.4.1")
+        ) ++ scalaDependencies(Scala211)
       val dependencies2 = List(
-        Dependency("org.typelevel", "cats_2.11", "0.6.0")
-      )
+          Dependency("org.typelevel", "cats_2.11", "0.6.0")
+        ) ++ scalaDependencies(Scala211)
 
       val result1: EvalResult[Int] = evaluator
         .eval(
@@ -95,21 +149,22 @@ Eval.now(42).value
       }
     }
 
-    ignore("can run code from the exercises content") {
+    it("can run code from the exercises content") {
       val code = """
 import stdlib._
 Asserts.scalaTestAsserts(true)
 """
-      val remotes =
-        List("https://oss.sonatype.org/content/repositories/releases/")
       val dependencies = List(
-        Dependency("org.scala-exercises", "exercises-stdlib_2.11", "0.2.0")
-      )
+          Dependency(
+            "org.scala-exercises",
+            "exercises-stdlib_2.11",
+            "0.3.0-SNAPSHOT")
+        ) ++ scalaDependencies(Scala211)
 
       val result: EvalResult[Unit] = evaluator
         .eval(
           code,
-          remotes = remotes,
+          remotes = commonResolvers,
           dependencies = dependencies
         )
         .run
@@ -119,21 +174,22 @@ Asserts.scalaTestAsserts(true)
       }
     }
 
-    ignore("captures exceptions when running the exercises content") {
+    it("captures exceptions when running the exercises content") {
       val code = """
 import stdlib._
 Asserts.scalaTestAsserts(false)
 """
-      val remotes =
-        List("https://oss.sonatype.org/content/repositories/releases/")
       val dependencies = List(
-        Dependency("org.scala-exercises", "exercises-stdlib_2.11", "0.2.0")
-      )
+          Dependency(
+            "org.scala-exercises",
+            "exercises-stdlib_2.11",
+            "0.3.0-SNAPSHOT")
+        ) ++ scalaDependencies(Scala211)
 
       val result: EvalResult[Unit] = evaluator
         .eval(
           code,
-          remotes = remotes,
+          remotes = commonResolvers,
           dependencies = dependencies
         )
         .run
