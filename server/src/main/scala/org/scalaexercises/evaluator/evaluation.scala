@@ -20,6 +20,7 @@ import org.xeustechnologies.jcl.{JarClassLoader, JclObjectFactory}
 
 import scala.concurrent.duration._
 import scala.language.reflectiveCalls
+import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
 import scala.reflect.internal.util.{AbstractFileClassLoader, Position}
 import scala.tools.nsc.io.{AbstractFile, VirtualDirectory}
 import scala.tools.nsc.reporters._
@@ -334,16 +335,17 @@ case class Eval(target: Option[File] = None, jars: List[File] = Nil) {
                  code: String,
                  resetState: Boolean,
                  jars: Seq[File]): T = {
-    val jarUrls = (jars map (_.getAbsolutePath)).toList
 
-    val classLoader = new AbstractFileClassLoader(
-      compilerOutputDir,
-      this.getClass.getClassLoader)
-    val jcl = new JarClassLoader(classLoader)
-
-    import collection.JavaConverters._
-    jcl.addAll(jarUrls.asJava)
-    jcl.add(compilerOutputDir.file.getAbsolutePath)
+    val urlClassLoader =
+      new URLClassLoader(jars map (_.toURI.toURL), NullLoader)
+    val classLoader =
+      new AbstractFileClassLoader(compilerOutputDir, urlClassLoader)
+//    val jcl = new JarClassLoader(classLoader)
+//
+//    import collection.JavaConverters._
+//    val jarUrls = (jars map (_.getAbsolutePath)).toList
+//    jcl.addAll(jarUrls.asJava)
+//    jcl.add(compilerOutputDir.file.getAbsolutePath)
 
     val wrappedCode = wrapCodeInClass(className, code)
 
@@ -351,7 +353,7 @@ case class Eval(target: Option[File] = None, jars: List[File] = Nil) {
       createScalaSource(className, wrappedCode),
       className,
       resetState,
-      jcl
+      classLoader
     )
 
     val method       = cls.getMethod("run")
@@ -415,6 +417,15 @@ class $className extends java.io.Serializable {
       classpath.value = newJars
       bootclasspath.value = newJars
     }
+  }
+}
+
+object NullLoader extends ClassLoader {
+  override final def loadClass(className: String, resolve: Boolean): Class[_] = {
+    if (className.startsWith("java.")) super.loadClass(className, resolve)
+    else
+      throw new ClassNotFoundException(
+        "No classes can be loaded from the null loader")
   }
 }
 
