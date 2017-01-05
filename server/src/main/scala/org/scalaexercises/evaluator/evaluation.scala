@@ -8,9 +8,7 @@ package org.scalaexercises.evaluator
 import java.io.{File, PrintWriter}
 import java.lang.reflect.InvocationTargetException
 import java.math.BigInteger
-import java.net.URL
 import java.security.MessageDigest
-import java.util.Collections
 import java.util.concurrent.TimeoutException
 
 import coursier._
@@ -340,26 +338,26 @@ case class Eval(target: Option[File] = None, jars: List[File] = Nil) {
       new URLClassLoader(jars map (_.toURI.toURL), NullLoader)
     val classLoader =
       new AbstractFileClassLoader(compilerOutputDir, urlClassLoader)
-//    val jcl = new JarClassLoader(classLoader)
-//
-//    import collection.JavaConverters._
-//    val jarUrls = (jars map (_.getAbsolutePath)).toList
-//    jcl.addAll(jarUrls.asJava)
-//    jcl.add(compilerOutputDir.file.getAbsolutePath)
+    val jcl = new JarClassLoader(classLoader)
+
+    import collection.JavaConverters._
+    val jarUrls = (jars map (_.getAbsolutePath)).toList
+    jcl.addAll(jarUrls.asJava)
+    jcl.add(compilerOutputDir.file.getAbsolutePath)
 
     val wrappedCode = wrapCodeInClass(className, code)
 
-    val cls = compiler.compile(
+    compiler.compile(
       createScalaSource(className, wrappedCode),
       className,
       resetState,
-      classLoader
+      jcl
     )
 
-    val method       = cls.getMethod("run")
-    val instantiated = cls.newInstance()
-
-    val result: Any = Option(method.invoke(instantiated)).getOrElse((): Unit)
+    val factory      = JclObjectFactory.getInstance()
+    val instantiated = factory.create(jcl, className)
+    val method       = instantiated.getClass.getMethod("run")
+    val result: Any  = Option(method.invoke(instantiated)).getOrElse((): Unit)
 
     result.asInstanceOf[T]
   }
