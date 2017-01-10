@@ -237,14 +237,11 @@ class StringCompiler(
 
   def compile(scalaSource: File,
               className: String,
-              resetState: Boolean = true,
-              classLoader: ClassLoader): Class[_] = {
+              resetState: Boolean = true): Unit = {
     synchronized {
       if (resetState) reset()
 
       compile(scalaSource)
-      findClass(className, classLoader) getOrElse (throw new ClassNotFoundException(
-            className))
     }
   }
 }
@@ -343,15 +340,14 @@ case class Eval(target: Option[File] = None, jars: List[File] = Nil) {
     import collection.JavaConverters._
     val jarUrls = (jars map (_.getAbsolutePath)).toList
     jcl.addAll(jarUrls.asJava)
-    jcl.add(compilerOutputDir.file.getAbsolutePath)
+    jcl.add(compilerOutputDir.file.toURI.toURL)
 
     val wrappedCode = wrapCodeInClass(className, code)
 
     compiler.compile(
       createScalaSource(className, wrappedCode),
       className,
-      resetState,
-      jcl
+      resetState
     )
 
     val factory      = JclObjectFactory.getInstance()
