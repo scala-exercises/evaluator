@@ -21,6 +21,7 @@ object EvaluatorBuild extends AutoPlugin {
       'coursier -> "1.0.0-M14-2",
       'http4s -> "0.14.10a",
       'jwtcore -> "0.8.0",
+      'jclcore -> "2.8",
       'log4s -> "1.3.0",
       'monix -> "2.0.3",
       'roshttp -> "2.0.0-RC1",

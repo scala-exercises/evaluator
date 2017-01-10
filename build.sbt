@@ -71,6 +71,7 @@ lazy val `evaluator-server` = (project in file("server"))
       "io.circe" %% "circe-parser" % v('circe),
       "com.typesafe" % "config" % v('config),
       "com.pauldijou" %% "jwt-core" % v('jwtcore),
+      "org.xeustechnologies" % "jcl-core" % v('jclcore),
       "org.log4s" %% "log4s" % v('log4s),
       "org.slf4j" % "slf4j-simple" % v('slf4j),
       "io.get-coursier" %% "coursier" % v('coursier),
