@@ -1,5 +1,3 @@
-import org.scalafmt.sbt.ScalaFmtPlugin
-import org.scalafmt.sbt.ScalaFmtPlugin.autoImport._
 import de.heikoseeberger.sbtheader.{HeaderPattern, HeaderPlugin}
 import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
 import com.typesafe.sbt.SbtPgp.autoImport._
@@ -8,35 +6,40 @@ import sbt._
 
 object EvaluatorBuild extends AutoPlugin {
 
-  override def requires = plugins.JvmPlugin && ScalaFmtPlugin && HeaderPlugin
+  override def requires = plugins.JvmPlugin && HeaderPlugin
 
   override def trigger = allRequirements
 
   object autoImport {
 
     val v = Map(
-      'cats -> "0.7.2",
-      'circe -> "0.5.2",
+      'cats -> "0.8.1",
+      'circe -> "0.6.1",
       'config -> "1.3.0",
       'coursier -> "1.0.0-M14-2",
       'http4s -> "0.14.10a",
+      'jclcore -> "2.8",
       'jwtcore -> "0.8.0",
       'log4s -> "1.3.0",
       'monix -> "2.0.3",
       'roshttp -> "2.0.0-RC1",
-      'scalacheck -> "1.12.5",
-      'scalaTest -> "2.2.6",
+      'scalacheck -> "1.13.4",
+      'scalaTest -> "3.0.1",
       'slf4j -> "1.7.21"
     )
 
 
     def compilerDependencySettings = Seq(
+      crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.1"),
       libraryDependencies ++= Seq(
+        "org.xeustechnologies" % "jcl-core" % v('jclcore),
         "org.scala-lang" % "scala-compiler" % scalaVersion.value,
         compilerPlugin(
           "org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full
-        )
-      )
+        ),
+        "org.scalatest" %% "scalatest" % "3.0.1" % "test"
+      ),
+        dependencyOverrides += "org.scala-lang" % "scala-compiler" % scalaVersion.value
     )
   }
 
@@ -44,7 +47,6 @@ object EvaluatorBuild extends AutoPlugin {
 
   override def projectSettings =
     baseSettings ++
-      reformatOnCompileSettings ++
       publishSettings ++
       miscSettings
 
@@ -53,9 +55,13 @@ object EvaluatorBuild extends AutoPlugin {
     version := "0.1.2-SNAPSHOT",
     organization := "org.scala-exercises",
     scalaVersion := "2.11.8",
-    scalafmtConfig in ThisBuild := Some(file(".scalafmt")),
 
-    resolvers ++= Seq(Resolver.mavenLocal, Resolver.sonatypeRepo("snapshots"), Resolver.sonatypeRepo("releases")),
+    resolvers ++= Seq(
+      Resolver.mavenLocal,
+      Resolver.sonatypeRepo("snapshots"),
+      Resolver.sonatypeRepo("releases"),
+      "caliberweb repo" at "https://s3-us-west-2.amazonaws.com/repo.caliberweb.com/release"
+    ),
 
     parallelExecution in Test := false,
     cancelable in Global := true,

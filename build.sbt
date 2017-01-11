@@ -5,10 +5,8 @@ lazy val noPublishSettings = Seq(
 )
 
 lazy val root = (project in file("."))
-  .settings(mainClass in Universal := Some("org.scalaexercises.evaluator.EvaluatorServer"))
-  .settings(stage <<= (stage in Universal in `evaluator-server`))
   .settings(noPublishSettings: _*)
-  .aggregate(`evaluator-server`, `evaluator-shared-jvm`, `evaluator-shared-js`, `evaluator-client-jvm`, `evaluator-client-js`)
+  .aggregate(`evaluator-server`, `evaluator-compiler`, `evaluator-shared-jvm`, `evaluator-shared-js`, `evaluator-client-jvm`, `evaluator-client-js`)
 
 lazy val `evaluator-shared` = (crossProject in file("shared"))
   .enablePlugins(AutomateHeaderPlugin)
@@ -53,7 +51,7 @@ lazy val `evaluator-client-jvm` = `evaluator-client`.jvm
 lazy val `evaluator-client-js` = `evaluator-client`.js
 
 lazy val `evaluator-server` = (project in file("server"))
-  .dependsOn(`evaluator-shared-jvm`)
+  .dependsOn(`evaluator-shared-jvm`, `evaluator-compiler`)
   .enablePlugins(JavaAppPackaging)
   .enablePlugins(AutomateHeaderPlugin)
   .enablePlugins(sbtdocker.DockerPlugin)
@@ -82,6 +80,14 @@ lazy val `evaluator-server` = (project in file("server"))
   .settings(dockerSettings)
   .settings(compilerDependencySettings: _*)
 
+lazy val `evaluator-compiler` = (project in file("compiler"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(noPublishSettings: _*)
+  .settings(
+    name := "evaluator-compiler"
+  )
+  .settings(compilerDependencySettings: _*)
+
 lazy val `smoketests` = (project in file("smoketests"))
   .dependsOn(`evaluator-server`)
   .settings(
@@ -98,8 +104,7 @@ lazy val `smoketests` = (project in file("smoketests"))
 
   )
 
-onLoad in Global := (Command.process("project evaluator-server", _: State)) compose (onLoad in Global).value
-addCommandAlias("publishSignedAll", ";evaluator-sharedJS/publishSigned;evaluator-sharedJVM/publishSigned;evaluator-clientJS/publishSigned;evaluator-clientJVM/publishSigned")
+addCommandAlias("publishSignedAll", ";evaluator-sharedJS/publishSigned;evaluator-sharedJVM/publishSigned;evaluator-clientJS/publishSigned;evaluator-clientJVM/publishSigned;evaluator-compiler/+publishSigned")
 
 lazy val dockerSettings = Seq(
   docker <<= docker dependsOn assembly,

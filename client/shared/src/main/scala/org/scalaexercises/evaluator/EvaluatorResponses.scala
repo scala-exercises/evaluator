@@ -5,7 +5,6 @@
 
 package org.scalaexercises.evaluator
 
-import cats.data.Xor
 import cats.free.Free
 import cats.implicits._
 import io.circe.Decoder
@@ -44,9 +43,9 @@ object EvaluatorResponses {
     futureResponse map {
       case r if isSuccess(r.statusCode) ⇒
         decode[A](r.body) match {
-          case Xor.Left(e) =>
+          case Left(e) =>
             Either.left(JsonParsingException(e.getMessage, r.body))
-          case Xor.Right(result) =>
+          case Right(result) =>
             Either.right(
               EvaluationResult(result, r.statusCode, r.headers.toLowerCase))
         }
