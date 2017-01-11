@@ -13,6 +13,12 @@ import scala.tools.nsc.reporters.{AbstractReporter, Reporter}
 import scala.reflect.internal.util.Position
 
 /**
+  * The code in this file was taken and only slightly modified from
+  *
+  * https://github.com/twitter/util/blob/302235a473d20735e5327d785e19b0f489b4a59f/util-eval/src/main/scala/com/twitter/util/Eval.scala
+  *
+  * Twitter, Inc.
+  *
   * Dynamic scala compiler. Lots of (slow) state is created, so it may be advantageous to keep
   * around one of these and reuse it.
   */
