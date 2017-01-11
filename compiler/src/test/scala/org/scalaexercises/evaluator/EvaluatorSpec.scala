@@ -1,16 +1,17 @@
 /*
- * scala-exercises-evaluator-server
+ * scala-exercises-evaluator-compiler
  * Copyright (C) 2015-2016 47 Degrees, LLC. <http://www.47deg.com>
  */
 
 package org.scalaexercises.evaluator
 
+import monix.execution.Scheduler
+import org.scalaexercises.evaluator.helper._
+import org.scalatest._
+import org.scalatest.exceptions.TestFailedException
+
 import scala.concurrent.duration._
 import scala.language.postfixOps
-import monix.execution.Scheduler
-import org.scalatest._
-import helper._
-import org.scalatest.exceptions.TestFailedException
 
 class EvaluatorSpec extends FunSpec with Matchers {
   implicit val scheduler: Scheduler = Scheduler.io("exercises-spec")
@@ -81,7 +82,7 @@ Xor.Right(42).toOption.get
       }
     }
 
-    it(
+    ignore(
       "can load binary incompatible dependencies for an evaluation, for scala 2.11") {
 
       val result: EvalResult[Int] = evaluator

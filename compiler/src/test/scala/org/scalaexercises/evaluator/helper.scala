@@ -1,5 +1,5 @@
 /*
- * scala-exercises-evaluator-server
+ * scala-exercises-evaluator-compiler
  * Copyright (C) 2015-2016 47 Degrees, LLC. <http://www.47deg.com>
  */
 

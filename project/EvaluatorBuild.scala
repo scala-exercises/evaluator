@@ -16,13 +16,13 @@ object EvaluatorBuild extends AutoPlugin {
       'cats -> "0.8.1",
       'circe -> "0.6.1",
       'config -> "1.3.0",
-      'coursier -> "1.0.0-M14-2",
+      'coursier -> "1.0.0-M15",
       'http4s -> "0.14.10a",
       'jclcore -> "2.8",
       'jwtcore -> "0.8.0",
-      'log4s -> "1.3.0",
-      'monix -> "2.0.3",
-      'roshttp -> "2.0.0-RC1",
+      'log4s -> "1.3.4",
+      'monix -> "2.1.2",
+      'roshttp -> "2.0.1",
       'scalacheck -> "1.13.4",
       'scalaTest -> "3.0.1",
       'slf4j -> "1.7.21"
@@ -30,16 +30,22 @@ object EvaluatorBuild extends AutoPlugin {
 
 
     def compilerDependencySettings = Seq(
-      crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.1"),
+      crossScalaVersions := Seq("2.11.8", "2.12.1"),
       libraryDependencies ++= Seq(
+        "io.monix" %% "monix" % v('monix),
+        "io.get-coursier" %% "coursier" % v('coursier),
+        "io.get-coursier" %% "coursier-cache" % v('coursier),
         "org.xeustechnologies" % "jcl-core" % v('jclcore),
         "org.scala-lang" % "scala-compiler" % scalaVersion.value,
+        "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+        "org.log4s" %% "log4s" % v('log4s),
+        "org.slf4j" % "slf4j-simple" % v('slf4j),
+        "org.scalatest" %% "scalatest" % v('scalaTest) % "test",
         compilerPlugin(
           "org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full
-        ),
-        "org.scalatest" %% "scalatest" % "3.0.1" % "test"
+        )
       ),
-        dependencyOverrides += "org.scala-lang" % "scala-compiler" % scalaVersion.value
+      dependencyOverrides += "org.scala-lang" % "scala-compiler" % scalaVersion.value
     )
   }
 

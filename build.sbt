@@ -51,7 +51,7 @@ lazy val `evaluator-client-jvm` = `evaluator-client`.jvm
 lazy val `evaluator-client-js` = `evaluator-client`.js
 
 lazy val `evaluator-server` = (project in file("server"))
-  .dependsOn(`evaluator-shared-jvm`, `evaluator-compiler`)
+  .dependsOn(`evaluator-shared-jvm`, `evaluator-compiler` % "test->test;compile->compile")
   .enablePlugins(JavaAppPackaging)
   .enablePlugins(AutomateHeaderPlugin)
   .enablePlugins(sbtdocker.DockerPlugin)
@@ -69,21 +69,17 @@ lazy val `evaluator-server` = (project in file("server"))
       "io.circe" %% "circe-parser" % v('circe),
       "com.typesafe" % "config" % v('config),
       "com.pauldijou" %% "jwt-core" % v('jwtcore),
-      "org.xeustechnologies" % "jcl-core" % v('jclcore),
       "org.log4s" %% "log4s" % v('log4s),
       "org.slf4j" % "slf4j-simple" % v('slf4j),
-      "io.get-coursier" %% "coursier" % v('coursier),
-      "io.get-coursier" %% "coursier-cache" % v('coursier),
       "org.scalatest" %% "scalatest" % v('scalaTest) % "test"
     ),
     assemblyJarName in assembly := "evaluator-server.jar"
   )
   .settings(dockerSettings)
-  .settings(compilerDependencySettings: _*)
 
 lazy val `evaluator-compiler` = (project in file("compiler"))
+  .dependsOn(`evaluator-shared-jvm`)
   .enablePlugins(AutomateHeaderPlugin)
-  .settings(noPublishSettings: _*)
   .settings(
     name := "evaluator-compiler"
   )
