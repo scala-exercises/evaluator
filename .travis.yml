@@ -29,6 +29,13 @@ after_success:
      sbt dockerBuildAndPush;
      sbt smoketests/test;
   fi
+- if [ "$TRAVIS_BRANCH" = "evaluator-free-of-classpath-issues" -a "$TRAVIS_PULL_REQUEST" = "false" ]; then
+     sbt -Devaluator.heroku.name=scala-evaluator-212 publishSignedAll;
+     echo "Deploying to Heroku";
+     docker login --username=noel.m@47deg.com --password=$heroku_token registry.heroku.com;
+     sbt dockerBuildAndPush;
+     sbt smoketests/test;
+  fi
 - if [ "$TRAVIS_PULL_REQUEST" = "true" ]; then
      echo "Not in master branch, skipping deploy and release";
   fi
