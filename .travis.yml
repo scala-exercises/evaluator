@@ -4,6 +4,7 @@ services:
 - docker
 scala:
 - 2.11.8
+- 2.12.1
 jdk:
 - oraclejdk8
 cache:
@@ -14,8 +15,7 @@ cache:
 env:
   global: JAVA_OPTS=-Xmx2g SBT_OPTS="-XX:+UseConcMarkSweepGC -XX:MaxPermSize=512m"
 script:
-- sbt test
-- sbt 'project evaluator-compiler' '+test'
+- sbt ++$TRAVIS_SCALA_VERSION test
 
 before_install:
 - if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" ]; then

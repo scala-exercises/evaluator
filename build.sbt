@@ -68,7 +68,12 @@ lazy val `evaluator-server` = (project in file("server"))
       "io.circe" %% "circe-generic" % v('circe),
       "io.circe" %% "circe-parser" % v('circe),
       "com.typesafe" % "config" % v('config),
-      "com.pauldijou" %% "jwt-core" % v('jwtcore),
+      "com.pauldijou" %% "jwt-core" % v({
+        scalaVersion.value match {
+          case sVersion if sVersion startsWith "2.11" => 'jwtcore_211
+          case _ => 'jwtcore
+        }
+      }),
       "org.log4s" %% "log4s" % v('log4s),
       "org.slf4j" % "slf4j-simple" % v('slf4j),
       "org.scalatest" %% "scalatest" % v('scalaTest) % "test"
@@ -80,6 +85,7 @@ lazy val `evaluator-server` = (project in file("server"))
 lazy val `evaluator-compiler` = (project in file("compiler"))
   .dependsOn(`evaluator-shared-jvm`)
   .enablePlugins(AutomateHeaderPlugin)
+  .enablePlugins(BuildInfoPlugin)
   .settings(
     name := "evaluator-compiler"
   )

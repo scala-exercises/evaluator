@@ -1,8 +1,10 @@
 import de.heikoseeberger.sbtheader.{HeaderPattern, HeaderPlugin}
 import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
 import com.typesafe.sbt.SbtPgp.autoImport._
+import sbtbuildinfo.BuildInfoKeys._
 import sbt.Keys._
 import sbt._
+import sbtbuildinfo.BuildInfoKey
 
 object EvaluatorBuild extends AutoPlugin {
 
@@ -17,9 +19,10 @@ object EvaluatorBuild extends AutoPlugin {
       'circe -> "0.6.1",
       'config -> "1.3.0",
       'coursier -> "1.0.0-M15",
-      'http4s -> "0.14.10a",
+      'http4s -> "0.15.3a",
       'jclcore -> "2.8",
-      'jwtcore -> "0.8.0",
+      'jwtcore_211 -> "0.9.2",
+      'jwtcore -> "0.10.0",
       'log4s -> "1.3.4",
       'monix -> "2.1.2",
       'roshttp -> "2.0.1",
@@ -45,7 +48,9 @@ object EvaluatorBuild extends AutoPlugin {
           "org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full
         )
       ),
-      dependencyOverrides += "org.scala-lang" % "scala-compiler" % scalaVersion.value
+      dependencyOverrides += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
+      buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
+      buildInfoPackage := "org.scalaexercises.evaluator"
     )
   }
 
@@ -60,7 +65,7 @@ object EvaluatorBuild extends AutoPlugin {
   private[this] def baseSettings = Seq(
     version := "0.1.2-SNAPSHOT",
     organization := "org.scala-exercises",
-    scalaVersion := "2.11.8",
+    scalaVersion := "2.12.1",
 
     resolvers ++= Seq(
       Resolver.mavenLocal,

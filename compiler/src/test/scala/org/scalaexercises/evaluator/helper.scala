@@ -11,6 +11,12 @@ object helper {
   case object Scala211 extends ScalaVersion("2.11.8")
   case object Scala212 extends ScalaVersion("2.12.1")
 
+  def toScalaVersion(v: String): ScalaVersion = v match {
+    case version if version.startsWith("2.11") => Scala211
+    case version if version.startsWith("2.12") => Scala212
+    case _ => throw new IllegalArgumentException("Unknown Scala Version")
+  }
+
   val commonResolvers = List(
     "https://oss.sonatype.org/content/repositories/snapshots",
     "https://oss.sonatype.org/content/repositories/public",

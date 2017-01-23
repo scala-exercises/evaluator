@@ -24,7 +24,7 @@ class EvaluatorSpec extends FunSpec with Matchers {
           "{ 41 + 1 }",
           remotes = commonResolvers,
           dependencies = scalaDependencies(Scala211))
-        .run
+        .unsafePerformSync
 
       result should matchPattern {
         case EvalSuccess(_, 42, _) ⇒
@@ -37,7 +37,7 @@ class EvaluatorSpec extends FunSpec with Matchers {
           "{ 41 + 1 }",
           remotes = commonResolvers,
           dependencies = scalaDependencies(Scala212))
-        .run
+        .unsafePerformSync
 
       result should matchPattern {
         case EvalSuccess(_, 42, _) ⇒
@@ -50,7 +50,7 @@ class EvaluatorSpec extends FunSpec with Matchers {
           "{ while(true) {}; 123 }",
           remotes = commonResolvers,
           dependencies = scalaDependencies(Scala211))
-        .run
+        .unsafePerformSync
 
       result should matchPattern {
         case Timeout(_) ⇒
@@ -75,39 +75,23 @@ Xor.Right(42).toOption.get
           remotes = remotes,
           dependencies = dependencies
         )
-        .run
+        .unsafePerformSync
 
       result should matchPattern {
         case EvalSuccess(_, 42, _) =>
       }
     }
 
-    ignore(
-      "can load binary incompatible dependencies for an evaluation, for scala 2.11") {
+    it(
+      s"can load binary incompatible dependencies for an evaluation, for scala ${BuildInfo.scalaVersion}") {
 
       val result: EvalResult[Int] = evaluator
         .eval(
           fetchCode,
           remotes = commonResolvers,
-          dependencies = fetchLibraryDependencies(Scala211)
+          dependencies = fetchLibraryDependencies(toScalaVersion(BuildInfo.scalaVersion))
         )
-        .run
-
-      result should matchPattern {
-        case EvalSuccess(_, _, _) =>
-      }
-    }
-
-    ignore(
-      "can load binary incompatible dependencies for an evaluation, for scala 2.12") {
-
-      val result: EvalResult[Int] = evaluator
-        .eval(
-          fetchCode,
-          remotes = commonResolvers,
-          dependencies = fetchLibraryDependencies(Scala212)
-        )
-        .run
+        .unsafePerformSync
 
       result should matchPattern {
         case EvalSuccess(_, _, _) =>
@@ -134,14 +118,14 @@ Eval.now(42).value
           remotes = remotes,
           dependencies = dependencies1
         )
-        .run
+        .unsafePerformSync
       val result2: EvalResult[Int] = evaluator
         .eval(
           code,
           remotes = remotes,
           dependencies = dependencies2
         )
-        .run
+        .unsafePerformSync
 
       result1 should matchPattern {
         case EvalSuccess(_, 42, _) =>
@@ -169,14 +153,14 @@ Asserts.scalaTestAsserts(true)
           remotes = commonResolvers,
           dependencies = dependencies
         )
-        .run
+        .unsafePerformSync
 
       result should matchPattern {
         case EvalSuccess(_, (), _) =>
       }
     }
 
-    ignore("captures exceptions when running the exercises content") {
+    it("captures exceptions when running the exercises content") {
       val code = """
 import stdlib._
 Asserts.scalaTestAsserts(false)
@@ -194,13 +178,9 @@ Asserts.scalaTestAsserts(false)
           remotes = commonResolvers,
           dependencies = dependencies
         )
-        .run
+        .unsafePerformSync
 
-      result should matchPattern {
-        case EvalRuntimeError(
-            _,
-            Some(RuntimeError(err: TestFailedException, _))) =>
-      }
+      result shouldBe a[EvalRuntimeError[_]]
     }
   }
 }
