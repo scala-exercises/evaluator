@@ -33,12 +33,11 @@ class EvaluatorSpec extends FunSpec with Matchers {
       }
     }
 
-    ignore("can load dependencies for an evaluation") {
+    describe("can load dependencies for an evaluation") {
       val code = """
-import cats._
-
-Eval.now(42).value
-      """
+              import cats._
+              Eval.now(42).value
+                 """
       val remotes =
         List("https://oss.sonatype.org/content/repositories/releases/")
       val dependencies = List(
@@ -58,11 +57,11 @@ Eval.now(42).value
       }
     }
 
-    ignore("can load different versions of a dependency across evaluations") {
+    describe("can load different versions of a dependency across evaluations") {
       val code = """
-import cats._
-Eval.now(42).value
-      """
+              import cats._
+              Eval.now(42).value
+                 """
       val remotes =
         List("https://oss.sonatype.org/content/repositories/releases/")
       val dependencies1 = List(
@@ -95,11 +94,11 @@ Eval.now(42).value
       }
     }
 
-    ignore("can run code from the exercises content") {
+    describe("can run code from the exercises content") {
       val code = """
-import stdlib._
-Asserts.scalaTestAsserts(true)
-"""
+              import stdlib._
+              Asserts.scalaTestAsserts(true)
+                 """
       val remotes =
         List("https://oss.sonatype.org/content/repositories/releases/")
       val dependencies = List(
@@ -119,11 +118,11 @@ Asserts.scalaTestAsserts(true)
       }
     }
 
-    ignore("captures exceptions when running the exercises content") {
+    describe("captures exceptions when running the exercises content") {
       val code = """
-import stdlib._
-Asserts.scalaTestAsserts(false)
-"""
+              import stdlib._
+              Asserts.scalaTestAsserts(false)
+                 """
       val remotes =
         List("https://oss.sonatype.org/content/repositories/releases/")
       val dependencies = List(
