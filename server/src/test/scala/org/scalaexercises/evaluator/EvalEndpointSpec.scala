@@ -5,27 +5,25 @@
 
 package org.scalaexercises.evaluator
 
-import org.scalatest._
-import org.http4s._
-import org.http4s.headers._
-import org.http4s.dsl._
-import org.http4s.server._
-
-import io.circe.syntax._
-import io.circe.generic.auto._
-import scalaz.stream.Process.emit
 import java.nio.charset.StandardCharsets
-import scodec.bits.ByteVector
-import pdi.jwt.{Jwt, JwtAlgorithm, JwtHeader, JwtClaim, JwtOptions}
 
-import org.http4s.{Status => HttpStatus}
+import io.circe.generic.auto._
+import io.circe.syntax._
+import org.http4s.dsl._
+import org.http4s.headers._
+import org.http4s.{Status => HttpStatus, _}
+import org.scalatest._
+import pdi.jwt.{Jwt, JwtAlgorithm}
+import scodec.bits.ByteVector
+
+import scalaz.stream.Process.emit
 
 class EvalEndpointSpec extends FunSpec with Matchers {
 
-  import services._
-  import codecs._
-  import auth._
   import EvalResponse.messages._
+  import auth._
+  import codecs._
+  import services._
 
   val sonatypeReleases = "https://oss.sonatype.org/content/repositories/releases/" :: Nil
 

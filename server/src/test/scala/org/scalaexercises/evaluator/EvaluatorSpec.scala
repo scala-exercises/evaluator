@@ -5,11 +5,12 @@
 
 package org.scalaexercises.evaluator
 
-import scala.concurrent.duration._
-import scala.language.postfixOps
 import monix.execution.Scheduler
 import org.scalatest._
 import org.scalatest.exceptions.TestFailedException
+
+import scala.concurrent.duration._
+import scala.language.postfixOps
 
 class EvaluatorSpec extends FunSpec with Matchers {
   implicit val scheduler: Scheduler = Scheduler.io("exercises-spec")
