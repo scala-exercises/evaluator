@@ -16,6 +16,8 @@ class EvaluatorSpec extends FunSpec with Matchers {
   implicit val scheduler: Scheduler = Scheduler.io("exercises-spec")
   val evaluator                     = new Evaluator(20 seconds)
 
+  val remotes = "https://oss.sonatype.org/content/repositories/releases/" :: Nil
+
   describe("evaluation") {
     it("can evaluate simple expressions") {
       val result: EvalResult[Int] = evaluator.eval("{ 41 + 1 }").run
@@ -35,22 +37,12 @@ class EvaluatorSpec extends FunSpec with Matchers {
     }
 
     describe("can load dependencies for an evaluation") {
-      val code = """
-              import cats._
-              Eval.now(42).value
-                 """
-      val remotes =
-        List("https://oss.sonatype.org/content/repositories/releases/")
-      val dependencies = List(
-        Dependency("org.typelevel", "cats_2.11", "0.6.0")
-      )
+      val code = "{import cats._; Eval.now(42).value}"
+
+      val dependencies = Dependency("org.typelevel", "cats_2.11", "0.6.0") :: Nil
 
       val result: EvalResult[Int] = evaluator
-        .eval(
-          code,
-          remotes = remotes,
-          dependencies = dependencies
-        )
+        .eval(code, remotes = remotes, dependencies = dependencies)
         .run
 
       result should matchPattern {
@@ -59,32 +51,17 @@ class EvaluatorSpec extends FunSpec with Matchers {
     }
 
     describe("can load different versions of a dependency across evaluations") {
-      val code = """
-              import cats._
-              Eval.now(42).value
-                 """
-      val remotes =
-        List("https://oss.sonatype.org/content/repositories/releases/")
-      val dependencies1 = List(
-        Dependency("org.typelevel", "cats_2.11", "0.4.1")
-      )
-      val dependencies2 = List(
-        Dependency("org.typelevel", "cats_2.11", "0.6.0")
-      )
+      val code = "{import cats._; Eval.now(42).value}"
+
+      val dependencies1 = Dependency("org.typelevel", "cats_2.11", "0.4.1") :: Nil
+
+      val dependencies2 = Dependency("org.typelevel", "cats_2.11", "0.6.0") :: Nil
 
       val result1: EvalResult[Int] = evaluator
-        .eval(
-          code,
-          remotes = remotes,
-          dependencies = dependencies1
-        )
+        .eval(code, remotes = remotes, dependencies = dependencies1)
         .run
       val result2: EvalResult[Int] = evaluator
-        .eval(
-          code,
-          remotes = remotes,
-          dependencies = dependencies2
-        )
+        .eval(code, remotes = remotes, dependencies = dependencies2)
         .run
 
       result1 should matchPattern {
@@ -96,22 +73,15 @@ class EvaluatorSpec extends FunSpec with Matchers {
     }
 
     describe("can run code from the exercises content") {
-      val code = """
-              import stdlib._
-              Asserts.scalaTestAsserts(true)
-                 """
-      val remotes =
-        List("https://oss.sonatype.org/content/repositories/releases/")
-      val dependencies = List(
-        Dependency("org.scala-exercises", "exercises-stdlib_2.11", "0.2.0")
-      )
+      val code = "{import stdlib._; Asserts.scalaTestAsserts(true)}"
+
+      val dependencies = Dependency(
+          "org.scala-exercises",
+          "exercises-stdlib_2.11",
+          "0.2.0") :: Nil
 
       val result: EvalResult[Unit] = evaluator
-        .eval(
-          code,
-          remotes = remotes,
-          dependencies = dependencies
-        )
+        .eval(code, remotes = remotes, dependencies = dependencies)
         .run
 
       result should matchPattern {
@@ -120,28 +90,95 @@ class EvaluatorSpec extends FunSpec with Matchers {
     }
 
     describe("captures exceptions when running the exercises content") {
-      val code = """
-              import stdlib._
-              Asserts.scalaTestAsserts(false)
-                 """
-      val remotes =
-        List("https://oss.sonatype.org/content/repositories/releases/")
-      val dependencies = List(
-        Dependency("org.scala-exercises", "exercises-stdlib_2.11", "0.2.0")
-      )
+      val code = "{import stdlib._; Asserts.scalaTestAsserts(false)}"
+
+      val dependencies = Dependency(
+          "org.scala-exercises",
+          "exercises-stdlib_2.11",
+          "0.2.0") :: Nil
 
       val result: EvalResult[Unit] = evaluator
-        .eval(
-          code,
-          remotes = remotes,
-          dependencies = dependencies
-        )
+        .eval(code, remotes = remotes, dependencies = dependencies)
         .run
 
       result should matchPattern {
         case EvalRuntimeError(
             _,
             Some(RuntimeError(err: TestFailedException, _))) =>
+      }
+    }
+
+    describe("can run code from the exercises content") {
+      val code = "{import cats._; Eval.now(42).value}"
+
+      val dependencies = Dependency("org.typelevel", "cats_2.11", "0.6.0") :: Nil
+
+      val compilerFlags = Nil
+
+      val result: EvalResult[Unit] = evaluator
+        .eval(
+          code,
+          remotes = remotes,
+          dependencies = dependencies,
+          compilerFlags = compilerFlags)
+        .run
+
+      result should matchPattern {
+        case EvalSuccess(_, 42, _) =>
+      }
+    }
+
+    describe("can evaluate code without any compiler flags provided") {
+      val code = "{import cats._; Eval.now(42).value}"
+
+      val dependencies = Dependency("org.typelevel", "cats_2.11", "0.6.0") :: Nil
+
+      val result: EvalResult[Unit] = evaluator
+        .eval(code, remotes = remotes, dependencies = dependencies)
+        .run
+
+      result should matchPattern {
+        case EvalSuccess(_, 42, _) =>
+      }
+    }
+
+    describe("can evaluate code with an empty list of compiler flags provided") {
+      val code = "{import cats._; Eval.now(42).value}"
+
+      val dependencies = Dependency("org.typelevel", "cats_2.11", "0.6.0") :: Nil
+
+      val compilerFlags = Nil
+
+      val result: EvalResult[Unit] = evaluator
+        .eval(
+          code,
+          remotes = remotes,
+          dependencies = dependencies,
+          compilerFlags = compilerFlags)
+        .run
+
+      result should matchPattern {
+        case EvalSuccess(_, 42, _) =>
+      }
+    }
+
+    describe("can evaluate code with a list of compiler flags provided") {
+      val code = "{import cats._; Eval.now(42).value}"
+
+      val dependencies = Dependency("org.typelevel", "cats_2.11", "0.6.0") :: Nil
+
+      val compilerFlags = List("-X", "-help")
+
+      val result: EvalResult[Unit] = evaluator
+        .eval(
+          code,
+          remotes = remotes,
+          dependencies = dependencies,
+          compilerFlags = compilerFlags)
+        .run
+
+      result should matchPattern {
+        case EvalSuccess(_, 42, _) =>
       }
     }
   }
