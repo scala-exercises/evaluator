@@ -5,6 +5,7 @@
 
 package org.scalaexercises.evaluator
 
+import io.circe.Decoder
 import org.http4s._
 import org.http4s.dsl._
 import org.http4s.server._
@@ -42,13 +43,39 @@ object services {
     auth(HttpService {
       case req @ POST -> Root / "eval" =>
         import io.circe.syntax._
+
+        val decoder: EntityDecoder[EvalRequest] = {
+          implicit val evalRequestDecoder: Decoder[EvalRequest] =
+            Decoder.instance {
+              cursor =>
+                for {
+                  resolvers <- cursor.downField("resolvers").as[List[String]]
+                  dependencies <- cursor
+                                   .downField("dependencies")
+                                   .as[List[Dependency]]
+                  code <- cursor.downField("code").as[String]
+                  compilerFlags <- cursor
+                                    .downField("compilerFlags")
+                                    .as[Option[List[String]]]
+                } yield
+                  EvalRequest(
+                    resolvers,
+                    dependencies,
+                    code,
+                    compilerFlags.getOrElse(Nil))
+            }
+
+          jsonDecoderOf(evalRequestDecoder)
+        }
+
         req
-          .decode[EvalRequest] {
+          .decodeWith[EvalRequest](decoder, strict = false) {
             evalRequest =>
               evaluator.eval[Any](
                 code = evalRequest.code,
                 remotes = evalRequest.resolvers,
-                dependencies = evalRequest.dependencies
+                dependencies = evalRequest.dependencies,
+                compilerFlags = evalRequest.compilerFlags
               ) flatMap {
                 (result: EvalResult[_]) =>
                   val response = result match {

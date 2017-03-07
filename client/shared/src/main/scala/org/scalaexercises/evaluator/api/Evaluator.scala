@@ -23,10 +23,11 @@ class Evaluator {
            authKey: String,
            resolvers: List[String] = Nil,
            dependencies: List[Dependency] = Nil,
-           code: String): Future[EvaluationResponse[EvalResponse]] =
+           code: String,
+           compilerFlags: List[String] = Nil): Future[EvaluationResponse[EvalResponse]] =
     httpClient.post[EvalResponse](
       url = url,
       secretKey = authKey,
-      data = EvalRequest(resolvers, dependencies, code).asJson.noSpaces)
+      data = EvalRequest(resolvers, dependencies, code, compilerFlags).asJson.noSpaces)
 
 }

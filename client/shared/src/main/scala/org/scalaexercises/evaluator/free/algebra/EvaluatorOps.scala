@@ -14,7 +14,8 @@ final case class Evaluates(url: String,
                            authKey: String,
                            resolvers: List[String] = Nil,
                            dependencies: List[Dependency] = Nil,
-                           code: String)
+                           code: String,
+                           compilerFlags: List[String] = Nil)
     extends EvaluatorOp[EvaluationResponse[EvalResponse]]
 
 class EvaluatorOps[F[_]](implicit I: Inject[EvaluatorOp, F]) {
@@ -24,10 +25,11 @@ class EvaluatorOps[F[_]](implicit I: Inject[EvaluatorOp, F]) {
     authKey: String,
     resolvers: List[String] = Nil,
     dependencies: List[Dependency] = Nil,
-    code: String
+    code: String,
+    compilerFlags: List[String] = Nil
   ): Free[F, EvaluationResponse[EvalResponse]] =
     Free.inject[EvaluatorOp, F](
-      Evaluates(url, authKey, resolvers, dependencies, code))
+      Evaluates(url, authKey, resolvers, dependencies, code, compilerFlags))
 
 }
 
