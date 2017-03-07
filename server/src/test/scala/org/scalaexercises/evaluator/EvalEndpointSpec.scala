@@ -183,5 +183,52 @@ class EvalEndpointSpec extends FunSpec with Matchers {
         `Accept-Ranges`(Nil)).status should be(HttpStatus.Unauthorized)
     }
 
+    it("evaluates the code when no compilerFlags are provided") {
+      verifyEvalResponse(
+        response = serve(
+          EvalRequest(
+            code = "{import cats._; Eval.now(42).value}",
+            resolvers = sonatypeReleases,
+            dependencies = Dependency("org.typelevel", "cats_2.11", "0.6.0") :: Nil
+          ),
+          `X-Scala-Eval-Api-Token`(validToken)),
+        expectedStatus = HttpStatus.Ok,
+        expectedValue = Some("42"),
+        expectedMessage = `ok`
+      )
+    }
+
+    it("evaluates the code when an empty list of compilerFlags is provided") {
+      verifyEvalResponse(
+        response = serve(
+          EvalRequest(
+            code = "{import cats._; Eval.now(42).value}",
+            resolvers = sonatypeReleases,
+            dependencies = Dependency("org.typelevel", "cats_2.11", "0.6.0") :: Nil,
+            compilerFlags = Nil
+          ),
+          `X-Scala-Eval-Api-Token`(validToken)),
+        expectedStatus = HttpStatus.Ok,
+        expectedValue = Some("42"),
+        expectedMessage = `ok`
+      )
+    }
+
+    it("evaluates the code when a list of compilerFlags is provided") {
+      verifyEvalResponse(
+        response = serve(
+          EvalRequest(
+            code = "{import cats._; Eval.now(42).value}",
+            resolvers = sonatypeReleases,
+            dependencies = Dependency("org.typelevel", "cats_2.11", "0.6.0") :: Nil,
+            compilerFlags = List("-print", "-optimise", "-help")
+          ),
+          `X-Scala-Eval-Api-Token`(validToken)),
+        expectedStatus = HttpStatus.Ok,
+        expectedValue = Some("42"),
+        expectedMessage = `ok`
+      )
+    }
+
   }
 }
