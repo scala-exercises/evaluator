@@ -219,7 +219,7 @@ class EvalEndpointSpec extends FunSpec with Matchers {
             code = "{import cats._; Eval.now(42).value}",
             resolvers = sonatypeReleases,
             dependencies = Dependency("org.typelevel", "cats_2.11", "0.6.0") :: Nil,
-            compilerFlags = List("-print", "-optimise", "-help")
+            compilerFlags = List("-optimise", "-help")
           ),
           `X-Scala-Eval-Api-Token`(validToken)),
         expectedStatus = HttpStatus.Ok,
