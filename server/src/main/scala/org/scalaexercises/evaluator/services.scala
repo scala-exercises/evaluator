@@ -5,6 +5,7 @@
 
 package org.scalaexercises.evaluator
 
+import com.typesafe.config.ConfigFactory
 import io.circe.Decoder
 import monix.execution.Scheduler
 import org.http4s._
@@ -12,6 +13,7 @@ import org.http4s.dsl._
 import org.http4s.server.blaze._
 import org.log4s.getLogger
 
+import scala.collection.JavaConversions._
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
@@ -22,6 +24,17 @@ object services {
   import io.circe.generic.auto._
 
   private val logger = getLogger
+
+  val config = ConfigFactory.load()
+
+  val AllowedCompilerFlags = "allowed.compiler.flags"
+
+  val allowedCompilerFlags = if (config.hasPath(AllowedCompilerFlags)) {
+    config.getStringList(AllowedCompilerFlags).toList
+  } else {
+    throw new IllegalStateException(
+      "Missing -D allowed.compiler.flags=[YOUR_KEY_HERE] or env var [ALLOWED_COMPILER_FLAGS]")
+  }
 
   implicit val scheduler: Scheduler = Scheduler.io("scala-evaluator")
 
@@ -68,45 +81,52 @@ object services {
         req
           .decodeWith[EvalRequest](decoder, strict = false) {
             evalRequest =>
-              evaluator.eval[Any](
-                code = evalRequest.code,
-                remotes = evalRequest.resolvers,
-                dependencies = evalRequest.dependencies,
-                compilerFlags = evalRequest.compilerFlags
-              ) flatMap {
-                (result: EvalResult[_]) =>
-                  val response = result match {
-                    case EvalSuccess(cis, res, out) =>
-                      EvalResponse(
-                        `ok`,
-                        Option(res.toString),
-                        Option(res.asInstanceOf[AnyRef].getClass.getName),
-                        cis)
-                    case Timeout(_) =>
-                      EvalResponse(`Timeout Exceded`, None, None, Map.empty)
-                    case UnresolvedDependency(msg) =>
-                      EvalResponse(
-                        `Unresolved Dependency` + " : " + msg,
-                        None,
-                        None,
-                        Map.empty)
-                    case EvalRuntimeError(cis, runtimeError) =>
-                      EvalResponse(
-                        `Runtime Error`,
-                        runtimeError map (_.error.getMessage),
-                        runtimeError map (_.error.getClass.getName),
-                        cis)
-                    case CompilationError(cis) =>
-                      EvalResponse(`Compilation Error`, None, None, cis)
-                    case GeneralError(err) =>
-                      EvalResponse(
-                        `Unforeseen Exception`,
-                        None,
-                        None,
-                        Map.empty)
-                  }
-                  Ok(response.asJson)
-              }
+              val (validCompilerFlags, invalidCompilerFlags) =
+                evalRequest.compilerFlags.partition(
+                  allowedCompilerFlags.contains(_))
+              if (invalidCompilerFlags.isEmpty) {
+                evaluator.eval[Any](
+                  code = evalRequest.code,
+                  remotes = evalRequest.resolvers,
+                  dependencies = evalRequest.dependencies,
+                  compilerFlags = validCompilerFlags
+                ) flatMap {
+                  (result: EvalResult[_]) =>
+                    val response = result match {
+                      case EvalSuccess(cis, res, out) =>
+                        EvalResponse(
+                          `ok`,
+                          Option(res.toString),
+                          Option(res.asInstanceOf[AnyRef].getClass.getName),
+                          cis)
+                      case Timeout(_) =>
+                        EvalResponse(`Timeout Exceded`, None, None, Map.empty)
+                      case UnresolvedDependency(msg) =>
+                        EvalResponse(
+                          `Unresolved Dependency` + " : " + msg,
+                          None,
+                          None,
+                          Map.empty)
+                      case EvalRuntimeError(cis, runtimeError) =>
+                        EvalResponse(
+                          `Runtime Error`,
+                          runtimeError map (_.error.getMessage),
+                          runtimeError map (_.error.getClass.getName),
+                          cis)
+                      case CompilationError(cis) =>
+                        EvalResponse(`Compilation Error`, None, None, cis)
+                      case GeneralError(err) =>
+                        EvalResponse(
+                          `Unforeseen Exception`,
+                          None,
+                          None,
+                          Map.empty)
+                    }
+                    Ok(response.asJson)
+                }
+              } else
+                BadRequest(
+                  s"Invalid compiler flags: ${invalidCompilerFlags.mkString(",")}")
           }
           .map((r: Response) => r.putHeaders(corsHeaders: _*))
     })
