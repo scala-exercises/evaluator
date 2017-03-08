@@ -162,12 +162,13 @@ class EvaluatorSpec extends FunSpec with Matchers {
       }
     }
 
-    describe("can evaluate code with a list of compiler flags provided") {
+    describe(
+      "can evaluate code with a list of allowed compiler flags provided") {
       val code = "{import cats._; Eval.now(42).value}"
 
       val dependencies = Dependency("org.typelevel", "cats_2.11", "0.6.0") :: Nil
 
-      val compilerFlags = List("-X", "-help")
+      val compilerFlags = List("-deprecation", "-feature")
 
       val result: EvalResult[Unit] = evaluator
         .eval(

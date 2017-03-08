@@ -212,20 +212,32 @@ class EvalEndpointSpec extends FunSpec with Matchers {
       )
     }
 
-    it("evaluates the code when a list of compilerFlags is provided") {
+    it("evaluates the code when a list of allowed compilerFlags is provided") {
       verifyEvalResponse(
         response = serve(
           EvalRequest(
             code = "{import cats._; Eval.now(42).value}",
             resolvers = sonatypeReleases,
             dependencies = Dependency("org.typelevel", "cats_2.11", "0.6.0") :: Nil,
-            compilerFlags = List("-optimise", "-help")
+            compilerFlags = List("-deprecation", "-feature")
           ),
           `X-Scala-Eval-Api-Token`(validToken)),
         expectedStatus = HttpStatus.Ok,
         expectedValue = Some("42"),
         expectedMessage = `ok`
       )
+    }
+
+    it("rejects requests with invalid compilerFlags") {
+      serve(
+        EvalRequest(
+          code = "1",
+          resolvers = Nil,
+          dependencies = Nil,
+          compilerFlags = List("-optimise", "-help")
+        ),
+        `X-Scala-Eval-Api-Token`(validToken)).status should be(
+        HttpStatus.BadRequest)
     }
 
   }
