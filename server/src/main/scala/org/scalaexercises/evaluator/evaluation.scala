@@ -76,6 +76,11 @@ class Evaluator(timeout: FiniteDuration = 20.seconds)(
         if (jars.nonEmpty) {
           val newJars = jars.mkString(File.pathSeparator)
           classpath.value = newJars + File.pathSeparator + classpath.value
+
+          (jars map (_.toString)).find(_.contains("paradise")) match {
+            case Some(compilerJar) => plugin.appendToValue(compilerJar)
+            case None              =>
+          }
         }
 
         processArguments(compilerFlags, processAll = true)
