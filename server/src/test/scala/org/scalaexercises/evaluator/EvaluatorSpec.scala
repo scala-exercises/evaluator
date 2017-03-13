@@ -113,26 +113,6 @@ class EvaluatorSpec extends FunSpec with Matchers {
 
       val dependencies = Dependency("org.typelevel", "cats_2.11", "0.6.0") :: Nil
 
-      val compilerFlags = Nil
-
-      val result: EvalResult[Unit] = evaluator
-        .eval(
-          code,
-          remotes = remotes,
-          dependencies = dependencies,
-          compilerFlags = compilerFlags)
-        .run
-
-      result should matchPattern {
-        case EvalSuccess(_, 42, _) =>
-      }
-    }
-
-    describe("can evaluate code without any compiler flags provided") {
-      val code = "{import cats._; Eval.now(42).value}"
-
-      val dependencies = Dependency("org.typelevel", "cats_2.11", "0.6.0") :: Nil
-
       val result: EvalResult[Unit] = evaluator
         .eval(code, remotes = remotes, dependencies = dependencies)
         .run
@@ -142,45 +122,5 @@ class EvaluatorSpec extends FunSpec with Matchers {
       }
     }
 
-    describe("can evaluate code with an empty list of compiler flags provided") {
-      val code = "{import cats._; Eval.now(42).value}"
-
-      val dependencies = Dependency("org.typelevel", "cats_2.11", "0.6.0") :: Nil
-
-      val compilerFlags = Nil
-
-      val result: EvalResult[Unit] = evaluator
-        .eval(
-          code,
-          remotes = remotes,
-          dependencies = dependencies,
-          compilerFlags = compilerFlags)
-        .run
-
-      result should matchPattern {
-        case EvalSuccess(_, 42, _) =>
-      }
-    }
-
-    describe(
-      "can evaluate code with a list of allowed compiler flags provided") {
-      val code = "{import cats._; Eval.now(42).value}"
-
-      val dependencies = Dependency("org.typelevel", "cats_2.11", "0.6.0") :: Nil
-
-      val compilerFlags = List("-deprecation", "-feature")
-
-      val result: EvalResult[Unit] = evaluator
-        .eval(
-          code,
-          remotes = remotes,
-          dependencies = dependencies,
-          compilerFlags = compilerFlags)
-        .run
-
-      result should matchPattern {
-        case EvalSuccess(_, 42, _) =>
-      }
-    }
   }
 }

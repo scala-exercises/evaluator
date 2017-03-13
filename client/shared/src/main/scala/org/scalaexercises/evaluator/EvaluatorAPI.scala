@@ -14,7 +14,6 @@ class EvaluatorAPI[F[_]](url: String, authKey: String)(
 
   def evaluates(resolvers: List[String] = Nil,
                 dependencies: List[Dependency] = Nil,
-                code: String,
-                compilerFlags: List[String] = Nil): Free[F, EvaluationResponse[EvalResponse]] =
-    O.evaluates(url, authKey, resolvers, dependencies, code, compilerFlags)
+                code: String): Free[F, EvaluationResponse[EvalResponse]] =
+    O.evaluates(url, authKey, resolvers, dependencies, code)
 }

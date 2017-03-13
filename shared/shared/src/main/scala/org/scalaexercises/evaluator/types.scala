@@ -46,8 +46,7 @@ final case class Dependency(groupId: String,
 
 final case class EvalRequest(resolvers: List[String] = Nil,
                              dependencies: List[Dependency] = Nil,
-                             code: String,
-                             compilerFlags: List[String] = Nil)
+                             code: String)
 
 final case class EvalResponse(msg: String,
                               value: Option[String] = None,

@@ -5,11 +5,11 @@
 
 package org.scalaexercises.evaluator.api
 
-import org.scalaexercises.evaluator.EvaluatorResponses.EvaluationResponse
-import org.scalaexercises.evaluator.{Decoders, Dependency, EvalRequest, EvalResponse}
-import org.scalaexercises.evaluator.http.HttpClient
 import io.circe.generic.auto._
 import io.circe.syntax._
+import org.scalaexercises.evaluator.EvaluatorResponses.EvaluationResponse
+import org.scalaexercises.evaluator.http.HttpClient
+import org.scalaexercises.evaluator.{Decoders, Dependency, EvalRequest, EvalResponse}
 
 import scala.concurrent.Future
 
@@ -23,11 +23,10 @@ class Evaluator {
            authKey: String,
            resolvers: List[String] = Nil,
            dependencies: List[Dependency] = Nil,
-           code: String,
-           compilerFlags: List[String] = Nil): Future[EvaluationResponse[EvalResponse]] =
+           code: String): Future[EvaluationResponse[EvalResponse]] =
     httpClient.post[EvalResponse](
       url = url,
       secretKey = authKey,
-      data = EvalRequest(resolvers, dependencies, code, compilerFlags).asJson.noSpaces)
+      data = EvalRequest(resolvers, dependencies, code).asJson.noSpaces)
 
 }

@@ -68,7 +68,7 @@ class Evaluator(timeout: FiniteDuration = 20.seconds)(
                   )
     } yield artifacts.sequenceU
 
-  def createEval(jars: Seq[File], compilerFlags: List[String]) = {
+  def createEval(jars: Seq[File]) = {
     new Eval(jars = jars.toList) {
       @volatile var errors: Map[String, List[CompilationInfo]] = Map.empty
 
@@ -82,8 +82,6 @@ class Evaluator(timeout: FiniteDuration = 20.seconds)(
             case None              =>
           }
         }
-
-        processArguments(compilerFlags, processAll = true)
       }
 
       override lazy val compilerMessageHandler: Option[Reporter] = Some(
@@ -103,10 +101,8 @@ class Evaluator(timeout: FiniteDuration = 20.seconds)(
     }
   }
 
-  private[this] def evaluate[T](code: String,
-                                jars: Seq[File],
-                                compilerFlags: List[String]): EvalResult[T] = {
-    val eval = createEval(jars, compilerFlags)
+  private[this] def evaluate[T](code: String, jars: Seq[File]): EvalResult[T] = {
+    val eval = createEval(jars)
 
     val result = for {
       _      ← Try(eval.check(code))
@@ -130,15 +126,14 @@ class Evaluator(timeout: FiniteDuration = 20.seconds)(
   def eval[T](
     code: String,
     remotes: Seq[Remote] = Nil,
-    dependencies: Seq[Dependency] = Nil,
-    compilerFlags: List[String] = Nil
+    dependencies: Seq[Dependency] = Nil
   ): Task[EvalResult[T]] = {
     for {
       allJars <- fetchArtifacts(remotes, dependencies)
       result <- allJars match {
                  case \/-(jars) =>
                    Task({
-                     evaluate(code, jars, compilerFlags)
+                     evaluate(code, jars)
                    }).timed(timeout)
                      .handle({
                        case err: TimeoutException => Timeout[T](timeout)

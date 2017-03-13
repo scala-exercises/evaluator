@@ -22,8 +22,8 @@ trait Interpreter {
       val evaluator = new Evaluator()
 
       def apply[A](fa: EvaluatorOp[A]): Future[A] = fa match {
-        case Evaluates(url, authKey, resolvers, dependencies, code, compilerFlags) ⇒
-          evaluator.eval(url, authKey, resolvers, dependencies, code, compilerFlags)
+        case Evaluates(url, authKey, resolvers, dependencies, code) ⇒
+          evaluator.eval(url, authKey, resolvers, dependencies, code)
       }
 
     }
