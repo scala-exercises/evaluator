@@ -5,23 +5,20 @@
 
 package org.scalaexercises.evaluator
 
+import monix.execution.Scheduler
 import org.http4s._
 import org.http4s.dsl._
-import org.http4s.server._
 import org.http4s.server.blaze._
 import org.log4s.getLogger
-import monix.execution.Scheduler
 
-import scala.language.postfixOps
-import scalaz.concurrent.Task
-import scalaz._
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
 object services {
 
+  import EvalResponse.messages._
   import codecs._
   import io.circe.generic.auto._
-  import EvalResponse.messages._
 
   private val logger = getLogger
 

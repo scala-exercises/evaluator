@@ -5,33 +5,28 @@
 
 package org.scalaexercises.evaluator
 
-import scala.language.reflectiveCalls
-
-import java.io.{File, InputStream}
-import java.net.URLClassLoader
-import java.nio.file.Path
-import java.util.jar.JarFile
-import java.util.concurrent.TimeoutException
-import java.security.MessageDigest
+import java.io.File
 import java.math.BigInteger
-
-import scala.tools.nsc.{Global, Settings}
-import scala.tools.nsc.reporters._
-import scala.tools.nsc.io.{VirtualDirectory, AbstractFile}
-import scala.reflect.internal.util.{Position, NoPosition, BatchSourceFile, AbstractFileClassLoader}
-
-import scalaz._; import Scalaz._
-import scala.util.Try
-import scala.util.control.NonFatal
-import scala.concurrent._
-import scala.concurrent.duration._
-import scalaz.concurrent.Task
-
-import monix.execution.Scheduler
+import java.net.URLClassLoader
+import java.security.MessageDigest
+import java.util.concurrent.TimeoutException
+import java.util.jar.JarFile
 
 import coursier._
+import monix.execution.Scheduler
+import org.scalaexercises.evaluator.Eval.CompilerException
 
-import org.scalaexercises.evaluator._
+import scala.concurrent.duration._
+import scala.language.reflectiveCalls
+import scala.reflect.internal.util.{AbstractFileClassLoader, BatchSourceFile, Position}
+import scala.tools.nsc.io.{AbstractFile, VirtualDirectory}
+import scala.tools.nsc.reporters._
+import scala.tools.nsc.{Global, Settings}
+import scala.util.Try
+import scala.util.control.NonFatal
+import scalaz.Scalaz._
+import scalaz._
+import scalaz.concurrent.Task
 
 class Evaluator(timeout: FiniteDuration = 20.seconds)(
   implicit S: Scheduler
@@ -78,9 +73,14 @@ class Evaluator(timeout: FiniteDuration = 20.seconds)(
       @volatile var errors: Map[String, List[CompilationInfo]] = Map.empty
 
       override lazy val compilerSettings: Settings = new EvalSettings(None) {
-        if (!jars.isEmpty) {
+        if (jars.nonEmpty) {
           val newJars = jars.mkString(File.pathSeparator)
           classpath.value = newJars + File.pathSeparator + classpath.value
+
+          (jars map (_.toString)).find(_.contains("paradise")) match {
+            case Some(compilerJar) => plugin.appendToValue(compilerJar)
+            case None              =>
+          }
         }
       }
 
@@ -115,7 +115,7 @@ class Evaluator(timeout: FiniteDuration = 20.seconds)(
       case scala.util.Success(r) ⇒ EvalSuccess[T](errors, r, "")
       case scala.util.Failure(t) ⇒
         t match {
-          case e: Eval.CompilerException ⇒ CompilationError(errors)
+          case e: CompilerException ⇒ CompilationError(errors)
           case NonFatal(e) ⇒
             EvalRuntimeError(errors, Option(RuntimeError(e, None)))
           case e ⇒ GeneralError(e)
@@ -253,7 +253,7 @@ private class StringCompiler(
         case _ =>
           List(List(reporter.toString))
       }
-      throw new Eval.CompilerException(msgs)
+      throw new CompilerException(msgs)
     }
   }
 

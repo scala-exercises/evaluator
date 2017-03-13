@@ -6,8 +6,8 @@
 package org.scalaexercises.evaluator.free.algebra
 
 import cats.free.{Free, Inject}
-import org.scalaexercises.evaluator.{Dependency, EvalResponse}
 import org.scalaexercises.evaluator.EvaluatorResponses.EvaluationResponse
+import org.scalaexercises.evaluator.{Dependency, EvalResponse}
 
 sealed trait EvaluatorOp[A]
 final case class Evaluates(url: String,

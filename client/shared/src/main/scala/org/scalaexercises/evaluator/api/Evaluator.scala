@@ -5,11 +5,11 @@
 
 package org.scalaexercises.evaluator.api
 
-import org.scalaexercises.evaluator.EvaluatorResponses.EvaluationResponse
-import org.scalaexercises.evaluator.{Decoders, Dependency, EvalRequest, EvalResponse}
-import org.scalaexercises.evaluator.http.HttpClient
 import io.circe.generic.auto._
 import io.circe.syntax._
+import org.scalaexercises.evaluator.EvaluatorResponses.EvaluationResponse
+import org.scalaexercises.evaluator.http.HttpClient
+import org.scalaexercises.evaluator.{Decoders, Dependency, EvalRequest, EvalResponse}
 
 import scala.concurrent.Future
 
