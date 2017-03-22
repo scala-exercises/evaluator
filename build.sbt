@@ -2,12 +2,16 @@ pgpPassphrase := Some(getEnvVar("PGP_PASSPHRASE").getOrElse("").toCharArray)
 pgpPublicRing := file(s"$gpgFolder/pubring.gpg")
 pgpSecretRing := file(s"$gpgFolder/secring.gpg")
 
+addCommandAlias(
+  "publishSignedAll",
+  ";evaluator-sharedJS/publishSigned;evaluator-sharedJVM/publishSigned;evaluator-clientJS/publishSigned;evaluator-clientJVM/publishSigned;evaluator-compiler/+publishSigned"
+)
+
 lazy val root = (project in file("."))
-  .settings(mainClass in Universal := Some("org.scalaexercises.evaluator.EvaluatorServer"))
-  .settings(stage <<= (stage in Universal in `evaluator-server`))
   .settings(noPublishSettings: _*)
   .aggregate(
     `evaluator-server`,
+    `evaluator-compiler`,
     `evaluator-shared-jvm`,
     `evaluator-shared-js`,
     `evaluator-client-jvm`,
@@ -42,7 +46,7 @@ lazy val `evaluator-client-jvm` = `evaluator-client`.jvm
 lazy val `evaluator-client-js`  = `evaluator-client`.js
 
 lazy val `evaluator-server` = (project in file("server"))
-  .dependsOn(`evaluator-shared-jvm`)
+  .dependsOn(`evaluator-shared-jvm`, `evaluator-compiler` % "test->test;compile->compile")
   .enablePlugins(JavaAppPackaging)
   .enablePlugins(AutomateHeaderPlugin)
   .enablePlugins(sbtdocker.DockerPlugin)
@@ -69,7 +73,15 @@ lazy val `evaluator-server` = (project in file("server"))
     assemblyJarName in assembly := "evaluator-server.jar"
   )
   .settings(dockerSettings)
-  .settings(scalaMacroDependencies: _*)
+
+lazy val `evaluator-compiler` = (project in file("compiler"))
+  .dependsOn(`evaluator-shared-jvm`)
+  .enablePlugins(AutomateHeaderPlugin)
+  .enablePlugins(BuildInfoPlugin)
+  .settings(
+    name := "evaluator-compiler"
+  )
+  .settings(compilerDependencySettings: _*)
 
 lazy val `smoketests` = (project in file("smoketests"))
   .dependsOn(`evaluator-server`)
@@ -85,30 +97,3 @@ lazy val `smoketests` = (project in file("smoketests"))
       %%("scalatest") % "test"
     )
   )
-
-onLoad in Global := (Command
-  .process("project evaluator-server", _: State)) compose (onLoad in Global).value
-addCommandAlias(
-  "publishSignedAll",
-  ";evaluator-sharedJS/publishSigned;evaluator-sharedJVM/publishSigned;evaluator-clientJS/publishSigned;evaluator-clientJVM/publishSigned"
-)
-
-lazy val dockerSettings = Seq(
-  docker <<= docker dependsOn assembly,
-  dockerfile in docker := {
-
-    val artifact: File     = assembly.value
-    val artifactTargetPath = artifact.name
-
-    sbtdocker.immutable.Dockerfile.empty
-      .from("ubuntu:latest")
-      .run("apt-get", "update")
-      .run("apt-get", "install", "-y", "openjdk-8-jdk")
-      .run("useradd", "-m", "evaluator")
-      .user("evaluator")
-      .add(artifact, artifactTargetPath)
-      .cmdRaw(
-        s"java -Dhttp.port=$$PORT -Deval.auth.secretKey=$$EVAL_SECRET_KEY -jar $artifactTargetPath")
-  },
-  imageNames in docker := Seq(ImageName(repository = "registry.heroku.com/scala-evaluator/web"))
-)
