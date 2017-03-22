@@ -1,5 +1,5 @@
 /*
- * scala-exercises-evaluator-shared
+ * scala-exercises - evaluator-shared
  * Copyright (C) 2015-2016 47 Degrees, LLC. <http://www.47deg.com>
  */
 
@@ -21,37 +21,32 @@ object EvalResult {
 
 import org.scalaexercises.evaluator.EvalResult._
 
-final case class EvalSuccess[A](compilationInfos: CI,
-                                result: A,
-                                consoleOutput: String)
+final case class EvalSuccess[A](compilationInfos: CI, result: A, consoleOutput: String)
     extends EvalResult[A]
 
 final case class Timeout[A](duration: FiniteDuration) extends EvalResult[A]
 
-final case class UnresolvedDependency[A](explanation: String)
+final case class UnresolvedDependency[A](explanation: String) extends EvalResult[A]
+
+final case class EvalRuntimeError[A](compilationInfos: CI, runtimeError: Option[RuntimeError])
     extends EvalResult[A]
 
-final case class EvalRuntimeError[A](compilationInfos: CI,
-                                     runtimeError: Option[RuntimeError])
-    extends EvalResult[A]
-
-final case class CompilationError[A](compilationInfos: CI)
-    extends EvalResult[A]
+final case class CompilationError[A](compilationInfos: CI) extends EvalResult[A]
 
 final case class GeneralError[A](stack: Throwable) extends EvalResult[A]
 
-final case class Dependency(groupId: String,
-                            artifactId: String,
-                            version: String)
+final case class Dependency(groupId: String, artifactId: String, version: String)
 
-final case class EvalRequest(resolvers: List[String] = Nil,
-                             dependencies: List[Dependency] = Nil,
-                             code: String)
+final case class EvalRequest(
+    resolvers: List[String] = Nil,
+    dependencies: List[Dependency] = Nil,
+    code: String)
 
-final case class EvalResponse(msg: String,
-                              value: Option[String] = None,
-                              valueType: Option[String] = None,
-                              compilationInfos: CI = Map.empty)
+final case class EvalResponse(
+    msg: String,
+    value: Option[String] = None,
+    valueType: Option[String] = None,
+    compilationInfos: CI = Map.empty)
 
 object EvalResponse {
 

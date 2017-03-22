@@ -1,5 +1,5 @@
 /*
- * scala-exercises-evaluator-client
+ * scala-exercises - evaluator-client
  * Copyright (C) 2015-2016 47 Degrees, LLC. <http://www.47deg.com>
  */
 
@@ -10,30 +10,30 @@ import org.scalaexercises.evaluator.EvaluatorResponses.EvaluationResponse
 import org.scalaexercises.evaluator.{Dependency, EvalResponse}
 
 sealed trait EvaluatorOp[A]
-final case class Evaluates(url: String,
-                           authKey: String,
-                           resolvers: List[String] = Nil,
-                           dependencies: List[Dependency] = Nil,
-                           code: String)
+final case class Evaluates(
+    url: String,
+    authKey: String,
+    resolvers: List[String] = Nil,
+    dependencies: List[Dependency] = Nil,
+    code: String)
     extends EvaluatorOp[EvaluationResponse[EvalResponse]]
 
 class EvaluatorOps[F[_]](implicit I: Inject[EvaluatorOp, F]) {
 
   def evaluates(
-    url: String,
-    authKey: String,
-    resolvers: List[String] = Nil,
-    dependencies: List[Dependency] = Nil,
-    code: String
+      url: String,
+      authKey: String,
+      resolvers: List[String] = Nil,
+      dependencies: List[Dependency] = Nil,
+      code: String
   ): Free[F, EvaluationResponse[EvalResponse]] =
-    Free.inject[EvaluatorOp, F](
-      Evaluates(url, authKey, resolvers, dependencies, code))
+    Free.inject[EvaluatorOp, F](Evaluates(url, authKey, resolvers, dependencies, code))
 
 }
 
 object EvaluatorOps {
 
-  implicit def instance[F[_]](
-    implicit I: Inject[EvaluatorOp, F]): EvaluatorOps[F] = new EvaluatorOps[F]
+  implicit def instance[F[_]](implicit I: Inject[EvaluatorOp, F]): EvaluatorOps[F] =
+    new EvaluatorOps[F]
 
 }

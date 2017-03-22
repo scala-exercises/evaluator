@@ -1,5 +1,5 @@
 /*
- * scala-exercises-evaluator-client
+ * scala-exercises - evaluator-client
  * Copyright (C) 2015-2016 47 Degrees, LLC. <http://www.47deg.com>
  */
 
@@ -16,10 +16,10 @@ import java.nio.ByteBuffer
 import monix.execution.Scheduler.Implicits.global
 
 case class HttpRequestBuilder(
-  url: String,
-  httpVerb: String,
-  headers: Headers = Map.empty[String, String],
-  body: String = ""
+    url: String,
+    httpVerb: String,
+    headers: Headers = Map.empty[String, String],
+    body: String = ""
 ) {
 
   case class CirceJSONBody(value: String) extends BulkBodyPart {

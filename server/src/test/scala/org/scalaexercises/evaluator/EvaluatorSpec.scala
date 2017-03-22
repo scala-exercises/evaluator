@@ -1,8 +1,7 @@
 /*
- * scala-exercises-evaluator-server
+ * scala-exercises - evaluator-server
  * Copyright (C) 2015-2016 47 Degrees, LLC. <http://www.47deg.com>
  */
-
 package org.scalaexercises.evaluator
 
 import monix.execution.Scheduler
@@ -75,10 +74,7 @@ class EvaluatorSpec extends FunSpec with Matchers {
     describe("can run code from the exercises content") {
       val code = "{import stdlib._; Asserts.scalaTestAsserts(true)}"
 
-      val dependencies = Dependency(
-          "org.scala-exercises",
-          "exercises-stdlib_2.11",
-          "0.2.0") :: Nil
+      val dependencies = Dependency("org.scala-exercises", "exercises-stdlib_2.11", "0.2.0") :: Nil
 
       val result: EvalResult[Unit] = evaluator
         .eval(code, remotes = remotes, dependencies = dependencies)
@@ -92,19 +88,14 @@ class EvaluatorSpec extends FunSpec with Matchers {
     describe("captures exceptions when running the exercises content") {
       val code = "{import stdlib._; Asserts.scalaTestAsserts(false)}"
 
-      val dependencies = Dependency(
-          "org.scala-exercises",
-          "exercises-stdlib_2.11",
-          "0.2.0") :: Nil
+      val dependencies = Dependency("org.scala-exercises", "exercises-stdlib_2.11", "0.2.0") :: Nil
 
       val result: EvalResult[Unit] = evaluator
         .eval(code, remotes = remotes, dependencies = dependencies)
         .run
 
       result should matchPattern {
-        case EvalRuntimeError(
-            _,
-            Some(RuntimeError(err: TestFailedException, _))) =>
+        case EvalRuntimeError(_, Some(RuntimeError(err: TestFailedException, _))) =>
       }
     }
 
