@@ -1,5 +1,5 @@
 /*
- * scala-exercises-evaluator-client
+ * scala-exercises - evaluator-client
  * Copyright (C) 2015-2016 47 Degrees, LLC. <http://www.47deg.com>
  */
 
@@ -19,11 +19,12 @@ class Evaluator {
 
   private val httpClient = new HttpClient
 
-  def eval(url: String,
-           authKey: String,
-           resolvers: List[String] = Nil,
-           dependencies: List[Dependency] = Nil,
-           code: String): Future[EvaluationResponse[EvalResponse]] =
+  def eval(
+      url: String,
+      authKey: String,
+      resolvers: List[String] = Nil,
+      dependencies: List[Dependency] = Nil,
+      code: String): Future[EvaluationResponse[EvalResponse]] =
     httpClient.post[EvalResponse](
       url = url,
       secretKey = authKey,

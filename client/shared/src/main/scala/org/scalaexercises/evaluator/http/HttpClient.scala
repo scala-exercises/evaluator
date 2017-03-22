@@ -1,5 +1,5 @@
 /*
- * scala-exercises-evaluator-client
+ * scala-exercises - evaluator-client
  * Copyright (C) 2015-2016 47 Degrees, LLC. <http://www.47deg.com>
  */
 
@@ -22,11 +22,11 @@ class HttpClient {
 
   import HttpClient._
   def post[A](
-    url: String,
-    secretKey: String,
-    method: String = "post",
-    headers: Headers = Map.empty,
-    data: String
+      url: String,
+      secretKey: String,
+      method: String = "post",
+      headers: Headers = Map.empty,
+      data: String
   )(implicit D: Decoder[A]): Future[EvaluationResponse[A]] =
     EvaluatorResponses.toEntity(
       HttpRequestBuilder(url = url, httpVerb = method)

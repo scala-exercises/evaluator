@@ -1,16 +1,14 @@
 /*
- * scala-exercises-evaluator-client
+ * scala-exercises - evaluator-client
  * Copyright (C) 2015-2016 47 Degrees, LLC. <http://www.47deg.com>
  */
 
 package org.scalaexercises.evaluator
 
-import cats.data.Xor
 import cats.free.Free
 import cats.implicits._
 import io.circe.Decoder
 import io.circe.parser._
-import io.circe.generic.auto._
 import org.scalaexercises.evaluator.free.algebra.EvaluatorOp
 
 import scala.concurrent.Future
@@ -24,31 +22,26 @@ object EvaluatorResponses {
 
   type EvaluationResponse[A] = Either[EvaluationException, EvaluationResult[A]]
 
-  case class EvaluationResult[A](result: A,
-                                 statusCode: Int,
-                                 headers: Map[String, String])
+  case class EvaluationResult[A](result: A, statusCode: Int, headers: Map[String, String])
 
-  sealed abstract class EvaluationException(msg: String,
-                                            cause: Option[Throwable] = None)
+  sealed abstract class EvaluationException(msg: String, cause: Option[Throwable] = None)
       extends Throwable(msg) {
     cause foreach initCause
   }
 
-  case class JsonParsingException(msg: String, json: String)
-      extends EvaluationException(msg)
+  case class JsonParsingException(msg: String, json: String) extends EvaluationException(msg)
 
   case class UnexpectedException(msg: String) extends EvaluationException(msg)
 
   def toEntity[A](futureResponse: Future[SimpleHttpResponse])(
-    implicit D: Decoder[A]): Future[EvaluationResponse[A]] =
+      implicit D: Decoder[A]): Future[EvaluationResponse[A]] =
     futureResponse map {
       case r if isSuccess(r.statusCode) ⇒
         decode[A](r.body) match {
-          case Xor.Left(e) =>
+          case Left(e) =>
             Either.left(JsonParsingException(e.getMessage, r.body))
-          case Xor.Right(result) =>
-            Either.right(
-              EvaluationResult(result, r.statusCode, r.headers.toLowerCase))
+          case Right(result) =>
+            Either.right(EvaluationResult(result, r.statusCode, r.headers.toLowerCase))
         }
       case r ⇒
         Either.left(
