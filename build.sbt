@@ -85,6 +85,7 @@ lazy val `evaluator-compiler` = (project in file("compiler"))
 
 lazy val `smoketests` = (project in file("smoketests"))
   .dependsOn(`evaluator-server`)
+  .settings(noPublishSettings: _*)
   .settings(
     name := "evaluator-server-smoke-tests",
     libraryDependencies ++= Seq(
