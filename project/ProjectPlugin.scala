@@ -6,7 +6,7 @@ import sbtorgpolicies._
 import sbtorgpolicies.OrgPoliciesPlugin.autoImport._
 import sbtorgpolicies.model._
 
-object EvaluatorBuild extends AutoPlugin {
+object ProjectPlugin extends AutoPlugin {
 
   override def trigger: PluginTrigger = allRequirements
 
@@ -25,15 +25,16 @@ object EvaluatorBuild extends AutoPlugin {
         Resolver.mavenLocal,
         Resolver.sonatypeRepo("snapshots"),
         Resolver.sonatypeRepo("releases")),
-      orgGithubSettings := GitHubSettings(
+      orgGithubSetting := GitHubSettings(
         organization = "scala-exercises",
         project = name.value,
         organizationName = "Scala Exercises",
         groupId = "org.scala-exercises",
         organizationHomePage = url("https://www.scala-exercises.org"),
-        organizationEmail = "hello@47deg.com",
-        license = ApacheLicense
+        organizationEmail = "hello@47deg.com"
       ),
+      orgLicenseSetting := ApacheLicense,
+      scalaVersion := "2.11.8",
       scalaOrganization := "org.scala-lang",
       javacOptions ++= Seq("-encoding", "UTF-8", "-Xlint:-options"),
       fork in Test := false,
