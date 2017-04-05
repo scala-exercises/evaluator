@@ -4,7 +4,6 @@ services:
 - docker
 scala:
 - 2.11.8
-- 2.12.1
 jdk:
 - oraclejdk8
 cache:
@@ -15,7 +14,7 @@ cache:
 env:
   global: JAVA_OPTS=-Xmx2g SBT_OPTS="-XX:+UseConcMarkSweepGC -XX:MaxPermSize=512m"
 script:
-- sbt ++$TRAVIS_SCALA_VERSION test
+- sbt test
 
 before_install:
 - if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" ]; then
@@ -23,18 +22,11 @@ before_install:
   fi
 
 after_success:
-- if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" -a "$TRAVIS_SCALA_VERSION" = "2.11.8" ]; then
+- if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" ]; then
      sbt publishSignedAll;
      echo "Deploying to Heroku";
      docker login --username=noel.m@47deg.com --password=$heroku_token registry.heroku.com;
      sbt dockerBuildAndPush;
-     sbt smoketests/test;
-  fi
-- if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" -a "$TRAVIS_SCALA_VERSION" = "2.12.1" ]; then
-     sbt -Devaluator.heroku.name=scala-evaluator-212 publishSignedAll;
-     echo "Deploying to Heroku";
-     docker login --username=noel.m@47deg.com --password=$heroku_token registry.heroku.com;
-     sbt -Devaluator.heroku.name=scala-evaluator-212 dockerBuildAndPush;
      sbt smoketests/test;
   fi
 - if [ "$TRAVIS_PULL_REQUEST" = "true" ]; then

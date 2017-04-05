@@ -1,12 +1,12 @@
 /*
- * scala-exercises - evaluator-server
+ * scala-exercises-evaluator-server
  * Copyright (C) 2015-2016 47 Degrees, LLC. <http://www.47deg.com>
  */
 
 package org.scalaexercises.evaluator
 
 import org.http4s._, org.http4s.dsl._
-import io.circe.{Decoder, Encoder, Json, Printer}
+import io.circe.{Encoder, Decoder, Json, Printer}
 import org.http4s.headers.`Content-Type`
 import io.circe.jawn.CirceSupportParser.facade
 
@@ -15,14 +15,17 @@ trait Http4sCodecInstances {
 
   implicit val jsonDecoder: EntityDecoder[Json] = jawn.jawnDecoder(facade)
 
-  implicit def jsonDecoderOf[A](implicit decoder: Decoder[A]): EntityDecoder[A] =
+  implicit def jsonDecoderOf[A](
+    implicit decoder: Decoder[A]): EntityDecoder[A] =
     jsonDecoder.flatMapR { json =>
       decoder
         .decodeJson(json)
         .fold(
           failure =>
             DecodeResult.failure(
-              InvalidMessageBodyFailure(s"Could not decode JSON: $json", Some(failure))),
+              InvalidMessageBodyFailure(
+                s"Could not decode JSON: $json",
+                Some(failure))),
           DecodeResult.success(_)
         )
     }
@@ -33,7 +36,8 @@ trait Http4sCodecInstances {
     }
     .withContentType(`Content-Type`(MediaType.`application/json`))
 
-  implicit def jsonEncoderOf[A](implicit encoder: Encoder[A]): EntityEncoder[A] =
+  implicit def jsonEncoderOf[A](
+    implicit encoder: Encoder[A]): EntityEncoder[A] =
     jsonEntityEncoder.contramap[A](encoder.apply)
 
 }
