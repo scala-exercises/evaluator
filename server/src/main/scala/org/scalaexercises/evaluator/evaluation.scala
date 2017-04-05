@@ -138,15 +138,15 @@ class Evaluator(timeout: FiniteDuration = 20.seconds)(
 }
 
 /**
-  * The code in this file was taken and only slightly modified from
-  *
-  * https://github.com/twitter/util/blob/302235a473d20735e5327d785e19b0f489b4a59f/util-eval/src/main/scala/com/twitter/util/Eval.scala
-  *
-  * Twitter, Inc.
-  *
-  * Dynamic scala compiler. Lots of (slow) state is created, so it may be advantageous to keep
-  * around one of these and reuse it.
-  */
+ * The code in this file was taken and only slightly modified from
+ *
+ * https://github.com/twitter/util/blob/302235a473d20735e5327d785e19b0f489b4a59f/util-eval/src/main/scala/com/twitter/util/Eval.scala
+ *
+ * Twitter, Inc.
+ *
+ * Dynamic scala compiler. Lots of (slow) state is created, so it may be advantageous to keep
+ * around one of these and reuse it.
+ */
 private class StringCompiler(
     lineOffset: Int,
     targetDir: Option[File],
@@ -270,25 +270,25 @@ private class StringCompiler(
 }
 
 /**
-  * The code in this file was taken and only slightly modified from
-  *
-  * https://github.com/twitter/util/blob/302235a473d20735e5327d785e19b0f489b4a59f/util-eval/src/main/scala/com/twitter/util/Eval.scala
-  *
-  * Twitter, Inc.
-  *
-  * Evaluates files, strings, or input streams as Scala code, and returns the result.
-  *
-  * If `target` is `None`, the results are compiled to memory (and are therefore ephemeral). If
-  * `target` is `Some(path)`, the path must point to a directory, and classes will be saved into
-  * that directory. You can optionally pass a list of JARs to include to the classpath during
-  * compilation and evaluation.
-  *
-  * The flow of evaluation is:
-  * - wrap code in an `apply` method in a generated class
-  * - compile the class adding the jars to the classpath
-  * - contruct an instance of that class
-  * - return the result of `apply()`
-  */
+ * The code in this file was taken and only slightly modified from
+ *
+ * https://github.com/twitter/util/blob/302235a473d20735e5327d785e19b0f489b4a59f/util-eval/src/main/scala/com/twitter/util/Eval.scala
+ *
+ * Twitter, Inc.
+ *
+ * Evaluates files, strings, or input streams as Scala code, and returns the result.
+ *
+ * If `target` is `None`, the results are compiled to memory (and are therefore ephemeral). If
+ * `target` is `Some(path)`, the path must point to a directory, and classes will be saved into
+ * that directory. You can optionally pass a list of JARs to include to the classpath during
+ * compilation and evaluation.
+ *
+ * The flow of evaluation is:
+ * - wrap code in an `apply` method in a generated class
+ * - compile the class adding the jars to the classpath
+ * - contruct an instance of that class
+ * - return the result of `apply()`
+ */
 class Eval(target: Option[File] = None, jars: List[File] = Nil) {
   private lazy val compilerPath = try {
     classPathOfClass("scala.tools.nsc.Interpreter")

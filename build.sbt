@@ -1,7 +1,3 @@
-pgpPassphrase := Some(getEnvVar("PGP_PASSPHRASE").getOrElse("").toCharArray)
-pgpPublicRing := file(s"$gpgFolder/pubring.gpg")
-pgpSecretRing := file(s"$gpgFolder/secring.gpg")
-
 lazy val root = (project in file("."))
   .settings(mainClass in Universal := Some("org.scalaexercises.evaluator.EvaluatorServer"))
   .settings(stage <<= (stage in Universal in `evaluator-server`))
@@ -94,22 +90,6 @@ addCommandAlias(
   ";evaluator-sharedJS/publishSigned;evaluator-sharedJVM/publishSigned;evaluator-clientJS/publishSigned;evaluator-clientJVM/publishSigned"
 )
 
-lazy val dockerSettings = Seq(
-  docker <<= docker dependsOn assembly,
-  dockerfile in docker := {
-
-    val artifact: File     = assembly.value
-    val artifactTargetPath = artifact.name
-
-    sbtdocker.immutable.Dockerfile.empty
-      .from("ubuntu:latest")
-      .run("apt-get", "update")
-      .run("apt-get", "install", "-y", "openjdk-8-jdk")
-      .run("useradd", "-m", "evaluator")
-      .user("evaluator")
-      .add(artifact, artifactTargetPath)
-      .cmdRaw(
-        s"java -Dhttp.port=$$PORT -Deval.auth.secretKey=$$EVAL_SECRET_KEY -jar $artifactTargetPath")
-  },
-  imageNames in docker := Seq(ImageName(repository = s"registry.heroku.com/${sys.props.getOrElse("evaluator.heroku.name", "scala-evaluator")}/web"))
-)
+pgpPassphrase := Some(getEnvVar("PGP_PASSPHRASE").getOrElse("").toCharArray)
+pgpPublicRing := file(s"$gpgFolder/pubring.gpg")
+pgpSecretRing := file(s"$gpgFolder/secring.gpg")

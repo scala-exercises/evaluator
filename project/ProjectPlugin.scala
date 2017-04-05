@@ -1,7 +1,7 @@
 import de.heikoseeberger.sbtheader.{HeaderPattern, HeaderPlugin}
 import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
 import sbt.Keys._
-import sbt._
+import sbt.{Def, _}
 import sbtassembly.AssemblyPlugin.autoImport.assembly
 import sbtbuildinfo.BuildInfoKey
 import sbtbuildinfo.BuildInfoKeys.{buildInfoKeys, buildInfoPackage}
@@ -18,20 +18,6 @@ object ProjectPlugin extends AutoPlugin {
 
   object autoImport {
     lazy val http4sV = "0.15.7a"
-
-    def compilerDependencySettings = scalaMacroDependencies ++ Seq(
-      libraryDependencies ++= Seq(
-        %%("monix"),
-        %%("log4s"),
-        %("slf4j-simple"),
-        "io.get-coursier"      %% "coursier" % "1.0.0-M15-3",
-        "io.get-coursier"      %% "coursier-cache" % "1.0.0-M15-3",
-        "org.xeustechnologies" % "jcl-core" % "2.8",
-        %%("scalatest")        % "test"
-      ),
-      buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
-      buildInfoPackage := "org.scalaexercises.evaluator"
-    )
 
     lazy val dockerSettings = Seq(
       docker <<= docker dependsOn assembly,
@@ -56,7 +42,7 @@ object ProjectPlugin extends AutoPlugin {
 
   }
 
-  override def projectSettings =
+  override def projectSettings: Seq[Def.Setting[_]] =
     Seq(
       name := "evaluator",
       description := "Scala Exercises: The path to enlightenment",
