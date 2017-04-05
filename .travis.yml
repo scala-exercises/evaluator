@@ -24,18 +24,18 @@ before_install:
 
 after_success:
 - if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" -a "$TRAVIS_SCALA_VERSION" = "2.11.8" ]; then
-     sbt publishSignedAll;
+     sbt ++$TRAVIS_SCALA_VERSION publishSignedAll;
      echo "Deploying to Heroku";
      docker login --username=noel.m@47deg.com --password=$heroku_token registry.heroku.com;
-     sbt dockerBuildAndPush;
-     sbt smoketests/test;
+     sbt ++$TRAVIS_SCALA_VERSION dockerBuildAndPush;
+     sbt ++$TRAVIS_SCALA_VERSION smoketests/test;
   fi
 - if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" -a "$TRAVIS_SCALA_VERSION" = "2.12.1" ]; then
-     sbt -Devaluator.heroku.name=scala-evaluator-212 publishSignedAll;
+     sbt ++$TRAVIS_SCALA_VERSION publishSignedAll;
      echo "Deploying to Heroku";
      docker login --username=noel.m@47deg.com --password=$heroku_token registry.heroku.com;
-     sbt -Devaluator.heroku.name=scala-evaluator-212 dockerBuildAndPush;
-     sbt smoketests/test;
+     sbt ++$TRAVIS_SCALA_VERSION -Devaluator.heroku.name=scala-evaluator-212 dockerBuildAndPush;
+     sbt ++$TRAVIS_SCALA_VERSION smoketests/test;
   fi
 - if [ "$TRAVIS_PULL_REQUEST" = "true" ]; then
      echo "Not in master branch, skipping deploy and release";
