@@ -68,7 +68,7 @@ lazy val `evaluator-server` = (project in file("server"))
     buildInfoPackage := "org.scalaexercises.evaluator"
   )
   .settings(dockerSettings)
-  .settings(scalaMacroDependencies: _*)
+  .settings(serverScalaMacroDependencies: _*)
 
 lazy val `smoketests` = (project in file("smoketests"))
   .dependsOn(`evaluator-server`)

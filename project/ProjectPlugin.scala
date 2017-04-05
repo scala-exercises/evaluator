@@ -40,6 +40,25 @@ object ProjectPlugin extends AutoPlugin {
         s"registry.heroku.com/${sys.props.getOrElse("evaluator.heroku.name", "scala-evaluator")}/web"))
     )
 
+    lazy val serverScalaMacroDependencies: Seq[Setting[_]] = {
+      Seq(
+        libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
+        libraryDependencies += "org.scala-lang" % "scala-reflect"  % scalaVersion.value,
+        libraryDependencies += compilerPlugin(%%("paradise") cross CrossVersion.full),
+        libraryDependencies ++= {
+          CrossVersion.partialVersion(scalaVersion.value) match {
+            // if scala 2.11+ is used, quasiquotes are merged into scala-reflect
+            case Some((2, scalaMajor)) if scalaMajor >= 11 => Seq()
+            // in Scala 2.10, quasiquotes are provided by macro paradise
+            case Some((2, 10)) =>
+              Seq(
+                %%("quasiquotes") cross CrossVersion.binary
+              )
+          }
+        }
+      )
+    }
+
   }
 
   override def projectSettings: Seq[Def.Setting[_]] =
