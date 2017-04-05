@@ -1,5 +1,5 @@
 /*
- * scala-exercises - evaluator-client
+ * scala-exercises-evaluator-client
  * Copyright (C) 2015-2016 47 Degrees, LLC. <http://www.47deg.com>
  */
 
@@ -14,8 +14,8 @@ import scala.concurrent.Future
 trait Interpreter {
 
   /**
-   * Lifts Evaluator Ops to an effect capturing Monad such as Task via natural transformations
-   */
+    * Lifts Evaluator Ops to an effect capturing Monad such as Task via natural transformations
+    */
   implicit def evaluatorOpsInterpreter: EvaluatorOp ~> Future =
     new (EvaluatorOp ~> Future) {
 
