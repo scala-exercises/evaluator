@@ -24,8 +24,8 @@ object ProjectPlugin extends AutoPlugin {
         %%("monix"),
         %%("log4s"),
         %("slf4j-simple"),
-        %%("coursier"),
-        %%("coursier-cache"),
+        "io.get-coursier"      %% "coursier" % "1.0.0-M15-3",
+        "io.get-coursier"      %% "coursier-cache" % "1.0.0-M15-3",
         "org.xeustechnologies" % "jcl-core" % "2.8",
         %%("scalatest")        % "test"
       ),

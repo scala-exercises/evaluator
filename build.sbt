@@ -66,9 +66,9 @@ lazy val `evaluator-server` = (project in file("server"))
       %%("http4s-circe", http4sV),
       %("config"),
       %%("jwt-core"),
-      %%("coursier"),
-      %%("coursier-cache"),
-      %%("scalatest") % "test"
+      "io.get-coursier" %% "coursier" % "1.0.0-M15-3",
+      "io.get-coursier" %% "coursier-cache" % "1.0.0-M15-3",
+      %%("scalatest")   % "test"
     ),
     assemblyJarName in assembly := "evaluator-server.jar"
   )
