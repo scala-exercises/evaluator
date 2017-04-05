@@ -1,0 +1,21 @@
+{
+  "name": "evaluator",
+  "description": "",
+  "scripts": {
+  },
+  "env": {
+    "EVAL_SECRET_KEY": {
+      "required": true
+    }
+  },
+  "formation": {
+  },
+  "addons": [
+
+  ],
+  "buildpacks": [
+    {
+      "url": "heroku/scala"
+    }
+  ]
+}
