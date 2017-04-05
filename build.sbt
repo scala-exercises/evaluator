@@ -42,6 +42,7 @@ lazy val `evaluator-server` = (project in file("server"))
   .enablePlugins(JavaAppPackaging)
   .enablePlugins(AutomateHeaderPlugin)
   .enablePlugins(sbtdocker.DockerPlugin)
+  .enablePlugins(BuildInfoPlugin)
   .settings(noPublishSettings: _*)
   .settings(
     name := "evaluator-server",
@@ -62,7 +63,9 @@ lazy val `evaluator-server` = (project in file("server"))
       "io.get-coursier" %% "coursier-cache" % "1.0.0-M15-3",
       %%("scalatest")   % "test"
     ),
-    assemblyJarName in assembly := "evaluator-server.jar"
+    assemblyJarName in assembly := "evaluator-server.jar",
+    buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
+    buildInfoPackage := "org.scalaexercises.evaluator"
   )
   .settings(dockerSettings)
   .settings(scalaMacroDependencies: _*)
