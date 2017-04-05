@@ -1,5 +1,5 @@
 /*
- * scala-exercises-evaluator-server
+ * scala-exercises - evaluator-server
  * Copyright (C) 2015-2016 47 Degrees, LLC. <http://www.47deg.com>
  */
 
@@ -12,6 +12,7 @@ import io.circe.syntax._
 import org.http4s.dsl._
 import org.http4s.headers._
 import org.http4s.{Status => HttpStatus, _}
+import org.scalaexercises.evaluator.helper._
 import org.scalatest._
 import pdi.jwt.{Jwt, JwtAlgorithm}
 import scodec.bits.ByteVector
@@ -25,16 +26,12 @@ class EvalEndpointSpec extends FunSpec with Matchers {
   import codecs._
   import services._
 
-  val sonatypeReleases = "https://oss.sonatype.org/content/repositories/releases/" :: Nil
+  val validToken: String =
+    Jwt.encode("""{"user": "scala-exercises"}""", auth.secretKey, JwtAlgorithm.HS256)
 
-  val validToken = Jwt.encode(
-    """{"user": "scala-exercises"}""",
-    auth.secretKey,
-    JwtAlgorithm.HS256)
+  val invalidToken: String = java.util.UUID.randomUUID.toString
 
-  val invalidToken = java.util.UUID.randomUUID.toString
-
-  def serve(evalRequest: EvalRequest, authHeader: Header) =
+  def serve(evalRequest: EvalRequest, authHeader: Header): Response =
     evalService
       .run(
         Request(
@@ -46,17 +43,17 @@ class EvalEndpointSpec extends FunSpec with Matchers {
             )
           )
         ).putHeaders(authHeader))
-      .run
+      .unsafePerformSync
 
   def verifyEvalResponse(
-    response: Response,
-    expectedStatus: HttpStatus,
-    expectedValue: Option[String] = None,
-    expectedMessage: String
-  ) = {
+      response: Response,
+      expectedStatus: HttpStatus,
+      expectedValue: Option[String] = None,
+      expectedMessage: String
+  ): Assertion = {
 
     response.status should be(expectedStatus)
-    val evalResponse = response.as[EvalResponse].run
+    val evalResponse = response.as[EvalResponse].unsafePerformSync
     evalResponse.value should be(expectedValue)
     evalResponse.msg should be(expectedMessage)
   }
@@ -65,7 +62,10 @@ class EvalEndpointSpec extends FunSpec with Matchers {
     it("can evaluate simple expressions") {
       verifyEvalResponse(
         response = serve(
-          EvalRequest(code = "{ 41 + 1 }"),
+          EvalRequest(
+            code = "{ 41 + 1 }",
+            resolvers = commonResolvers,
+            dependencies = scalaDependencies(Scala211)),
           `X-Scala-Eval-Api-Token`(validToken)),
         expectedStatus = HttpStatus.Ok,
         expectedValue = Some("42"),
@@ -76,7 +76,10 @@ class EvalEndpointSpec extends FunSpec with Matchers {
     it("fails with a timeout when takes longer than the configured timeout") {
       verifyEvalResponse(
         response = serve(
-          EvalRequest(code = "{ while(true) {}; 123 }"),
+          EvalRequest(
+            code = "{ while(true) {}; 123 }",
+            resolvers = commonResolvers,
+            dependencies = scalaDependencies(Scala211)),
           `X-Scala-Eval-Api-Token`(validToken)),
         expectedStatus = HttpStatus.Ok,
         expectedValue = None,
@@ -89,10 +92,12 @@ class EvalEndpointSpec extends FunSpec with Matchers {
         response = serve(
           EvalRequest(
             code = "{import cats._; Eval.now(42).value}",
-            resolvers = sonatypeReleases,
-            dependencies = Dependency("org.typelevel", "cats_2.11", "0.6.0") :: Nil
+            resolvers = commonResolvers,
+            dependencies = List(Dependency("org.typelevel", "cats_2.11", "0.6.0")) ++ scalaDependencies(
+              Scala211)
           ),
-          `X-Scala-Eval-Api-Token`(validToken)),
+          `X-Scala-Eval-Api-Token`(validToken)
+        ),
         expectedStatus = HttpStatus.Ok,
         expectedValue = Some("42"),
         expectedMessage = `ok`
@@ -101,21 +106,19 @@ class EvalEndpointSpec extends FunSpec with Matchers {
 
     it("can load different versions of a dependency across evaluations") {
       val code      = "{import cats._; Eval.now(42).value}"
-      val resolvers = sonatypeReleases
+      val resolvers = commonResolvers
 
       List("0.6.0", "0.4.1") foreach { version =>
         verifyEvalResponse(
-          response =
-            serve(
-              EvalRequest(
-                code = code,
-                resolvers = resolvers,
-                dependencies = Dependency(
-                    "org.typelevel",
-                    "cats_2.11",
-                    version) :: Nil
-              ),
-              `X-Scala-Eval-Api-Token`(validToken)),
+          response = serve(
+            EvalRequest(
+              code = code,
+              resolvers = resolvers,
+              dependencies = List(Dependency("org.typelevel", "cats_2.11", "0.6.0")) ++ scalaDependencies(
+                Scala211)
+            ),
+            `X-Scala-Eval-Api-Token`(validToken)
+          ),
           expectedStatus = HttpStatus.Ok,
           expectedValue = Some("42"),
           expectedMessage = `ok`
@@ -125,17 +128,19 @@ class EvalEndpointSpec extends FunSpec with Matchers {
     }
 
     it("can run code from the exercises content") {
+
       verifyEvalResponse(
         response = serve(
           EvalRequest(
-            code = "{import stdlib._; Asserts.scalaTestAsserts(true)}",
-            resolvers = sonatypeReleases,
-            dependencies = Dependency(
-                "org.scala-exercises",
-                "exercises-stdlib_2.11",
-                "0.2.0") :: Nil
+            code = exerciseContentCode(true),
+            resolvers = commonResolvers,
+            dependencies = List(Dependency(
+              "org.scala-exercises",
+              "exercises-stdlib_2.11",
+              exercisesVersion)) ++ scalaDependencies(Scala211)
           ),
-          `X-Scala-Eval-Api-Token`(validToken)),
+          `X-Scala-Eval-Api-Token`(validToken)
+        ),
         expectedStatus = HttpStatus.Ok,
         expectedValue = Some("()"),
         expectedMessage = `ok`
@@ -146,14 +151,15 @@ class EvalEndpointSpec extends FunSpec with Matchers {
       verifyEvalResponse(
         response = serve(
           EvalRequest(
-            code = "{import stdlib._; Asserts.scalaTestAsserts(false)}",
-            resolvers = sonatypeReleases,
-            dependencies = Dependency(
-                "org.scala-exercises",
-                "exercises-stdlib_2.11",
-                "0.2.0") :: Nil
+            code = exerciseContentCode(false),
+            resolvers = commonResolvers,
+            dependencies = List(Dependency(
+              "org.scala-exercises",
+              "exercises-stdlib_2.11",
+              exercisesVersion)) ++ scalaDependencies(Scala211)
           ),
-          `X-Scala-Eval-Api-Token`(validToken)),
+          `X-Scala-Eval-Api-Token`(validToken)
+        ),
         expectedStatus = HttpStatus.Ok,
         expectedValue = Some("true was not false"),
         expectedMessage = `Runtime Error`
@@ -167,8 +173,7 @@ class EvalEndpointSpec extends FunSpec with Matchers {
           resolvers = Nil,
           dependencies = Nil
         ),
-        `X-Scala-Eval-Api-Token`(invalidToken)).status should be(
-        HttpStatus.Unauthorized)
+        `X-Scala-Eval-Api-Token`(invalidToken)).status should be(HttpStatus.Unauthorized)
     }
 
     it("rejects requests with missing tokens") {

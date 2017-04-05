@@ -1,5 +1,5 @@
 /*
- * scala-exercises-evaluator-server
+ * scala-exercises - evaluator-server
  * Copyright (C) 2015-2016 47 Degrees, LLC. <http://www.47deg.com>
  */
 
@@ -30,10 +30,9 @@ object services {
     Header("Vary", "Origin,Access-Control-Request-Methods"),
     Header("Access-Control-Allow-Methods", "POST"),
     Header("Access-Control-Allow-Origin", "*"),
-    Header(
-      "Access-Control-Allow-Headers",
-      "x-scala-eval-api-token, Content-Type"),
-    Header("Access-Control-Max-Age", 1.day.toSeconds.toString()))
+    Header("Access-Control-Allow-Headers", "x-scala-eval-api-token, Content-Type"),
+    Header("Access-Control-Max-Age", 1.day.toSeconds.toString())
+  )
 
   def evalService =
     auth(HttpService {
@@ -58,11 +57,7 @@ object services {
                     case Timeout(_) =>
                       EvalResponse(`Timeout Exceded`, None, None, Map.empty)
                     case UnresolvedDependency(msg) =>
-                      EvalResponse(
-                        `Unresolved Dependency` + " : " + msg,
-                        None,
-                        None,
-                        Map.empty)
+                      EvalResponse(`Unresolved Dependency` + " : " + msg, None, None, Map.empty)
                     case EvalRuntimeError(cis, runtimeError) =>
                       EvalResponse(
                         `Runtime Error`,
@@ -72,11 +67,7 @@ object services {
                     case CompilationError(cis) =>
                       EvalResponse(`Compilation Error`, None, None, cis)
                     case GeneralError(err) =>
-                      EvalResponse(
-                        `Unforeseen Exception`,
-                        None,
-                        None,
-                        Map.empty)
+                      EvalResponse(`Unforeseen Exception`, None, None, Map.empty)
                   }
                   Ok(response.asJson)
               }
@@ -110,7 +101,7 @@ object EvaluatorServer extends App {
   val ip = Option(System.getenv("HOST")).getOrElse("0.0.0.0")
 
   val port = (Option(System.getenv("PORT")) orElse
-        Option(System.getProperty("http.port"))).map(_.toInt).getOrElse(8080)
+    Option(System.getProperty("http.port"))).map(_.toInt).getOrElse(8080)
 
   logger.info(s"Initializing Evaluator at $ip:$port")
 
