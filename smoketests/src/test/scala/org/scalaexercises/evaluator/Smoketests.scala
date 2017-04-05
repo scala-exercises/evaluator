@@ -11,11 +11,22 @@ import org.http4s._
 import org.http4s.client.blaze._
 import org.http4s.circe._
 import io.circe.generic.auto._
+import org.scalaexercises.evaluator.helper._
 
 import scala.concurrent.duration._
 import pdi.jwt.{Jwt, JwtAlgorithm}
 
 class Smoketests extends FunSpec with Matchers with CirceInstances {
+
+  val evaluatorUrl: Uri = (toScalaVersion(BuildInfo.scalaVersion) match {
+    case Scala211 => Uri.fromString("https://scala-evaluator.herokuapp.com/eval")
+    case _        => Uri.fromString("https://scala-evaluator-212.herokuapp.com/eval")
+  }).toOption
+    .getOrElse(
+      throw new RuntimeException(
+        s"Unable to parse the scala evaluator url for scala version ${BuildInfo.scalaVersion}"
+      )
+    )
 
   case class EvaluatorResponse(
       msg: String,
@@ -35,7 +46,7 @@ class Smoketests extends FunSpec with Matchers with CirceInstances {
 
     val request = new Request(
       method = Method.POST,
-      uri = Uri.uri("https://scala-evaluator.herokuapp.com/eval"),
+      uri = evaluatorUrl,
       headers = Headers(headers)
     ).withBody(s"""{"resolvers" : [], "dependencies" : [], "code" : "$code"}""")
 

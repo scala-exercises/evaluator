@@ -4,7 +4,7 @@ import sbt.Keys._
 import sbt.{Def, _}
 import sbtassembly.AssemblyPlugin.autoImport.assembly
 import sbtbuildinfo.BuildInfoKey
-import sbtbuildinfo.BuildInfoKeys.{buildInfoKeys, buildInfoPackage}
+import sbtbuildinfo.BuildInfoPlugin.autoImport._
 import sbtdocker.DockerPlugin.autoImport._
 import sbtorgpolicies._
 import sbtorgpolicies.model._
@@ -58,6 +58,11 @@ object ProjectPlugin extends AutoPlugin {
         }
       )
     }
+
+    lazy val buildInfoSettings = Seq(
+      buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
+      buildInfoPackage := "org.scalaexercises.evaluator"
+    )
 
   }
 

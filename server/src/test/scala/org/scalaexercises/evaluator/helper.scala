@@ -17,7 +17,7 @@ object helper {
   def toScalaVersion(v: String): ScalaVersion = v match {
     case version if version.startsWith("2.11") => Scala211
     case version if version.startsWith("2.12") => Scala212
-    case _                                     => throw new IllegalArgumentException("Unknown Scala Version")
+    case _                                     => throw new IllegalArgumentException(s"Unknown Scala Version $v")
   }
 
   val commonResolvers = List(

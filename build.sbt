@@ -63,15 +63,15 @@ lazy val `evaluator-server` = (project in file("server"))
       "io.get-coursier" %% "coursier-cache" % "1.0.0-M15-3",
       %%("scalatest")   % "test"
     ),
-    assemblyJarName in assembly := "evaluator-server.jar",
-    buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
-    buildInfoPackage := "org.scalaexercises.evaluator"
+    assemblyJarName in assembly := "evaluator-server.jar"
   )
-  .settings(dockerSettings)
+  .settings(dockerSettings: _*)
+  .settings(buildInfoSettings: _*)
   .settings(serverScalaMacroDependencies: _*)
 
 lazy val `smoketests` = (project in file("smoketests"))
-  .dependsOn(`evaluator-server`)
+  .dependsOn(`evaluator-server` % "compile->compile;test->test")
+  .enablePlugins(BuildInfoPlugin)
   .settings(noPublishSettings: _*)
   .settings(
     name := "evaluator-server-smoke-tests",
@@ -85,9 +85,8 @@ lazy val `smoketests` = (project in file("smoketests"))
       %%("scalatest") % "test"
     )
   )
+  .settings(buildInfoSettings: _*)
 
-onLoad in Global := (Command
-  .process("project evaluator-server", _: State)) compose (onLoad in Global).value
 addCommandAlias(
   "publishSignedAll",
   ";evaluator-sharedJS/publishSigned;evaluator-sharedJVM/publishSigned;evaluator-clientJS/publishSigned;evaluator-clientJVM/publishSigned"
