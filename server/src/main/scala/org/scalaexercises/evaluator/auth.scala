@@ -1,5 +1,5 @@
 /*
- * scala-exercises-evaluator-server
+ * scala-exercises - evaluator-server
  * Copyright (C) 2015-2016 47 Degrees, LLC. <http://www.47deg.com>
  */
 
@@ -8,8 +8,8 @@ package org.scalaexercises.evaluator
 import org.http4s._, org.http4s.dsl._, org.http4s.server._
 import com.typesafe.config._
 import org.http4s.util._
-import scala.util.{Try, Success, Failure}
-import pdi.jwt.{Jwt, JwtAlgorithm, JwtHeader, JwtClaim, JwtOptions}
+import scala.util.{Failure, Success, Try}
+import pdi.jwt.{Jwt, JwtAlgorithm, JwtClaim, JwtHeader, JwtOptions}
 
 import org.log4s.getLogger
 
@@ -49,8 +49,7 @@ object auth {
 
   }
 
-  final case class `X-Scala-Eval-Api-Token`(token: String)
-      extends Header.Parsed {
+  final case class `X-Scala-Eval-Api-Token`(token: String) extends Header.Parsed {
     override def key = `X-Scala-Eval-Api-Token`
     override def renderValue(writer: Writer): writer.type =
       writer.append(token)
