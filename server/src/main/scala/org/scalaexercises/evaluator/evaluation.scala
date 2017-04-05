@@ -146,6 +146,12 @@ class Evaluator(timeout: FiniteDuration = 20.seconds)(
 }
 
 /**
+  * The code in this file was taken and only slightly modified from
+  *
+  * https://github.com/twitter/util/blob/302235a473d20735e5327d785e19b0f489b4a59f/util-eval/src/main/scala/com/twitter/util/Eval.scala
+  *
+  * Twitter, Inc.
+  *
   * Dynamic scala compiler. Lots of (slow) state is created, so it may be advantageous to keep
   * around one of these and reuse it.
   */
@@ -274,6 +280,12 @@ private class StringCompiler(
 }
 
 /**
+  * The code in this file was taken and only slightly modified from
+  *
+  * https://github.com/twitter/util/blob/302235a473d20735e5327d785e19b0f489b4a59f/util-eval/src/main/scala/com/twitter/util/Eval.scala
+  *
+  * Twitter, Inc.
+  *
   * Evaluates files, strings, or input streams as Scala code, and returns the result.
   *
   * If `target` is `None`, the results are compiled to memory (and are therefore ephemeral). If
