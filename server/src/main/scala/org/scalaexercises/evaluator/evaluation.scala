@@ -73,7 +73,7 @@ class Evaluator(timeout: FiniteDuration = 20.seconds)(
           val newJars = jars.mkString(File.pathSeparator)
           classpath.value = newJars + File.pathSeparator + classpath.value
 
-          (jars map (_.toString)).find(_.contains("paradise")) match {
+          (jars map (_.toString)).filter(_.endsWith(".jar")).find(_.contains("paradise")) match {
             case Some(compilerJar) => plugin.appendToValue(compilerJar)
             case None              =>
           }
