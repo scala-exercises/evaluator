@@ -74,7 +74,7 @@ class Evaluator(timeout: FiniteDuration = 20.seconds)(
           classpath.value = newJars + File.pathSeparator + classpath.value
 
           (jars map (_.toString)).filter(_.endsWith(".jar")).find(_.contains("paradise")) match {
-            case Some(compilerJar) => plugin.appendToValue(compilerJar)
+            case Some(compilerJar) => plugin.value ++= List(compilerJar)
             case None              =>
           }
         }
