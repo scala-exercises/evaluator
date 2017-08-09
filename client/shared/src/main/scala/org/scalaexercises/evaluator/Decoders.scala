@@ -16,5 +16,5 @@ object Decoders {
     Decoder.forProduct2("message", "pos")(CompilationInfo.apply)
 
   implicit val decodeEvalResponse: Decoder[EvalResponse] =
-    Decoder.forProduct4("msg", "value", "valueType", "compilationInfos")(EvalResponse.apply)
+    Decoder.forProduct5("msg", "value", "valueType", "consoleOutput", "compilationInfos")(EvalResponse.apply)
 }

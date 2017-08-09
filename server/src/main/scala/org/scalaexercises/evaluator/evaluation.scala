@@ -5,7 +5,7 @@
 
 package org.scalaexercises.evaluator
 
-import java.io.File
+import java.io.{ByteArrayOutputStream, File}
 import java.math.BigInteger
 import java.net.URLClassLoader
 import java.security.MessageDigest
@@ -96,22 +96,27 @@ class Evaluator(timeout: FiniteDuration = 20.seconds)(
   private[this] def evaluate[T](code: String, jars: Seq[File]): EvalResult[T] = {
     val eval = createEval(jars)
 
-    val result = for {
-      _      ← Try(eval.check(code))
-      result ← Try(eval.execute[T](code, resetState = true, jars = jars))
-    } yield result
+    val outCapture = new ByteArrayOutputStream
 
-    val errors = eval.errors
+    Console.withOut(outCapture) {
 
-    result match {
-      case scala.util.Success(r) ⇒ EvalSuccess[T](errors, r, "")
-      case scala.util.Failure(t) ⇒
-        t match {
-          case e: CompilerException ⇒ CompilationError(errors)
-          case NonFatal(e) ⇒
-            EvalRuntimeError(errors, Option(RuntimeError(e, None)))
-          case e ⇒ GeneralError(e)
-        }
+      val result = for {
+        _      ← Try(eval.check(code))
+        result ← Try(eval.execute[T](code, resetState = true, jars = jars))
+      } yield result
+
+      val errors = eval.errors
+
+      result match {
+        case scala.util.Success(r) ⇒ EvalSuccess[T](errors, r, outCapture.toString)
+        case scala.util.Failure(t) ⇒
+          t match {
+            case e: CompilerException ⇒ CompilationError(errors)
+            case NonFatal(e) ⇒
+              EvalRuntimeError(errors, Option(RuntimeError(e, None)))
+            case e ⇒ GeneralError(e)
+          }
+      }
     }
   }
 
