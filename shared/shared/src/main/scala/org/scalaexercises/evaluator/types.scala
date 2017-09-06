@@ -46,6 +46,7 @@ final case class EvalResponse(
     msg: String,
     value: Option[String] = None,
     valueType: Option[String] = None,
+    consoleOutput: Option[String] = None,
     compilationInfos: CI = Map.empty)
 
 object EvalResponse {

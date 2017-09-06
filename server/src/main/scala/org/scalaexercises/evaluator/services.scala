@@ -53,21 +53,28 @@ object services {
                         `ok`,
                         Option(res.toString),
                         Option(res.asInstanceOf[AnyRef].getClass.getName),
+                        Option(out),
                         cis)
                     case Timeout(_) =>
-                      EvalResponse(`Timeout Exceded`, None, None, Map.empty)
+                      EvalResponse(`Timeout Exceded`, None, None, None, Map.empty)
                     case UnresolvedDependency(msg) =>
-                      EvalResponse(`Unresolved Dependency` + " : " + msg, None, None, Map.empty)
+                      EvalResponse(
+                        `Unresolved Dependency` + " : " + msg,
+                        None,
+                        None,
+                        None,
+                        Map.empty)
                     case EvalRuntimeError(cis, runtimeError) =>
                       EvalResponse(
                         `Runtime Error`,
                         runtimeError map (_.error.getMessage),
                         runtimeError map (_.error.getClass.getName),
+                        None,
                         cis)
                     case CompilationError(cis) =>
-                      EvalResponse(`Compilation Error`, None, None, cis)
+                      EvalResponse(`Compilation Error`, None, None, None, cis)
                     case GeneralError(err) =>
-                      EvalResponse(`Unforeseen Exception`, None, None, Map.empty)
+                      EvalResponse(`Unforeseen Exception`, None, None, None, Map.empty)
                   }
                   Ok(response.asJson)
               }
