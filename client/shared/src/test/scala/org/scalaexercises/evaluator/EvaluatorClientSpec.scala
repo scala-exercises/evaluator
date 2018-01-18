@@ -13,8 +13,6 @@ import org.scalaexercises.evaluator.api.EvaluatorLike
 import org.scalaexercises.evaluator.http.HttpClient.Headers
 import org.scalaexercises.evaluator.http.HttpClientLike
 import org.scalatest.{AsyncFunSpec, Matchers}
-
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class EvaluatorClientSpec extends AsyncFunSpec with Matchers {
@@ -100,7 +98,7 @@ class EvaluatorClientSpec extends AsyncFunSpec with Matchers {
 }
 
 object EvaluatorClientSpec {
-  
+
   case class TestError(msg: String, cause: Option[Throwable] = None) extends EvaluationException(msg, cause)
 
   val malformedJsonResponse = "error"
