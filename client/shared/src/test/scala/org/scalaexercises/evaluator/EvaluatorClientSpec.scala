@@ -82,13 +82,7 @@ class EvaluatorClientSpec extends AsyncFunSpec with Matchers {
     }
   }
 
-}
-
-object EvaluatorClientSpec {
-
-  case class TestError(msg: String, cause: Option[Throwable] = None) extends EvaluationException(msg, cause)
-
-  def httpClientWithValidResult[A](result: A, statusCode: Int, isError: Boolean) = new HttpClientLike[A] {
+  private def httpClientWithValidResult[A](result: A, statusCode: Int, isError: Boolean) = new HttpClientLike[A] {
     override def post(url: String, secretKey: String, method: String, headers: Headers, data: String)(implicit D: Decoder[A]): Future[EvaluationResponse[A]] =
       Future {
         if (isError) {
@@ -102,6 +96,12 @@ object EvaluatorClientSpec {
         }
       }
   }
+
+}
+
+object EvaluatorClientSpec {
+  
+  case class TestError(msg: String, cause: Option[Throwable] = None) extends EvaluationException(msg, cause)
 
   val malformedJsonResponse = "error"
   val validJsonResponse =
