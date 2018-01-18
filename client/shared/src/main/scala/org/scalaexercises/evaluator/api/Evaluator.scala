@@ -8,16 +8,16 @@ package org.scalaexercises.evaluator.api
 import io.circe.generic.auto._
 import io.circe.syntax._
 import org.scalaexercises.evaluator.EvaluatorResponses.EvaluationResponse
-import org.scalaexercises.evaluator.http.HttpClient
+import org.scalaexercises.evaluator.http.{HttpClient, HttpClientLike}
 import org.scalaexercises.evaluator.{Decoders, Dependency, EvalRequest, EvalResponse}
 
 import scala.concurrent.Future
 
-class Evaluator {
+trait EvaluatorLike {
 
   import Decoders._
 
-  private val httpClient = new HttpClient
+  val httpClient: HttpClientLike[EvalResponse] = new HttpClient
 
   def eval(
       url: String,
@@ -25,9 +25,11 @@ class Evaluator {
       resolvers: List[String] = Nil,
       dependencies: List[Dependency] = Nil,
       code: String): Future[EvaluationResponse[EvalResponse]] =
-    httpClient.post[EvalResponse](
+    httpClient.post(
       url = url,
       secretKey = authKey,
       data = EvalRequest(resolvers, dependencies, code).asJson.noSpaces)
 
 }
+
+class Evaluator extends EvaluatorLike

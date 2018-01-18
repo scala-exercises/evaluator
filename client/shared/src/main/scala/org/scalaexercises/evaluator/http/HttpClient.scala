@@ -18,10 +18,10 @@ object HttpClient {
 
 }
 
-class HttpClient {
+trait HttpClientLike[A] {
 
   import HttpClient._
-  def post[A](
+  def post(
       url: String,
       secretKey: String,
       method: String = "post",
@@ -34,3 +34,5 @@ class HttpClient {
         .withBody(data)
         .run)
 }
+
+class HttpClient[A] extends HttpClientLike[A]

@@ -24,7 +24,7 @@ object EvaluatorResponses {
 
   case class EvaluationResult[A](result: A, statusCode: Int, headers: Map[String, String])
 
-  sealed abstract class EvaluationException(msg: String, cause: Option[Throwable] = None)
+  abstract class EvaluationException(msg: String, cause: Option[Throwable] = None)
       extends Throwable(msg) {
     cause foreach initCause
   }
