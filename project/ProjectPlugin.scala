@@ -26,6 +26,7 @@ object ProjectPlugin extends AutoPlugin {
       lazy val roshttp     = "2.2.4"
       lazy val slf4jSimple = "1.7.28"
       lazy val jwtCore     = "4.0.0"
+      lazy val coursier    = "2.0.0-RC3-2"
     }
 
     lazy val dockerSettings = Seq(
@@ -83,7 +84,7 @@ object ProjectPlugin extends AutoPlugin {
         %%("jwt-core", V.jwtCore),
         %%("scalatest", V.scalatest) % "test"
       ),
-      addSbtPlugin("io.get-coursier" % "sbt-coursier" % "2.0.0-RC3-2")
+      addSbtPlugin("io.get-coursier" % "sbt-coursier" % V.coursier)
     )
 
     lazy val buildInfoSettings = Seq(
