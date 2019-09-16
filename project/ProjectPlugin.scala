@@ -146,7 +146,7 @@ object ProjectPlugin extends AutoPlugin {
         HeaderLicense.Custom(
           s"""|/*
             | * scala-exercises - ${name.value}
-            | * Copyright (C) 2015-2016 47 Degrees, LLC. <http://www.47deg.com>
+            | * Copyright (C) 2015-2019 47 Degrees, LLC. <http://www.47deg.com>
             | */
             |
             |""".stripMargin
