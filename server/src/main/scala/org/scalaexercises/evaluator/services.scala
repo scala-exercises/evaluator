@@ -5,11 +5,16 @@
 
 package org.scalaexercises.evaluator
 
-import monix.execution.Scheduler
+import cats.effect.{ExitCode, IO, IOApp, Sync}
+import cats.implicits._
+import codecs._
+import io.circe.generic.auto._
+import io.circe.syntax._
 import org.http4s._
 import org.http4s.dsl._
 import org.http4s.server.blaze._
 import org.log4s.getLogger
+import org.http4s.syntax.kleisli.http4sKleisliResponseSyntax
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -17,8 +22,6 @@ import scala.language.postfixOps
 object services {
 
   import EvalResponse.messages._
-  import codecs._
-  import io.circe.generic.auto._
 
   private val logger = getLogger
 
@@ -34,19 +37,19 @@ object services {
     Header("Access-Control-Max-Age", 1.day.toSeconds.toString())
   )
 
-  def evalService =
-    auth(HttpService {
-      case req @ POST -> Root / "eval" =>
-        import io.circe.syntax._
-        req
-          .decode[EvalRequest] {
-            evalRequest =>
-              evaluator.eval[Any](
-                code = evalRequest.code,
-                remotes = evalRequest.resolvers,
-                dependencies = evalRequest.dependencies
-              ) flatMap {
-                (result: EvalResult[_]) =>
+  def service[F[_]: Sync] = new Http4sDsl[F] {
+    def httpApp =
+      HttpRoutes
+        .of[F] {
+          // Evaluator service
+          case req @ POST -> Root / "eval" =>
+            req
+              .decode[EvalRequest] { evalRequest =>
+                evaluator.eval[Any](
+                  code = evalRequest.code,
+                  remotes = evalRequest.resolvers,
+                  dependencies = evalRequest.dependencies
+                ) flatMap { (result: EvalResult[_]) =>
                   val response = result match {
                     case EvalSuccess(cis, res, out) =>
                       EvalResponse(
@@ -77,52 +80,47 @@ object services {
                       EvalResponse(`Unforeseen Exception`, None, None, None, Map.empty)
                   }
                   Ok(response.asJson)
+                }
               }
-          }
-          .map((r: Response) => r.putHeaders(corsHeaders: _*))
-    })
-
-  def loaderIOService = HttpService {
-
-    case _ -> Root =>
-      MethodNotAllowed()
-
-    case GET -> Root / "loaderio-1318d1b3e06b7bc96dd5de5716f57496" =>
-      Ok("loaderio-1318d1b3e06b7bc96dd5de5716f57496")
-  }
-
-  // CORS middleware in http4s can't be combined with our `auth` middleware. We need to handle CORS calls ourselves.
-  def optionsService = HttpService {
-    case OPTIONS -> Root / "eval" =>
-      Ok().putHeaders(corsHeaders: _*)
+              .map((r: Response[F]) => r.putHeaders(corsHeaders: _*))
+          // LoaderIO service
+          case _ -> Root =>
+            MethodNotAllowed()
+          case GET -> Root / "loaderio-1318d1b3e06b7bc96dd5de5716f57496" =>
+            Ok("loaderio-1318d1b3e06b7bc96dd5de5716f57496")
+          // Options service
+          // CORS middleware in http4s can't be combined with our `auth` middleware. We need to handle CORS calls ourselves.
+          case OPTIONS -> Root / "eval" =>
+            Ok().map(_.headers.put(corsHeaders: _*)) //putHeaders(corsHeaders: _*)
+        }
+        .orNotFound
   }
 
 }
 
-object EvaluatorServer extends App {
+object EvaluatorServer extends IOApp {
 
   import services._
 
   private[this] val logger = getLogger
 
-  val ip = Option(System.getenv("HOST")).getOrElse("0.0.0.0")
+  lazy val ip = Option(System.getenv("HOST")).getOrElse("0.0.0.0")
 
-  val port = (Option(System.getenv("PORT")) orElse
+  lazy val port = (Option(System.getenv("PORT")) orElse
     Option(System.getProperty("http.port"))).map(_.toInt).getOrElse(8080)
 
-  logger.info(s"Initializing Evaluator at $ip:$port")
+  override def run(args: List[String]): IO[ExitCode] = {
+    logger.info(s"Initializing Evaluator at $ip:$port")
 
-  // The order in which services are mounted is really important. They're executed from bottom to top, and they won't be
-  // checked for repeated methods or routes. That's why we set the `optionsService` before the `evalService` one, as if
-  // not, execution of a OPTIONS call to /eval would lead to `evalService`, even if that service doesn't recognize the
-  // OPTIONS verb.
-  BlazeBuilder
-    .bindHttp(port, ip)
-    .mountService(evalService)
-    .mountService(optionsService)
-    .mountService(loaderIOService)
-    .start
-    .run
-    .awaitShutdown()
-
+    // The order in which services are mounted is really important. They're executed from bottom to top, and they won't be
+    // checked for repeated methods or routes. That's why we set the `optionsService` before the `evalService` one, as if
+    // not, execution of a OPTIONS call to /eval would lead to `evalService`, even if that service doesn't recognize the
+    // OPTIONS verb.
+    BlazeServerBuilder[IO]
+      .bindHttp(port, ip)
+      .withHttpApp(service[IO].httpApp)
+      .serve
+      .compile
+      .lastOrError
+  }
 }
