@@ -1,4 +1,4 @@
-import de.heikoseeberger.sbtheader.{HeaderPattern, HeaderPlugin}
+import de.heikoseeberger.sbtheader.HeaderPlugin
 import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
 import sbt.Keys._
 import sbt.{Def, _}
@@ -17,10 +17,19 @@ object ProjectPlugin extends AutoPlugin {
   override def requires: Plugins = plugins.JvmPlugin && HeaderPlugin && OrgPoliciesPlugin
 
   object autoImport {
-    lazy val http4sV = "0.15.7a"
+
+    object V {
+      lazy val http4s      = "0.20.10"
+      lazy val circe       = "0.11.1"
+      lazy val log4s       = "1.7.0"
+      lazy val scalatest   = "3.0.5"
+      lazy val roshttp     = "2.2.4"
+      lazy val slf4jSimple = "1.7.28"
+      lazy val jwtCore     = "4.0.0"
+    }
 
     lazy val dockerSettings = Seq(
-      docker <<= docker dependsOn assembly,
+      docker := (docker dependsOn assembly).value,
       dockerfile in docker := {
 
         val artifact: File     = assembly.value
@@ -59,10 +68,52 @@ object ProjectPlugin extends AutoPlugin {
       )
     }
 
+    lazy val serverHttpDependencies = Seq(
+      libraryDependencies ++= Seq(
+        %%("circe-core", V.circe),
+        %%("circe-generic", V.circe),
+        %%("circe-parser", V.circe),
+        %%("log4s", V.log4s),
+        %("slf4j-simple", V.slf4jSimple),
+        %%("http4s-dsl", V.http4s),
+        %%("http4s-blaze-server", V.http4s),
+        %%("http4s-blaze-client", V.http4s),
+        %%("http4s-circe", V.http4s),
+        %("config"),
+        %%("jwt-core", V.jwtCore),
+        %%("scalatest", V.scalatest) % "test"
+      ),
+      addSbtPlugin("io.get-coursier" % "sbt-coursier" % "2.0.0-RC3-2")
+    )
+
     lazy val buildInfoSettings = Seq(
       buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
       buildInfoPackage := "org.scalaexercises.evaluator"
     )
+
+    lazy val smoketestDependencies = Seq(
+      libraryDependencies ++= Seq(
+        %%("circe-core", V.circe),
+        %%("circe-generic", V.circe),
+        %%("circe-parser", V.circe),
+        %%("http4s-blaze-client", V.http4s),
+        %%("http4s-circe", V.http4s),
+        %%("jwt-core", V.jwtCore),
+        %%("scalatest", V.scalatest) % "test"
+      )
+    )
+
+    lazy val clientDependencies = Seq(
+      libraryDependencies ++= Seq(
+        %%("http4s-blaze-client", V.http4s),
+        %%("http4s-circe", V.http4s),
+        %%("circe-core", V.circe),
+        %%("circe-generic", V.circe),
+        %%("circe-parser", V.circe),
+        %%("log4s", V.log4s),
+        %("slf4j-simple", V.slf4jSimple),
+        %%("scalatest", V.scalatest) % "test"
+      ))
 
   }
 
@@ -84,20 +135,21 @@ object ProjectPlugin extends AutoPlugin {
         organizationEmail = "hello@47deg.com"
       ),
       orgLicenseSetting := ApacheLicense,
-      scalaVersion := "2.11.11",
+      scalaVersion := "2.12.10",
       scalaOrganization := "org.scala-lang",
       javacOptions ++= Seq("-encoding", "UTF-8", "-Xlint:-options"),
       fork in Test := false,
       parallelExecution in Test := false,
       cancelable in Global := true,
-      headers := Map(
-        "scala" -> (HeaderPattern.cStyleBlockComment,
-        s"""|/*
+      headerLicense := Some(
+        HeaderLicense.Custom(
+          s"""|/*
             | * scala-exercises - ${name.value}
             | * Copyright (C) 2015-2016 47 Degrees, LLC. <http://www.47deg.com>
             | */
             |
-            |""".stripMargin)
-      )
+            |""".stripMargin
+        )),
+      headerMappings := headerMappings.value + (HeaderFileType.scala -> HeaderCommentStyle.CStyleBlockComment)
     ) ++ shellPromptSettings
 }
