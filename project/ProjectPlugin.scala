@@ -86,8 +86,7 @@ object ProjectPlugin extends AutoPlugin {
         %%("coursier-cache", V.coursier),
         "io.get-coursier"            %% "coursier-cats-interop" % V.coursier,
         %%("scalatest", V.scalatest) % "test"
-      ) //,
-      //addSbtPlugin("io.get-coursier" % "sbt-coursier" % V.coursier)
+      )
     )
 
     lazy val buildInfoSettings = Seq(
@@ -153,6 +152,5 @@ object ProjectPlugin extends AutoPlugin {
               |
               |""".stripMargin
         ))
-      //headerMappings := headerMappings.value + (HeaderFileType.scala -> HeaderCommentStyle.CStyleBlockComment)
     ) ++ shellPromptSettings
 }
