@@ -26,6 +26,7 @@ object ProjectPlugin extends AutoPlugin {
       lazy val roshttp     = "2.2.4"
       lazy val slf4jSimple = "1.7.28"
       lazy val jwtCore     = "4.0.0"
+      lazy val coursier    = "2.0.0-RC3-4"
     }
 
     lazy val dockerSettings = Seq(
@@ -81,9 +82,12 @@ object ProjectPlugin extends AutoPlugin {
         %%("http4s-circe", V.http4s),
         %("config"),
         %%("jwt-core", V.jwtCore),
+        %%("coursier", V.coursier),
+        %%("coursier-cache", V.coursier),
+        "io.get-coursier"            %% "coursier-cats-interop" % V.coursier,
         %%("scalatest", V.scalatest) % "test"
-      ),
-      addSbtPlugin("io.get-coursier" % "sbt-coursier" % "2.0.0-RC3-2")
+      ) //,
+      //addSbtPlugin("io.get-coursier" % "sbt-coursier" % V.coursier)
     )
 
     lazy val buildInfoSettings = Seq(
@@ -135,7 +139,7 @@ object ProjectPlugin extends AutoPlugin {
         organizationEmail = "hello@47deg.com"
       ),
       orgLicenseSetting := ApacheLicense,
-      scalaVersion := "2.12.10",
+      scalaVersion := "2.11.11",
       scalaOrganization := "org.scala-lang",
       javacOptions ++= Seq("-encoding", "UTF-8", "-Xlint:-options"),
       fork in Test := false,
@@ -143,13 +147,12 @@ object ProjectPlugin extends AutoPlugin {
       cancelable in Global := true,
       headerLicense := Some(
         HeaderLicense.Custom(
-          s"""|/*
-            | * scala-exercises - ${name.value}
-            | * Copyright (C) 2015-2016 47 Degrees, LLC. <http://www.47deg.com>
-            | */
-            |
-            |""".stripMargin
-        )),
-      headerMappings := headerMappings.value + (HeaderFileType.scala -> HeaderCommentStyle.CStyleBlockComment)
+          s"""|
+            | scala-exercises - ${name.value}
+              | Copyright (C) 2015-2019 47 Degrees, LLC. <http://www.47deg.com>
+              |
+              |""".stripMargin
+        ))
+      //headerMappings := headerMappings.value + (HeaderFileType.scala -> HeaderCommentStyle.CStyleBlockComment)
     ) ++ shellPromptSettings
 }
