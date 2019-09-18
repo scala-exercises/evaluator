@@ -17,7 +17,7 @@ import org.scalatest._
 import pdi.jwt.{Jwt, JwtAlgorithm}
 import scodec.bits.ByteVector
 
-//import scalaz.stream.Process.emit
+import scalaz.stream.Process.emit
 
 class EvalEndpointSpec extends FunSpec with Matchers {
 
@@ -186,5 +186,5 @@ class EvalEndpointSpec extends FunSpec with Matchers {
         `Accept-Ranges`(Nil)).status should be(HttpStatus.Unauthorized)
     }
 
-  }
+  } */
 }

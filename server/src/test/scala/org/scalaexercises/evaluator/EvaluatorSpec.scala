@@ -5,7 +5,7 @@
 
 package org.scalaexercises.evaluator
 
-//import monix.execution.Scheduler
+import monix.execution.Scheduler
 import org.scalaexercises.evaluator.helper._
 import org.scalatest._
 
