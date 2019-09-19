@@ -1,6 +1,8 @@
 /*
- * scala-exercises - evaluator-client
- * Copyright (C) 2015-2016 47 Degrees, LLC. <http://www.47deg.com>
+ *
+ *  scala-exercises - evaluator-client
+ *  Copyright (C) 2015-2019 47 Degrees, LLC. <http://www.47deg.com>
+ *
  */
 
 package org.scalaexercises.evaluator
@@ -16,5 +18,6 @@ object Decoders {
     Decoder.forProduct2("message", "pos")(CompilationInfo.apply)
 
   implicit val decodeEvalResponse: Decoder[EvalResponse] =
-    Decoder.forProduct5("msg", "value", "valueType", "consoleOutput", "compilationInfos")(EvalResponse.apply)
+    Decoder.forProduct5("msg", "value", "valueType", "consoleOutput", "compilationInfos")(
+      EvalResponse.apply)
 }

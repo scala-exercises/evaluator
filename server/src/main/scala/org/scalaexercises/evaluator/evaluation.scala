@@ -42,11 +42,17 @@ class Evaluator[F[_]: Sync](timeout: FiniteDuration = 20.seconds)(
 
   def remoteToRepository(remote: Remote): Repository = MavenRepository(remote)
 
-  def dependencyToModule(dependency: Dependency): coursier.Dependency =
-    coursier.Dependency.of(
-      Module(Organization(dependency.groupId), ModuleName(dependency.artifactId)),
-      dependency.version
-    )
+  def dependencyToModule(dependency: Dependency): coursier.Dependency = {
+    val exclusions = dependency.exclusions map {
+      case Exclusion(org, mod) => (Organization(org), ModuleName(mod))
+    }
+    coursier.Dependency
+      .of(
+        Module(Organization(dependency.groupId), ModuleName(dependency.artifactId)),
+        dependency.version
+      )
+      .withExclusions(exclusions)
+  }
 
   val cache: FileCache[F] = FileCache[F].noCredentials
 
