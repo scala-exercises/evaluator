@@ -1,15 +1,25 @@
 /*
- * scala-exercises - evaluator-server
- * Copyright (C) 2015-2016 47 Degrees, LLC. <http://www.47deg.com>
+ *
+ *  scala-exercises - evaluator-server
+ *  Copyright (C) 2015-2019 47 Degrees, LLC. <http://www.47deg.com>
+ *
  */
 
 package org.scalaexercises.evaluator
 
-import monix.execution.Scheduler
+import cats.effect.{ConcurrentEffect, ContextShift, ExitCode, IO, IOApp, Timer}
+import cats.implicits._
+import codecs._
+import coursier.util.Sync
+import coursier.interop.cats._
+import io.circe.generic.auto._
+import io.circe.syntax._
 import org.http4s._
 import org.http4s.dsl._
+import org.http4s.headers.Allow
 import org.http4s.server.blaze._
 import org.log4s.getLogger
+import org.http4s.syntax.kleisli.http4sKleisliResponseSyntax
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -17,14 +27,8 @@ import scala.language.postfixOps
 object services {
 
   import EvalResponse.messages._
-  import codecs._
-  import io.circe.generic.auto._
 
-  private val logger = getLogger
-
-  implicit val scheduler: Scheduler = Scheduler.io("scala-evaluator")
-
-  val evaluator = new Evaluator(20 seconds)
+  def evaluatorInstance[F[_]: ConcurrentEffect: ContextShift: Timer: Sync] = new Evaluator[F](20 seconds)
 
   val corsHeaders = Seq(
     Header("Vary", "Origin,Access-Control-Request-Methods"),
@@ -34,95 +38,87 @@ object services {
     Header("Access-Control-Max-Age", 1.day.toSeconds.toString())
   )
 
-  def evalService =
-    auth(HttpService {
-      case req @ POST -> Root / "eval" =>
-        import io.circe.syntax._
-        req
-          .decode[EvalRequest] {
-            evalRequest =>
-              evaluator.eval[Any](
-                code = evalRequest.code,
-                remotes = evalRequest.resolvers,
-                dependencies = evalRequest.dependencies
-              ) flatMap {
-                (result: EvalResult[_]) =>
-                  val response = result match {
-                    case EvalSuccess(cis, res, out) =>
-                      EvalResponse(
-                        `ok`,
-                        Option(res.toString),
-                        Option(res.asInstanceOf[AnyRef].getClass.getName),
-                        Option(out),
-                        cis)
-                    case Timeout(_) =>
-                      EvalResponse(`Timeout Exceded`, None, None, None, Map.empty)
-                    case UnresolvedDependency(msg) =>
-                      EvalResponse(
-                        `Unresolved Dependency` + " : " + msg,
-                        None,
-                        None,
-                        None,
-                        Map.empty)
-                    case EvalRuntimeError(cis, runtimeError) =>
-                      EvalResponse(
-                        `Runtime Error`,
-                        runtimeError map (_.error.getMessage),
-                        runtimeError map (_.error.getClass.getName),
-                        None,
-                        cis)
-                    case CompilationError(cis) =>
-                      EvalResponse(`Compilation Error`, None, None, None, cis)
-                    case GeneralError(err) =>
-                      EvalResponse(`Unforeseen Exception`, None, None, None, Map.empty)
+  def service[F[_]: ConcurrentEffect: ContextShift: Timer: Sync] = new Http4sDsl[F] {
+    def httpApp(evaluator: Evaluator[F]) =
+      HttpRoutes
+        .of[F] {
+          // Evaluator service
+          case req @ POST -> Root / "eval" =>
+            req
+              .decode[EvalRequest] { evalRequest =>
+                evaluator
+                  .eval[Any](
+                    code = evalRequest.code,
+                    remotes = evalRequest.resolvers,
+                    dependencies = evalRequest.dependencies
+                  )
+                  .flatMap { (result: EvalResult[_]) =>
+                    val response = result match {
+                      case EvalSuccess(cis, res, out) =>
+                        EvalResponse(
+                          `ok`,
+                          Option(res.toString),
+                          Option(res.asInstanceOf[AnyRef].getClass.getName),
+                          Option(out),
+                          cis)
+                      case Timeout(_) =>
+                        EvalResponse(`Timeout Exceded`, None, None, None, Map.empty)
+                      case UnresolvedDependency(msg) =>
+                        EvalResponse(
+                          `Unresolved Dependency` + " : " + msg,
+                          None,
+                          None,
+                          None,
+                          Map.empty)
+                      case EvalRuntimeError(cis, runtimeError) =>
+                        EvalResponse(
+                          `Runtime Error`,
+                          runtimeError map (_.error.getMessage),
+                          runtimeError map (_.error.getClass.getName),
+                          None,
+                          cis)
+                      case CompilationError(cis) =>
+                        EvalResponse(`Compilation Error`, None, None, None, cis)
+                      case GeneralError(err) =>
+                        EvalResponse(`Unforeseen Exception`, None, None, None, Map.empty)
+                    }
+                    Ok(response.asJson)
                   }
-                  Ok(response.asJson)
               }
-          }
-          .map((r: Response) => r.putHeaders(corsHeaders: _*))
-    })
-
-  def loaderIOService = HttpService {
-
-    case _ -> Root =>
-      MethodNotAllowed()
-
-    case GET -> Root / "loaderio-1318d1b3e06b7bc96dd5de5716f57496" =>
-      Ok("loaderio-1318d1b3e06b7bc96dd5de5716f57496")
-  }
-
-  // CORS middleware in http4s can't be combined with our `auth` middleware. We need to handle CORS calls ourselves.
-  def optionsService = HttpService {
-    case OPTIONS -> Root / "eval" =>
-      Ok().putHeaders(corsHeaders: _*)
+              .map((r: Response[F]) => r.putHeaders(corsHeaders: _*))
+          // LoaderIO service
+          case _ -> Root => MethodNotAllowed(Allow(GET, POST, OPTIONS))
+          case GET -> Root / "loaderio-1318d1b3e06b7bc96dd5de5716f57496" =>
+            Ok("loaderio-1318d1b3e06b7bc96dd5de5716f57496")
+          // Options service
+          // CORS middleware in http4s can't be combined with our `auth` middleware. We need to handle CORS calls ourselves.
+          case OPTIONS -> Root / "eval" =>
+            Ok().map(res => res.withHeaders(corsHeaders: _*)) //putHeaders(corsHeaders: _*)
+        }
+        .orNotFound
   }
 
 }
 
-object EvaluatorServer extends App {
+object EvaluatorServer extends IOApp {
 
   import services._
 
   private[this] val logger = getLogger
 
-  val ip = Option(System.getenv("HOST")).getOrElse("0.0.0.0")
+  lazy val ip = Option(System.getenv("HOST")).getOrElse("0.0.0.0")
 
-  val port = (Option(System.getenv("PORT")) orElse
+  lazy val port = (Option(System.getenv("PORT")) orElse
     Option(System.getProperty("http.port"))).map(_.toInt).getOrElse(8080)
 
-  logger.info(s"Initializing Evaluator at $ip:$port")
+  override def run(args: List[String]): IO[ExitCode] = {
+    logger.info(s"Initializing Evaluator at $ip:$port")
 
-  // The order in which services are mounted is really important. They're executed from bottom to top, and they won't be
-  // checked for repeated methods or routes. That's why we set the `optionsService` before the `evalService` one, as if
-  // not, execution of a OPTIONS call to /eval would lead to `evalService`, even if that service doesn't recognize the
-  // OPTIONS verb.
-  BlazeBuilder
-    .bindHttp(port, ip)
-    .mountService(evalService)
-    .mountService(optionsService)
-    .mountService(loaderIOService)
-    .start
-    .run
-    .awaitShutdown()
-
+    BlazeServerBuilder[IO]
+      .bindHttp(port, ip)
+      .withHttpApp(auth[IO](service[IO].httpApp(evaluatorInstance[IO])))
+      .serve
+      .compile
+      .lastOrError
+  }
 }
