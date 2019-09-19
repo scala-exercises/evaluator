@@ -42,7 +42,7 @@ final case class Dependency(
     groupId: String,
     artifactId: String,
     version: String,
-    exclusions: Set[Exclusion] = Set.empty)
+    exclusions: Option[List[Exclusion]] = None)
 
 final case class EvalRequest(
     resolvers: List[String] = Nil,
