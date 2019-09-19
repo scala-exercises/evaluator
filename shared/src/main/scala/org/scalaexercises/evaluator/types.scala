@@ -37,7 +37,12 @@ final case class CompilationError[A](compilationInfos: CI) extends EvalResult[A]
 
 final case class GeneralError[A](stack: Throwable) extends EvalResult[A]
 
-final case class Dependency(groupId: String, artifactId: String, version: String)
+final case class Exclusion(organization: String, moduleName: String)
+final case class Dependency(
+    groupId: String,
+    artifactId: String,
+    version: String,
+    exclusions: Set[Exclusion] = Set.empty)
 
 final case class EvalRequest(
     resolvers: List[String] = Nil,
