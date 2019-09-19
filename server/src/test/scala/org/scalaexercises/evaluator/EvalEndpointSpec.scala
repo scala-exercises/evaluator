@@ -186,5 +186,5 @@ class EvalEndpointSpec extends FunSpec with Matchers {
         `Accept-Ranges`(Nil)).status should be(HttpStatus.Unauthorized)
     }
 
-  } */
+  }
 }

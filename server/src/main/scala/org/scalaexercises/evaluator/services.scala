@@ -28,7 +28,7 @@ object services {
 
   import EvalResponse.messages._
 
-  def evaluator[F[_]: ConcurrentEffect: ContextShift: Timer: Sync] = new Evaluator[F](20 seconds)
+  def evaluatorInstance[F[_]: ConcurrentEffect: ContextShift: Timer: Sync] = new Evaluator[F](20 seconds)
 
   val corsHeaders = Seq(
     Header("Vary", "Origin,Access-Control-Request-Methods"),
@@ -39,7 +39,7 @@ object services {
   )
 
   def service[F[_]: ConcurrentEffect: ContextShift: Timer: Sync] = new Http4sDsl[F] {
-    def httpApp =
+    def httpApp(evaluator: Evaluator[F]) =
       HttpRoutes
         .of[F] {
           // Evaluator service
@@ -116,7 +116,7 @@ object EvaluatorServer extends IOApp {
 
     BlazeServerBuilder[IO]
       .bindHttp(port, ip)
-      .withHttpApp(auth[IO](service[IO].httpApp))
+      .withHttpApp(auth[IO](service[IO].httpApp(evaluatorInstance[IO])))
       .serve
       .compile
       .lastOrError
