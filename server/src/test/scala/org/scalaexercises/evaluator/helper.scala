@@ -10,10 +10,10 @@ package org.scalaexercises.evaluator
 object helper {
 
   val remotes: List[String]    = "https://oss.sonatype.org/content/repositories/releases/" :: Nil
-  val exercisesVersion: String = "0.4.1-SNAPSHOT"
+  val exercisesVersion: String = "0.5.0-SNAPSHOT"
 
   sealed abstract class ScalaVersion(val version: String)
-  case object Scala211 extends ScalaVersion("2.11.8")
+  case object Scala211 extends ScalaVersion("2.11.11")
   case object Scala212 extends ScalaVersion("2.12.1")
 
   def toScalaVersion(v: String): ScalaVersion = v match {
@@ -30,17 +30,16 @@ object helper {
 
   def scalaDependencies(scala: ScalaVersion): List[Dependency] = List(
     Dependency("org.scala-lang", s"scala-library", s"${scala.version}"),
-    Dependency("org.scala-lang", s"scala-api", s"${scala.version}"),
     Dependency("org.scala-lang", s"scala-reflect", s"${scala.version}"),
     Dependency("org.scala-lang", s"scala-compiler", s"${scala.version}"),
-    Dependency("org.scala-lang", "scala-xml", s"${scala.version}")
+    Dependency("org.scala-lang.modules", s"scala-xml_${scala.version.substring(0, 4)}", "1.2.0")
   )
 
   def fetchLibraryDependencies(scala: ScalaVersion): List[Dependency] = {
     val sv = scala.version
     List(
-      Dependency("com.fortysevendeg", s"fetch_${sv.substring(0, 4)}", "0.4.0"),
-      Dependency("com.fortysevendeg", s"fetch-monix_${sv.substring(0, 4)}", "0.4.0")
+      Dependency("com.47deg", s"fetch_${sv.substring(0, 4)}", "1.2.0"),
+      Dependency("com.47deg", s"fetch-monix_${sv.substring(0, 4)}", "0.7.3")
     ) ++ scalaDependencies(scala)
   }
 
