@@ -7,38 +7,21 @@
 
 package org.scalaexercises.evaluator
 
-import cats.data.EitherT
-import cats.~>
-import cats.implicits._
-import org.scalaexercises.evaluator.EvaluatorResponses.{
-  EvalIO,
-  EvaluationException,
-  EvaluationResponse,
-  EvaluationResult
-}
-import org.scalaexercises.evaluator.free.algebra.EvaluatorOp
+import cats.effect.{ConcurrentEffect, Resource}
+import org.http4s.client.Client
+import org.http4s.client.blaze.BlazeClientBuilder
+import org.scalaexercises.evaluator.service.{HttpClientHandler, HttpClientService}
 
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.ExecutionContext
 
-class EvaluatorClient(url: String, authKey: String) {
-
-  lazy val api: EvaluatorAPI[EvaluatorOp] = new EvaluatorAPI(url, authKey)
-
-}
+case class EvaluatorClient(url: String, authKey: String)
 
 object EvaluatorClient {
 
-  def apply(url: String, authKey: String) =
-    new EvaluatorClient(url, authKey)
+  private def clientResource[F[_]: ConcurrentEffect]: Resource[F, Client[F]] =
+    BlazeClientBuilder[F](ExecutionContext.global).resource
 
-  implicit class EvaluationIOSyntaxEither[A](evalIO: EvalIO[EvaluationResponse[A]]) {
+  def apply[F[_]: ConcurrentEffect](url: String, authKey: String): HttpClientService[F] =
+    HttpClientHandler[F](url, authKey, clientResource[F])
 
-    def exec(implicit I: (EvaluatorOp ~> Future)): Future[EvaluationResponse[A]] =
-      evalIO foldMap I
-
-    def liftEvaluator: EitherT[EvalIO, EvaluationException, EvaluationResult[A]] =
-      EitherT[EvalIO, EvaluationException, EvaluationResult[A]](evalIO)
-
-  }
 }
