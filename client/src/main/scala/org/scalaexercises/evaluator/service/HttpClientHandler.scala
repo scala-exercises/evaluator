@@ -19,19 +19,17 @@ object HttpClientHandler {
 
   private val headerContentType = Header("content-type", "application/json")
 
-  def apply[F[_]: Sync](
-      uri: String,
-      authString: String,
-      resource: Resource[F, Client[F]]): HttpClientService[F] =
+  def apply[F[_]](uri: String, authString: String, resource: Resource[F, Client[F]])(
+      implicit F: Sync[F]): HttpClientService[F] =
     new HttpClientService[F] {
       override def evaluates(evalRequest: EvalRequest): F[EvalResponse] =
-        resource.use(
-          _.expect[EvalResponse](
-            Request[F](Method.POST, Uri(path = uri))
-              .withEntity(evalRequest)
-              .withHeaders(headerToken(authString), headerContentType)
-          )
-        )
+        for {
+          uri <- F.fromEither(Uri.fromString(uri))
+          request = Request[F](Method.POST, uri)
+            .withEntity(evalRequest)
+            .withHeaders(headerToken(authString), headerContentType)
+          result <- resource.use(_.expect[EvalResponse](request))
+        } yield result
     }
 
 }

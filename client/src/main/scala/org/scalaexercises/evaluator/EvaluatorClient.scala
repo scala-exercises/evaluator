@@ -14,8 +14,6 @@ import org.scalaexercises.evaluator.service.{HttpClientHandler, HttpClientServic
 
 import scala.concurrent.ExecutionContext
 
-case class EvaluatorClient(url: String, authKey: String)
-
 object EvaluatorClient {
 
   private def clientResource[F[_]: ConcurrentEffect]: Resource[F, Client[F]] =
