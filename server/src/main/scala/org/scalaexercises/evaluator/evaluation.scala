@@ -44,10 +44,13 @@ class Evaluator[F[_]: Sync](timeout: FiniteDuration = 20.seconds)(
 
   def dependencyToModule(dependency: Dependency): coursier.Dependency = {
     val exclusions: Set[(Organization, ModuleName)] =
-      dependency.exclusions.toSet
-        .flatMap(_.map {
-          case Exclusion(org, mod) => (Organization(org), ModuleName(mod))
-        })
+      dependency.exclusions
+        .fold(List[(Organization, ModuleName)]())(
+          _.map(
+            ex => (Organization(ex.organization), ModuleName(ex.moduleName))
+          ))
+        .toSet
+
     coursier.Dependency
       .of(
         Module(Organization(dependency.groupId), ModuleName(dependency.artifactId)),

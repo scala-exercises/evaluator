@@ -5,28 +5,33 @@
 
 package org.scalaexercises.evaluator
 
+import cats.Traverse.ops.toAllTraverseOps
+import cats.effect.{IO, Sync}
 import io.circe.Printer
 import org.scalatest._
 import org.http4s._
 import org.http4s.client.blaze._
 import org.http4s.circe._
 import io.circe.generic.auto._
+import org.http4s.client.Client
 import org.scalaexercises.evaluator.helper._
 
 import scala.concurrent.duration._
 import pdi.jwt.{Jwt, JwtAlgorithm}
 
-class Smoketests extends FunSpec with Matchers with CirceInstances {
+import scala.concurrent.ExecutionContext
 
-  val evaluatorUrl: Uri = (toScalaVersion(BuildInfo.scalaVersion) match {
-    case Scala211 => Uri.fromString("https://scala-evaluator.herokuapp.com/eval")
-    case _        => Uri.fromString("https://scala-evaluator-212.herokuapp.com/eval")
-  }).toOption
-    .getOrElse(
-      throw new RuntimeException(
-        s"Unable to parse the scala evaluator url for scala version ${BuildInfo.scalaVersion}"
-      )
-    )
+class Smoketests extends FunSpec with Matchers with CirceInstances with Implicits {
+
+  val evaluatorUrl: Uri = IO
+    .fromEither(toScalaVersion(BuildInfo.scalaVersion) match {
+      case Scala211 => Uri.fromString("https://scala-evaluator.herokuapp.com/eval")
+      case _        => Uri.fromString("https://scala-evaluator-212.herokuapp.com/eval")
+    })
+    .handleErrorWith(_ =>
+      IO.raiseError(new RuntimeException(
+        s"Unable to parse the scala evaluator url for scala version ${BuildInfo.scalaVersion}")))
+    .unsafeRunSync()
 
   case class EvaluatorResponse(
       msg: String,
@@ -34,8 +39,8 @@ class Smoketests extends FunSpec with Matchers with CirceInstances {
       valueType: String,
       compilationInfos: Map[String, String])
 
-  implicit val decoder: EntityDecoder[EvaluatorResponse] =
-    jsonOf[EvaluatorResponse]
+  implicit def decoder[F[_]: Sync]: EntityDecoder[F, EvaluatorResponse] =
+    jsonOf[F, EvaluatorResponse]
 
   val validToken =
     Jwt.encode("""{"user": "scala-exercises"}""", auth.secretKey, JwtAlgorithm.HS256)
@@ -44,16 +49,18 @@ class Smoketests extends FunSpec with Matchers with CirceInstances {
       expectation: EvaluatorResponse => Unit,
       failExpectation: Throwable => Unit = fail(_)): Unit = {
 
-    val request = new Request(
-      method = Method.POST,
-      uri = evaluatorUrl,
-      headers = Headers(headers)
-    ).withBody(s"""{"resolvers" : [], "dependencies" : [], "code" : "$code"}""")
+    val request = Request[IO](method = Method.POST, uri = evaluatorUrl)
+      .withEntity(s"""{"resolvers" : [], "dependencies" : [], "code" : "$code"}""")
+      .withHeaders(Headers.of(headers: _*))
 
-    val task = client.expect[EvaluatorResponse](request)
+    def task(client: Client[IO]) = client.expect[EvaluatorResponse](request)
 
-    val response = task.unsafePerformSyncAttemptFor(60.seconds)
-    response.fold(failExpectation, expectation)
+    client
+      .use(task)
+      .attempt
+      .map(_.fold(failExpectation, expectation))
+      .timeout(60.seconds)
+      .unsafeRunSync()
   }
 
   val headers = List(
@@ -61,7 +68,7 @@ class Smoketests extends FunSpec with Matchers with CirceInstances {
     Header("x-scala-eval-api-token", validToken).parsed
   )
 
-  val client = PooledHttp1Client()
+  val client = BlazeClientBuilder[IO](ExecutionContext.global).resource
 
   describe("Querying the /eval endpoint") {
     it("should succeed for a simple request") {
@@ -90,5 +97,5 @@ class Smoketests extends FunSpec with Matchers with CirceInstances {
     }
   }
 
-  override protected def defaultPrinter: Printer = Printer.noSpaces.copy(dropNullKeys = true)
+  override protected def defaultPrinter: Printer = Printer.noSpaces.copy(dropNullValues = true)
 }

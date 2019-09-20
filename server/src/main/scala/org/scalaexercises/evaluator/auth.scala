@@ -72,6 +72,7 @@ object auth {
                   Sync[F].pure(Response(Status.Unauthorized))
                 }
               }
+            case None => Sync[F].pure(Response(Status.Unauthorized))
           }
         }
         case _ => Sync[F].pure(Response(Status.Unauthorized))

@@ -7,22 +7,21 @@
 
 package org.scalaexercises.evaluator
 
-import monix.execution.Scheduler
 import org.scalaexercises.evaluator.helper._
 import org.scalatest._
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-class EvaluatorSpec extends FunSpec with Matchers {
-  implicit val scheduler: Scheduler = Scheduler.io("exercises-spec")
-  val evaluator                     = new Evaluator(20 seconds)
+class EvaluatorSpec extends FunSpec with Matchers with Implicits {
+
+  val evaluator = new Evaluator(20 seconds)
 
   describe("evaluation") {
     it("can evaluate simple expressions, for Scala 2.11") {
       val result: EvalResult[Int] = evaluator
         .eval("{ 41 + 1 }", remotes = commonResolvers, dependencies = scalaDependencies(Scala211))
-        .unsafePerformSync
+        .unsafeRunSync()
 
       result should matchPattern {
         case EvalSuccess(_, 42, _) ⇒
@@ -32,7 +31,7 @@ class EvaluatorSpec extends FunSpec with Matchers {
     it("can evaluate simple expressions, for Scala 2.12") {
       val result: EvalResult[Int] = evaluator
         .eval("{ 41 + 1 }", remotes = commonResolvers, dependencies = scalaDependencies(Scala212))
-        .unsafePerformSync
+        .unsafeRunSync()
 
       result should matchPattern {
         case EvalSuccess(_, 42, _) ⇒
@@ -45,7 +44,7 @@ class EvaluatorSpec extends FunSpec with Matchers {
           "{ while(true) {}; 123 }",
           remotes = commonResolvers,
           dependencies = scalaDependencies(Scala211))
-        .unsafePerformSync
+        .unsafeRunSync()
 
       result should matchPattern {
         case Timeout(_) ⇒
@@ -70,7 +69,7 @@ Xor.Right(42).toOption.get
           remotes = remotes,
           dependencies = dependencies
         )
-        .unsafePerformSync
+        .unsafeRunSync()
 
       result should matchPattern {
         case EvalSuccess(_, 42, _) =>
@@ -86,7 +85,7 @@ Xor.Right(42).toOption.get
           remotes = commonResolvers,
           dependencies = fetchLibraryDependencies(toScalaVersion(BuildInfo.scalaVersion))
         )
-        .unsafePerformSync
+        .unsafeRunSync()
 
       result should matchPattern {
         case EvalSuccess(_, _, _) =>
@@ -113,14 +112,14 @@ Eval.now(42).value
           remotes = remotes,
           dependencies = dependencies1
         )
-        .unsafePerformSync
+        .unsafeRunSync()
       val result2: EvalResult[Int] = evaluator
         .eval(
           code,
           remotes = remotes,
           dependencies = dependencies2
         )
-        .unsafePerformSync
+        .unsafeRunSync()
 
       result1 should matchPattern {
         case EvalSuccess(_, 42, _) =>
@@ -133,7 +132,11 @@ Eval.now(42).value
     it("can run code from the exercises content") {
       val code = exerciseContentCode(true)
       val dependencies = List(
-        Dependency("org.scala-exercises", "exercises-stdlib_2.11", exercisesVersion)
+        Dependency(
+          "org.scala-exercises",
+          "exercises-stdlib_2.11",
+          exercisesVersion,
+          Some(List(Exclusion("io.monix", "monix_2.11"))))
       ) ++ scalaDependencies(Scala211)
 
       val result: EvalResult[Unit] = evaluator
@@ -142,7 +145,7 @@ Eval.now(42).value
           remotes = commonResolvers,
           dependencies = dependencies
         )
-        .unsafePerformSync
+        .unsafeRunSync()
 
       result should matchPattern {
         case EvalSuccess(_, (), _) =>
@@ -152,7 +155,11 @@ Eval.now(42).value
     it("captures exceptions when running the exercises content") {
 
       val dependencies = List(
-        Dependency("org.scala-exercises", "exercises-stdlib_2.11", exercisesVersion)
+        Dependency(
+          "org.scala-exercises",
+          "exercises-stdlib_2.11",
+          exercisesVersion,
+          Some(List(Exclusion("io.monix", "monix_2.11"))))
       ) ++ scalaDependencies(Scala211)
 
       val result: EvalResult[Unit] = evaluator
@@ -161,7 +168,7 @@ Eval.now(42).value
           remotes = commonResolvers,
           dependencies = dependencies
         )
-        .unsafePerformSync
+        .unsafeRunSync()
 
       result shouldBe a[EvalRuntimeError[_]]
     }
@@ -173,7 +180,7 @@ Eval.now(42).value
 
       val result: EvalResult[Unit] = evaluator
         .eval(code, remotes = remotes, dependencies = dependencies)
-        .unsafePerformSync
+        .unsafeRunSync()
 
       result should matchPattern {
         case EvalSuccess(_, 42, _) =>
