@@ -38,11 +38,12 @@ object helper {
   def fetchLibraryDependencies(scala: ScalaVersion): List[Dependency] = {
     val sv = scala.version
     List(
-      Dependency("com.47deg", s"fetch_${sv.substring(0, 4)}", "1.2.0"),
+      Dependency("com.47deg", s"fetch_${sv.substring(0, 4)}", "0.7.3"),
       Dependency("com.47deg", s"fetch-monix_${sv.substring(0, 4)}", "0.7.3")
     ) ++ scalaDependencies(scala)
   }
 
+  //TODO: Update test code for newer version of Fetch
   def exerciseContentCode(assertCheck: Boolean) =
     s"""
 import org.scalaexercises.content._
