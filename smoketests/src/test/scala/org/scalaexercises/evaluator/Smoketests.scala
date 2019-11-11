@@ -5,21 +5,19 @@
 
 package org.scalaexercises.evaluator
 
-import cats.Traverse.ops.toAllTraverseOps
 import cats.effect.{IO, Sync}
 import io.circe.Printer
-import org.scalatest._
-import org.http4s._
-import org.http4s.client.blaze._
-import org.http4s.circe._
 import io.circe.generic.auto._
+import org.http4s._
+import org.http4s.circe._
 import org.http4s.client.Client
+import org.http4s.client.blaze._
 import org.scalaexercises.evaluator.helper._
-
-import scala.concurrent.duration._
+import org.scalatest._
 import pdi.jwt.{Jwt, JwtAlgorithm}
 
 import scala.concurrent.ExecutionContext
+import scala.concurrent.duration._
 
 class Smoketests extends FunSpec with Matchers with CirceInstances with Implicits {
 

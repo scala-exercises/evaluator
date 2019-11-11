@@ -40,7 +40,7 @@ lazy val root = (project in file("."))
   .settings(mainClass in Universal := Some("org.scalaexercises.evaluator.EvaluatorServer"))
   .settings(stage := (stage in Universal in `evaluator-server`).value)
   .settings(noPublishSettings: _*)
-  .aggregate(`evaluator-server`, `evaluator-client`, `evaluator-shared`, `smoketests`)
+  .aggregate(`evaluator-server`, `evaluator-client`, `evaluator-shared`)
 
 addCommandAlias(
   "publishSignedAll",
