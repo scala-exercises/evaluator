@@ -73,12 +73,9 @@ object ProjectPlugin extends AutoPlugin {
       libraryDependencies ++= Seq(
         %%("circe-core", V.circe),
         %%("circe-generic", V.circe),
-        %%("circe-parser", V.circe),
-        %%("log4s", V.log4s),
         %("slf4j-simple", V.slf4jSimple),
         %%("http4s-dsl", V.http4s),
         %%("http4s-blaze-server", V.http4s),
-        %%("http4s-blaze-client", V.http4s),
         %%("http4s-circe", V.http4s),
         %("config"),
         %%("jwt-core", V.jwtCore),
@@ -112,9 +109,6 @@ object ProjectPlugin extends AutoPlugin {
         %%("http4s-circe", V.http4s),
         %%("circe-core", V.circe),
         %%("circe-generic", V.circe),
-        %%("circe-parser", V.circe),
-        %%("log4s", V.log4s),
-        %("slf4j-simple", V.slf4jSimple),
         %%("scalatest", V.scalatest) % "test"
       ))
 
