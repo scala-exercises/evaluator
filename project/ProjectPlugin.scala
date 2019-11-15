@@ -19,14 +19,14 @@ object ProjectPlugin extends AutoPlugin {
   object autoImport {
 
     object V {
-      lazy val http4s      = "0.20.10"
-      lazy val circe       = "0.11.1"
+      lazy val http4s      = "0.20.13"
+      lazy val circe       = "0.12.3"
       lazy val log4s       = "1.7.0"
-      lazy val scalatest   = "3.0.5"
+      lazy val scalatest   = "3.0.8"
       lazy val roshttp     = "2.2.4"
       lazy val slf4jSimple = "1.7.28"
       lazy val jwtCore     = "4.0.0"
-      lazy val coursier    = "2.0.0-RC3-4"
+      lazy val coursier    = "2.0.0-RC5-2"
     }
 
     lazy val dockerSettings = Seq(

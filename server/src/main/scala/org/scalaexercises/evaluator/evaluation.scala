@@ -13,7 +13,7 @@ import java.net.URLClassLoader
 import java.security.MessageDigest
 import java.util.jar.JarFile
 
-import cats.effect.{Concurrent, ConcurrentEffect, ContextShift, Timer}
+import cats.effect.{Concurrent, ConcurrentEffect, Timer}
 import cats.implicits._
 import coursier._
 import coursier.cache.{ArtifactError, FileCache}
@@ -30,8 +30,7 @@ import scala.util.Try
 import scala.util.control.NonFatal
 
 class Evaluator[F[_]: Sync](timeout: FiniteDuration = 20.seconds)(
-    implicit CS: ContextShift[F],
-    F: ConcurrentEffect[F],
+    implicit F: ConcurrentEffect[F],
     T: Timer[F]) {
   type Remote = String
 
@@ -51,8 +50,8 @@ class Evaluator[F[_]: Sync](timeout: FiniteDuration = 20.seconds)(
           ))
         .toSet
 
-    coursier.Dependency
-      .of(
+    coursier
+      .Dependency(
         Module(Organization(dependency.groupId), ModuleName(dependency.artifactId)),
         dependency.version
       )
