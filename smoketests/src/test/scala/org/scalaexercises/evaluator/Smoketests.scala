@@ -13,13 +13,15 @@ import org.http4s.circe._
 import org.http4s.client.Client
 import org.http4s.client.blaze._
 import org.scalaexercises.evaluator.helper._
-import org.scalatest._
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
+
 import pdi.jwt.{Jwt, JwtAlgorithm}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
-class Smoketests extends FunSpec with Matchers with CirceInstances with Implicits {
+class Smoketests extends AnyFunSpec with Matchers with CirceInstances with Implicits {
 
   val evaluatorUrl: Uri = IO
     .fromEither(toScalaVersion(BuildInfo.scalaVersion) match {

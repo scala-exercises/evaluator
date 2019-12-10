@@ -7,7 +7,7 @@
 
 package org.scalaexercises.evaluator
 
-import cats.effect.{IO, Timer}
+import cats.effect.IO
 import coursier.util.Sync
 import coursier.interop.cats._
 

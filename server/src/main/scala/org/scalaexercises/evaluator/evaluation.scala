@@ -145,13 +145,8 @@ class Evaluator[F[_]: Sync](timeout: FiniteDuration = 20.seconds)(
       allJars <- fetchArtifacts(remotes, dependencies)
       result <- allJars match {
         case Right(jars) =>
-          val fallback: EvalResult[T] = Timeout[T](timeout)
-          val success: F[EvalResult[T]] =
-            timeoutTo(F.delay { evaluate(code, jars) }, timeout, fallback)
-          success
-        case Left(fileError) =>
-          val failure: F[EvalResult[T]] = F.pure(UnresolvedDependency[T](fileError.describe))
-          failure
+          timeoutTo[EvalResult[T]](F.delay { evaluate(code, jars) }, timeout, Timeout[T](timeout))
+        case Left(fileError) => F.pure(UnresolvedDependency[T](fileError.describe))
       }
     } yield result
   }

@@ -7,21 +7,18 @@
 
 package org.scalaexercises.evaluator
 
-import java.nio.charset.StandardCharsets
-
 import cats.effect.IO
 import io.circe.generic.auto._
-import io.circe.syntax._
-import org.http4s.dsl._
 import org.http4s.headers._
 import org.http4s.{Status => HttpStatus, _}
 import org.http4s.dsl.io._
 import org.scalaexercises.evaluator.helper._
-import org.scalatest._
+import org.scalatest.Assertion
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 import pdi.jwt.{Jwt, JwtAlgorithm}
-import scodec.bits.ByteVector
 
-class EvalEndpointSpec extends FunSpec with Matchers with Implicits {
+class EvalEndpointSpec extends AnyFunSpec with Matchers with Implicits {
 
   import EvalResponse.messages._
   import auth._
@@ -137,7 +134,7 @@ class EvalEndpointSpec extends FunSpec with Matchers with Implicits {
             dependencies = List(
               Dependency(
                 "org.scala-exercises",
-                "exercises-stdlib_2.11",
+                "exercises-stdlib_2.12",
                 exercisesVersion,
                 Some(List(Exclusion("io.monix", "monix_2.11"))))) ++ scalaDependencies(Scala211)
           ),
@@ -158,7 +155,7 @@ class EvalEndpointSpec extends FunSpec with Matchers with Implicits {
             dependencies = List(
               Dependency(
                 "org.scala-exercises",
-                "exercises-stdlib_2.11",
+                "exercises-stdlib_2.12",
                 exercisesVersion,
                 Some(List(Exclusion("io.monix", "monix_2.11"))))) ++ scalaDependencies(Scala211)
           ),

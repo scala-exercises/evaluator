@@ -8,12 +8,13 @@
 package org.scalaexercises.evaluator
 
 import org.scalaexercises.evaluator.helper._
-import org.scalatest._
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-class EvaluatorSpec extends FunSpec with Matchers with Implicits {
+class EvaluatorSpec extends AnyFunSpec with Matchers with Implicits {
 
   val evaluator = new Evaluator(10 seconds)
 
@@ -134,7 +135,7 @@ Eval.now(42).value
       val dependencies = List(
         Dependency(
           "org.scala-exercises",
-          "exercises-stdlib_2.11",
+          "exercises-stdlib_2.12",
           exercisesVersion,
           Some(List(Exclusion("io.monix", "monix_2.11"))))
       ) ++ scalaDependencies(Scala211)
@@ -157,7 +158,7 @@ Eval.now(42).value
       val dependencies = List(
         Dependency(
           "org.scala-exercises",
-          "exercises-stdlib_2.11",
+          "exercises-stdlib_2.12",
           exercisesVersion,
           Some(List(Exclusion("io.monix", "monix_2.11"))))
       ) ++ scalaDependencies(Scala211)

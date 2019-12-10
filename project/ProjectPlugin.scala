@@ -19,14 +19,13 @@ object ProjectPlugin extends AutoPlugin {
   object autoImport {
 
     object V {
-      lazy val http4s      = "0.20.13"
+      lazy val http4s      = "0.20.15"
       lazy val circe       = "0.12.3"
       lazy val log4s       = "1.7.0"
-      lazy val scalatest   = "3.0.8"
-      lazy val roshttp     = "2.2.4"
-      lazy val slf4jSimple = "1.7.28"
-      lazy val jwtCore     = "4.0.0"
-      lazy val coursier    = "2.0.0-RC5-2"
+      lazy val scalatest   = "3.1.0"
+      lazy val slf4jSimple = "1.7.29"
+      lazy val jwtCore     = "4.2.0"
+      lazy val coursier    = "2.0.0-RC5-3"
     }
 
     lazy val dockerSettings = Seq(
@@ -82,7 +81,7 @@ object ProjectPlugin extends AutoPlugin {
         %%("coursier", V.coursier),
         %%("coursier-cache", V.coursier),
         "io.get-coursier"            %% "coursier-cats-interop" % V.coursier,
-        %%("scalatest", V.scalatest) % "test"
+        %%("scalatest", V.scalatest)
       )
     )
 
@@ -102,15 +101,6 @@ object ProjectPlugin extends AutoPlugin {
         %%("scalatest", V.scalatest) % "test"
       )
     )
-
-    lazy val clientDependencies = Seq(
-      libraryDependencies ++= Seq(
-        %%("http4s-blaze-client", V.http4s),
-        %%("http4s-circe", V.http4s),
-        %%("circe-core", V.circe),
-        %%("circe-generic", V.circe),
-        %%("scalatest", V.scalatest) % "test"
-      ))
 
   }
 
@@ -135,13 +125,14 @@ object ProjectPlugin extends AutoPlugin {
       scalaVersion := "2.12.10",
       scalaOrganization := "org.scala-lang",
       javacOptions ++= Seq("-encoding", "UTF-8", "-Xlint:-options"),
+      scalacOptions += "-Ypartial-unification",
       fork in Test := false,
       parallelExecution in Test := false,
       cancelable in Global := true,
       headerLicense := Some(
         HeaderLicense.Custom(
           s"""|
-            | scala-exercises - ${name.value}
+              | scala-exercises - ${name.value}
               | Copyright (C) 2015-2019 47 Degrees, LLC. <http://www.47deg.com>
               |
               |""".stripMargin

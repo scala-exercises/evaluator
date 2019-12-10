@@ -2,14 +2,6 @@ lazy val `evaluator-shared` = (project in file("shared"))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(name := "evaluator-shared")
 
-lazy val `evaluator-client` = (project in file("client"))
-  .dependsOn(`evaluator-shared`)
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(
-    name := "evaluator-client",
-    clientDependencies
-  )
-
 lazy val `evaluator-server` = (project in file("server"))
   .dependsOn(`evaluator-shared`)
   .enablePlugins(JavaAppPackaging)
@@ -40,7 +32,7 @@ lazy val root = (project in file("."))
   .settings(mainClass in Universal := Some("org.scalaexercises.evaluator.EvaluatorServer"))
   .settings(stage := (stage in Universal in `evaluator-server`).value)
   .settings(noPublishSettings: _*)
-  .aggregate(`evaluator-server`, `evaluator-client`, `evaluator-shared`)
+  .aggregate(`evaluator-server`, `evaluator-shared`)
 
 addCommandAlias(
   "publishSignedAll",
