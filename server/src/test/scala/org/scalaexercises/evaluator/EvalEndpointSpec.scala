@@ -9,9 +9,9 @@ package org.scalaexercises.evaluator
 
 import cats.effect.IO
 import io.circe.generic.auto._
+import org.http4s.dsl.io._
 import org.http4s.headers._
 import org.http4s.{Status => HttpStatus, _}
-import org.http4s.dsl.io._
 import org.scalaexercises.evaluator.helper._
 import org.scalatest.Assertion
 import org.scalatest.funspec.AnyFunSpec
@@ -131,12 +131,10 @@ class EvalEndpointSpec extends AnyFunSpec with Matchers with Implicits {
           EvalRequest(
             code = exerciseContentCode(true),
             resolvers = commonResolvers,
-            dependencies = List(
-              Dependency(
-                "org.scala-exercises",
-                "exercises-stdlib_2.12",
-                exercisesVersion,
-                Some(List(Exclusion("io.monix", "monix_2.11"))))) ++ scalaDependencies(Scala211)
+            dependencies = List(Dependency(
+              "org.scala-exercises",
+              "exercises-stdlib_2.12",
+              exercisesVersion)) ++ scalaDependencies(Scala211)
           ),
           `X-Scala-Eval-Api-Token`(validToken)
         ),
@@ -152,12 +150,10 @@ class EvalEndpointSpec extends AnyFunSpec with Matchers with Implicits {
           EvalRequest(
             code = exerciseContentCode(false),
             resolvers = commonResolvers,
-            dependencies = List(
-              Dependency(
-                "org.scala-exercises",
-                "exercises-stdlib_2.12",
-                exercisesVersion,
-                Some(List(Exclusion("io.monix", "monix_2.11"))))) ++ scalaDependencies(Scala211)
+            dependencies = List(Dependency(
+              "org.scala-exercises",
+              "exercises-stdlib_2.12",
+              exercisesVersion)) ++ scalaDependencies(Scala211)
           ),
           `X-Scala-Eval-Api-Token`(validToken)
         ),

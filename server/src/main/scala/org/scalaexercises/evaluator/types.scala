@@ -1,6 +1,6 @@
 /*
  *
- *  scala-exercises - evaluator-shared
+ *  scala-exercises - evaluator-server
  *  Copyright (C) 2015-2019 47 Degrees, LLC. <http://www.47deg.com>
  *
  */

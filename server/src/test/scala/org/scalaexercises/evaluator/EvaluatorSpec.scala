@@ -134,11 +134,7 @@ Eval.now(42).value
     it("can run code from the exercises content") {
       val code = exerciseContentCode(true)
       val dependencies = List(
-        Dependency(
-          "org.scala-exercises",
-          "exercises-stdlib_2.12",
-          exercisesVersion,
-          Some(List(Exclusion("io.monix", "monix_2.11"))))
+        Dependency("org.scala-exercises", "exercises-stdlib_2.12", exercisesVersion)
       ) ++ scalaDependencies(Scala211)
 
       val result: EvalResult[Unit] = evaluator
@@ -157,11 +153,7 @@ Eval.now(42).value
     it("captures exceptions when running the exercises content") {
 
       val dependencies = List(
-        Dependency(
-          "org.scala-exercises",
-          "exercises-stdlib_2.12",
-          exercisesVersion,
-          Some(List(Exclusion("io.monix", "monix_2.11"))))
+        Dependency("org.scala-exercises", "exercises-stdlib_2.12", exercisesVersion)
       ) ++ scalaDependencies(Scala211)
 
       val result: EvalResult[Unit] = evaluator

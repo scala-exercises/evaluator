@@ -1,9 +1,4 @@
-lazy val `evaluator-shared` = (project in file("shared"))
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(name := "evaluator-shared")
-
 lazy val `evaluator-server` = (project in file("server"))
-  .dependsOn(`evaluator-shared`)
   .enablePlugins(JavaAppPackaging)
   .enablePlugins(AutomateHeaderPlugin)
   .enablePlugins(sbtdocker.DockerPlugin)
@@ -19,7 +14,7 @@ lazy val `evaluator-server` = (project in file("server"))
   .settings(serverScalaMacroDependencies: _*)
 
 lazy val `smoketests` = (project in file("smoketests"))
-  .dependsOn(`evaluator-server` % "compile->compile;test->test")
+  .dependsOn(`evaluator-server`)
   .enablePlugins(BuildInfoPlugin)
   .settings(noPublishSettings: _*)
   .settings(
@@ -32,7 +27,7 @@ lazy val root = (project in file("."))
   .settings(mainClass in Universal := Some("org.scalaexercises.evaluator.EvaluatorServer"))
   .settings(stage := (stage in Universal in `evaluator-server`).value)
   .settings(noPublishSettings: _*)
-  .aggregate(`evaluator-server`, `evaluator-shared`)
+  .aggregate(`evaluator-server`)
 
 addCommandAlias(
   "publishSignedAll",
