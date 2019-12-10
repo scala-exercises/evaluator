@@ -44,7 +44,7 @@ class EvaluatorSpec extends AnyFunSpec with Matchers with Implicits {
         .eval(
           "{ while(true) {}; 123 }",
           remotes = commonResolvers,
-          dependencies = scalaDependencies(Scala211))
+          dependencies = scalaDependencies(Scala212))
         .unsafeRunSync()
 
       result should matchPattern {

@@ -13,8 +13,8 @@ object helper {
   val exercisesVersion: String = "0.5.0-SNAPSHOT"
 
   sealed abstract class ScalaVersion(val version: String)
-  case object Scala211 extends ScalaVersion("2.11.11")
-  case object Scala212 extends ScalaVersion("2.12.1")
+  case object Scala211 extends ScalaVersion("2.11.12")
+  case object Scala212 extends ScalaVersion("2.12.10")
 
   def toScalaVersion(v: String): ScalaVersion = v match {
     case version if version.startsWith("2.11") => Scala211
