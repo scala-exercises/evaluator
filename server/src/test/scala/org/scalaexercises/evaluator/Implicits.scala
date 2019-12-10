@@ -15,7 +15,7 @@ import scala.concurrent.ExecutionContext
 
 trait Implicits {
 
-  val EC = ExecutionContext.global
+  val EC = ExecutionContext.fromExecutor(new java.util.concurrent.ForkJoinPool(10))
 
   implicit val timer = IO.timer(EC)
 

@@ -7,6 +7,7 @@
 
 package org.scalaexercises.evaluator
 
+import cats.effect.IO
 import org.scalaexercises.evaluator.helper._
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
@@ -16,7 +17,7 @@ import scala.language.postfixOps
 
 class EvaluatorSpec extends AnyFunSpec with Matchers with Implicits {
 
-  def evaluator = new Evaluator(10 seconds)
+  def evaluator = new Evaluator[IO](10 seconds)
 
   describe("evaluation") {
     it("can evaluate simple expressions, for Scala 2.11") {
