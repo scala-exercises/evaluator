@@ -76,7 +76,7 @@ class EvalEndpointSpec extends AnyFunSpec with Matchers with Implicits {
           EvalRequest(
             code = "{ while(true) {}; 123 }",
             resolvers = commonResolvers,
-            dependencies = scalaDependencies(Scala211)),
+            dependencies = scalaDependencies(Scala212)),
           `X-Scala-Eval-Api-Token`(validToken)),
         expectedStatus = HttpStatus.Ok,
         expectedValue = None,
