@@ -15,7 +15,7 @@ import scala.language.postfixOps
 
 class EvaluatorSpec extends FunSpec with Matchers with Implicits {
 
-  val evaluator = new Evaluator(20 seconds)
+  val evaluator = new Evaluator(10 seconds)
 
   describe("evaluation") {
     it("can evaluate simple expressions, for Scala 2.11") {
