@@ -6,9 +6,9 @@ import sbtassembly.AssemblyPlugin.autoImport.assembly
 import sbtbuildinfo.BuildInfoKey
 import sbtbuildinfo.BuildInfoPlugin.autoImport._
 import sbtdocker.DockerPlugin.autoImport._
+import sbtorgpolicies.OrgPoliciesPlugin.autoImport._
 import sbtorgpolicies._
 import sbtorgpolicies.model._
-import sbtorgpolicies.OrgPoliciesPlugin.autoImport._
 
 object ProjectPlugin extends AutoPlugin {
 
@@ -26,6 +26,7 @@ object ProjectPlugin extends AutoPlugin {
       lazy val slf4jSimple = "1.7.29"
       lazy val jwtCore     = "4.2.0"
       lazy val coursier    = "2.0.0-RC5-3"
+      lazy val config      = "1.4.0"
     }
 
     lazy val dockerSettings = Seq(
@@ -76,11 +77,11 @@ object ProjectPlugin extends AutoPlugin {
         %%("http4s-dsl", V.http4s),
         %%("http4s-blaze-server", V.http4s),
         %%("http4s-circe", V.http4s),
-        %("config"),
+        %("config", V.config),
         %%("jwt-core", V.jwtCore),
         %%("coursier", V.coursier),
         %%("coursier-cache", V.coursier),
-        "io.get-coursier"            %% "coursier-cats-interop" % V.coursier,
+        "io.get-coursier" %% "coursier-cats-interop" % V.coursier,
         %%("scalatest", V.scalatest)
       )
     )
