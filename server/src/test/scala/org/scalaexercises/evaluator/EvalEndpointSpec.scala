@@ -32,7 +32,7 @@ class EvalEndpointSpec extends AnyFunSpec with Matchers with Implicits {
 
   val evaluator = new Evaluator[IO]
 
-  val server = auth[IO](service[IO].httpApp(evaluator))
+  val server = auth[IO](service[IO](evaluator))
 
   def serve(evalRequest: EvalRequest, authHeader: Header): Response[IO] =
     server
