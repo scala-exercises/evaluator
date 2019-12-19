@@ -26,7 +26,7 @@ after_success:
      sbt ++$TRAVIS_SCALA_VERSION publishSignedAll;
      echo "Deploying to Heroku";
      docker login --username=noel.m@47deg.com --password=$heroku_token registry.heroku.com;
-     sbt ++$TRAVIS_SCALA_VERSION -Devaluator.heroku.name=scala-evaluator-212 dockerBuildAndPush;
+     sbt ++$TRAVIS_SCALA_VERSION dockerBuildAndPush;
      sbt ++$TRAVIS_SCALA_VERSION smoketests/test;
   fi
 - if [ "$TRAVIS_PULL_REQUEST" = "true" ]; then
