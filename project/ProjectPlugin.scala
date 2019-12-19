@@ -1,4 +1,4 @@
-import de.heikoseeberger.sbtheader.{HeaderPattern, HeaderPlugin}
+import de.heikoseeberger.sbtheader.HeaderPlugin
 import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
 import sbt.Keys._
 import sbt.{Def, _}
@@ -6,9 +6,9 @@ import sbtassembly.AssemblyPlugin.autoImport.assembly
 import sbtbuildinfo.BuildInfoKey
 import sbtbuildinfo.BuildInfoPlugin.autoImport._
 import sbtdocker.DockerPlugin.autoImport._
+import sbtorgpolicies.OrgPoliciesPlugin.autoImport._
 import sbtorgpolicies._
 import sbtorgpolicies.model._
-import sbtorgpolicies.OrgPoliciesPlugin.autoImport._
 
 object ProjectPlugin extends AutoPlugin {
 
@@ -17,10 +17,20 @@ object ProjectPlugin extends AutoPlugin {
   override def requires: Plugins = plugins.JvmPlugin && HeaderPlugin && OrgPoliciesPlugin
 
   object autoImport {
-    lazy val http4sV = "0.15.7a"
+
+    object V {
+      lazy val http4s      = "0.20.15"
+      lazy val circe       = "0.12.3"
+      lazy val log4s       = "1.7.0"
+      lazy val scalatest   = "3.1.0"
+      lazy val slf4jSimple = "1.7.29"
+      lazy val jwtCore     = "4.2.0"
+      lazy val coursier    = "2.0.0-RC5-3"
+      lazy val config      = "1.4.0"
+    }
 
     lazy val dockerSettings = Seq(
-      docker <<= docker dependsOn assembly,
+      docker := (docker dependsOn assembly).value,
       dockerfile in docker := {
 
         val artifact: File     = assembly.value
@@ -59,9 +69,38 @@ object ProjectPlugin extends AutoPlugin {
       )
     }
 
+    lazy val serverHttpDependencies = Seq(
+      libraryDependencies ++= Seq(
+        %%("circe-core", V.circe),
+        %%("circe-generic", V.circe),
+        %("slf4j-simple", V.slf4jSimple),
+        %%("http4s-dsl", V.http4s),
+        %%("http4s-blaze-server", V.http4s),
+        %%("http4s-circe", V.http4s),
+        %("config", V.config),
+        %%("jwt-core", V.jwtCore),
+        %%("coursier", V.coursier),
+        %%("coursier-cache", V.coursier),
+        "io.get-coursier" %% "coursier-cats-interop" % V.coursier,
+        %%("scalatest", V.scalatest)
+      )
+    )
+
     lazy val buildInfoSettings = Seq(
       buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
       buildInfoPackage := "org.scalaexercises.evaluator"
+    )
+
+    lazy val smoketestDependencies = Seq(
+      libraryDependencies ++= Seq(
+        %%("circe-core", V.circe),
+        %%("circe-generic", V.circe),
+        %%("circe-parser", V.circe),
+        %%("http4s-blaze-client", V.http4s),
+        %%("http4s-circe", V.http4s),
+        %%("jwt-core", V.jwtCore),
+        %%("scalatest", V.scalatest) % "test"
+      )
     )
 
   }
@@ -84,20 +123,20 @@ object ProjectPlugin extends AutoPlugin {
         organizationEmail = "hello@47deg.com"
       ),
       orgLicenseSetting := ApacheLicense,
-      scalaVersion := "2.11.11",
+      scalaVersion := "2.12.10",
       scalaOrganization := "org.scala-lang",
       javacOptions ++= Seq("-encoding", "UTF-8", "-Xlint:-options"),
+      scalacOptions += "-Ypartial-unification",
       fork in Test := false,
       parallelExecution in Test := false,
       cancelable in Global := true,
-      headers := Map(
-        "scala" -> (HeaderPattern.cStyleBlockComment,
-        s"""|/*
-            | * scala-exercises - ${name.value}
-            | * Copyright (C) 2015-2016 47 Degrees, LLC. <http://www.47deg.com>
-            | */
-            |
-            |""".stripMargin)
-      )
+      headerLicense := Some(
+        HeaderLicense.Custom(
+          s"""|
+              | scala-exercises - ${name.value}
+              | Copyright (C) 2015-2019 47 Degrees, LLC. <http://www.47deg.com>
+              |
+              |""".stripMargin
+        ))
     ) ++ shellPromptSettings
 }

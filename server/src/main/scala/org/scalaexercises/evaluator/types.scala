@@ -1,6 +1,8 @@
 /*
- * scala-exercises - evaluator-shared
- * Copyright (C) 2015-2016 47 Degrees, LLC. <http://www.47deg.com>
+ *
+ *  scala-exercises - evaluator-server
+ *  Copyright (C) 2015-2019 47 Degrees, LLC. <http://www.47deg.com>
+ *
  */
 
 package org.scalaexercises.evaluator
@@ -35,7 +37,12 @@ final case class CompilationError[A](compilationInfos: CI) extends EvalResult[A]
 
 final case class GeneralError[A](stack: Throwable) extends EvalResult[A]
 
-final case class Dependency(groupId: String, artifactId: String, version: String)
+final case class Exclusion(organization: String, moduleName: String)
+final case class Dependency(
+    groupId: String,
+    artifactId: String,
+    version: String,
+    exclusions: Option[List[Exclusion]] = None)
 
 final case class EvalRequest(
     resolvers: List[String] = Nil,

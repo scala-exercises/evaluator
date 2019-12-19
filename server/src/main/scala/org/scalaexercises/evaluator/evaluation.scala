@@ -1,6 +1,8 @@
 /*
- * scala-exercises - evaluator-server
- * Copyright (C) 2015-2016 47 Degrees, LLC. <http://www.47deg.com>
+ *
+ *  scala-exercises - evaluator-server
+ *  Copyright (C) 2015-2019 47 Degrees, LLC. <http://www.47deg.com>
+ *
  */
 
 package org.scalaexercises.evaluator
@@ -9,11 +11,13 @@ import java.io.{ByteArrayOutputStream, File}
 import java.math.BigInteger
 import java.net.URLClassLoader
 import java.security.MessageDigest
-import java.util.concurrent.TimeoutException
 import java.util.jar.JarFile
 
+import cats.effect.{Concurrent, ConcurrentEffect, Timer}
+import cats.implicits._
 import coursier._
-import monix.execution.Scheduler
+import coursier.cache.{ArtifactError, FileCache}
+import coursier.util.Sync
 import org.scalaexercises.evaluator.Eval.CompilerException
 
 import scala.concurrent.duration._
@@ -24,13 +28,10 @@ import scala.tools.nsc.reporters._
 import scala.tools.nsc.{Global, Settings}
 import scala.util.Try
 import scala.util.control.NonFatal
-import scalaz.Scalaz._
-import scalaz._
-import scalaz.concurrent.Task
 
-class Evaluator(timeout: FiniteDuration = 20.seconds)(
-    implicit S: Scheduler
-) {
+class Evaluator[F[_]: Sync](timeout: FiniteDuration = 20.seconds)(
+    implicit F: ConcurrentEffect[F],
+    T: Timer[F]) {
   type Remote = String
 
   private[this] def convert(errors: (Position, String, String)): (String, List[CompilationInfo]) = {
@@ -38,31 +39,46 @@ class Evaluator(timeout: FiniteDuration = 20.seconds)(
     (severity, CompilationInfo(msg, Some(RangePosition(pos.start, pos.point, pos.end))) :: Nil)
   }
 
-  def remoteToRepository(remote: Remote): Repository =
-    MavenRepository(remote)
+  def remoteToRepository(remote: Remote): Repository = MavenRepository(remote)
 
-  def dependencyToModule(dependency: Dependency): coursier.Dependency =
-    coursier.Dependency(
-      Module(dependency.groupId, dependency.artifactId),
-      dependency.version
-    )
+  def dependencyToModule(dependency: Dependency): coursier.Dependency = {
+    val exclusions: Set[(Organization, ModuleName)] =
+      dependency.exclusions
+        .fold(List[(Organization, ModuleName)]())(
+          _.map(
+            ex => (Organization(ex.organization), ModuleName(ex.moduleName))
+          ))
+        .toSet
 
-  def resolveArtifacts(remotes: Seq[Remote], dependencies: Seq[Dependency]): Task[Resolution] = {
-    val resolution                    = Resolution(dependencies.map(dependencyToModule).toSet)
-    val repositories: Seq[Repository] = Cache.ivy2Local +: remotes.map(remoteToRepository)
-    val fetch                         = Fetch.from(repositories, Cache.fetch())
-    resolution.process.run(fetch)
+    coursier
+      .Dependency(
+        Module(Organization(dependency.groupId), ModuleName(dependency.artifactId)),
+        dependency.version
+      )
+      .withExclusions(exclusions)
+  }
+
+  val cache: FileCache[F] = FileCache[F].noCredentials
+
+  def resolveArtifacts(remotes: Seq[Remote], dependencies: Seq[Dependency]): F[Resolution] = {
+    Resolve[F](cache)
+      .addDependencies(dependencies.map(dependencyToModule): _*)
+      .addRepositories(remotes.map(remoteToRepository): _*)
+      .addRepositories(coursier.LocalRepositories.ivy2Local)
+      .io
   }
 
   def fetchArtifacts(
       remotes: Seq[Remote],
-      dependencies: Seq[Dependency]): Task[coursier.FileError \/ List[File]] =
+      dependencies: Seq[Dependency]): F[Either[ArtifactError, List[File]]] =
     for {
-      resolution <- resolveArtifacts(remotes, dependencies)
-      artifacts <- Task.gatherUnordered(
-        resolution.artifacts.map(Cache.file(_).run)
-      )
-    } yield artifacts.sequenceU
+      resolution        <- resolveArtifacts(remotes, dependencies)
+      gatheredArtifacts <- resolution.artifacts().toList.traverse(cache.file(_).run)
+      artifacts = gatheredArtifacts.foldRight(Right(Nil): Either[ArtifactError, List[File]]) {
+        case (Right(file), acc) => acc.map(file :: _)
+        case (Left(ae), _)      => Left(ae)
+      }
+    } yield artifacts
 
   def createEval(jars: Seq[File]) = {
     new Eval(jars = jars.toList) {
@@ -124,21 +140,23 @@ class Evaluator(timeout: FiniteDuration = 20.seconds)(
       code: String,
       remotes: Seq[Remote] = Nil,
       dependencies: Seq[Dependency] = Nil
-  ): Task[EvalResult[T]] = {
+  ): F[EvalResult[T]] = {
     for {
       allJars <- fetchArtifacts(remotes, dependencies)
       result <- allJars match {
-        case \/-(jars) =>
-          Task({
-            evaluate(code, jars)
-          }).timed(timeout)
-            .handle({
-              case err: TimeoutException => Timeout[T](timeout)
-            })
-        case -\/(fileError) =>
-          Task.now(UnresolvedDependency(fileError.describe))
+        case Right(jars) =>
+          timeoutTo[EvalResult[T]](F.delay { evaluate(code, jars) }, timeout, Timeout[T](timeout))
+        case Left(fileError) => F.pure(UnresolvedDependency[T](fileError.describe))
       }
     } yield result
+  }
+
+  def timeoutTo[A](fa: F[A], after: FiniteDuration, fallback: A): F[A] = {
+
+    Concurrent[F].race(fa, T.sleep(after)).flatMap {
+      case Left(a)  => a.pure[F]
+      case Right(_) => fallback.pure[F]
+    }
   }
 }
 
@@ -170,7 +188,7 @@ private class StringCompiler(
     val settings = StringCompiler.this.settings
     val messages = new scala.collection.mutable.ListBuffer[List[String]]
 
-    def display(pos: Position, message: String, severity: Severity) {
+    def display(pos: Position, message: String, severity: Severity) = {
       severity.count += 1
       val severityName = severity match {
         case ERROR   => "error: "
@@ -193,11 +211,11 @@ private class StringCompiler(
        })
     }
 
-    def displayPrompt {
+    def displayPrompt = {
       // no.
     }
 
-    override def reset {
+    override def reset = {
       super.reset
       messages.clear()
     }
@@ -205,7 +223,7 @@ private class StringCompiler(
 
   val global = new Global(settings, reporter)
 
-  def reset() {
+  def reset() = {
     targetDir match {
       case None => {
         output.asInstanceOf[VirtualDirectory].clear()
@@ -239,7 +257,7 @@ private class StringCompiler(
   /**
    * Compile scala code. It can be found using the above class loader.
    */
-  def apply(code: String) {
+  def apply(code: String) = {
     // if you're looking for the performance hit, it's 1/2 this line...
     val compiler    = new global.Run
     val sourceFiles = List(new BatchSourceFile("(inline)", code))
@@ -366,7 +384,7 @@ class Eval(target: Option[File] = None, jars: List[File] = Nil) {
    * Check if code is Eval-able.
    * @throws CompilerException if not Eval-able.
    */
-  def check(code: String) {
+  def check(code: String) = {
     val id          = uniqueId(code)
     val className   = "Evaluator__" + id
     val wrappedCode = wrapCodeInClass(className, code)

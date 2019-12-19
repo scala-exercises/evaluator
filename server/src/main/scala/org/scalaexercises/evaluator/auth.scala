@@ -1,19 +1,21 @@
 /*
- * scala-exercises - evaluator-server
- * Copyright (C) 2015-2016 47 Degrees, LLC. <http://www.47deg.com>
+ *
+ *  scala-exercises - evaluator-server
+ *  Copyright (C) 2015-2019 47 Degrees, LLC. <http://www.47deg.com>
+ *
  */
 
 package org.scalaexercises.evaluator
 
-import org.http4s._, org.http4s.dsl._, org.http4s.server._
+import cats.effect.Sync
 import com.typesafe.config._
+import org.http4s._
+import org.http4s.syntax.kleisli.http4sKleisliResponseSyntax
 import org.http4s.util._
-import scala.util.{Failure, Success, Try}
-import pdi.jwt.{Jwt, JwtAlgorithm, JwtClaim, JwtHeader, JwtOptions}
-
 import org.log4s.getLogger
+import pdi.jwt.{Jwt, JwtAlgorithm}
 
-import scalaz.concurrent.Task
+import scala.util.{Failure, Success}
 
 object auth {
 
@@ -37,15 +39,14 @@ object auth {
 
     type HeaderT = `X-Scala-Eval-Api-Token`
 
-    def name: CaseInsensitiveString = "x-scala-eval-api-token".ci
+    def name: CaseInsensitiveString = CaseInsensitiveString("x-scala-eval-api-token")
 
     override def parse(s: String): ParseResult[`X-Scala-Eval-Api-Token`] =
       ParseResult.success(`X-Scala-Eval-Api-Token`(s))
 
-    def matchHeader(header: Header): Option[HeaderT] = {
+    def matchHeader(header: Header): Option[HeaderT] =
       if (header.name == name) Some(`X-Scala-Eval-Api-Token`(header.value))
       else None
-    }
 
   }
 
@@ -55,20 +56,27 @@ object auth {
       writer.append(token)
   }
 
-  def apply(service: HttpService): HttpService = Service.lift { req =>
-    req.headers.get(`X-Scala-Eval-Api-Token`) match {
-      case Some(header) =>
-        Jwt.decodeRaw(header.value, secretKey, Seq(JwtAlgorithm.HS256)) match {
-          case Success(tokenIdentity) =>
-            logger.info(s"Auth success with identity : $tokenIdentity")
-            service(req)
-          case Failure(ex) =>
-            logger.warn(s"Auth failed : $ex")
-            Task.now(Response(Status.Unauthorized))
+  def apply[F[_]: Sync](service: HttpApp[F]): HttpApp[F] =
+    HttpRoutes
+      .of[F] {
+        case req if req.headers.nonEmpty => {
+          req.headers.get(`X-Scala-Eval-Api-Token`) match {
+            case Some(header) =>
+              Jwt.decodeRaw(header.token, secretKey, Seq(JwtAlgorithm.HS256)) match {
+                case Success(tokenIdentity) => {
+                  logger.info(s"Auth success with identity : $tokenIdentity")
+                  service(req)
+                }
+                case Failure(ex) => {
+                  logger.warn(s"Auth failed : $ex")
+                  Sync[F].pure(Response(Status.Unauthorized))
+                }
+              }
+            case None => Sync[F].pure(Response(Status.Unauthorized))
+          }
         }
-      case None => Task.now(Response(Status.Unauthorized))
-    }
-
-  }
+        case _ => Sync[F].pure(Response(Status.Unauthorized))
+      }
+      .orNotFound
 
 }
