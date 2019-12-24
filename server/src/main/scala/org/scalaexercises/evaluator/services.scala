@@ -17,19 +17,18 @@ import org.http4s._
 import org.http4s.dsl._
 import org.http4s.headers.Allow
 import org.http4s.server.blaze._
-import org.http4s.syntax.kleisli.http4sKleisliResponseSyntax
+import org.http4s.syntax.kleisli.http4sKleisliResponseSyntaxOptionT
 import org.log4s.getLogger
 import org.scalaexercises.evaluator.codecs._
 
 import scala.concurrent.duration._
-import scala.language.postfixOps
 
 object services {
 
   import EvalResponse.messages._
 
-  def evaluatorInstance[F[_]: ConcurrentEffect: ContextShift: Timer: Sync] =
-    new Evaluator[F](20 seconds)
+  //def evaluatorInstance[F[_]: ConcurrentEffect: ContextShift: Timer: Sync] =
+  //  new Evaluator[F](20 seconds)
 
   val corsHeaders = Seq(
     Header("Vary", "Origin,Access-Control-Request-Methods"),
@@ -116,12 +115,14 @@ object EvaluatorServer extends IOApp {
   lazy val port = (Option(System.getenv("PORT")) orElse
     Option(System.getProperty("http.port"))).map(_.toInt).getOrElse(8080)
 
+  val evaluator = new Evaluator[IO](10.seconds)
+
   override def run(args: List[String]): IO[ExitCode] = {
     logger.info(s"Initializing Evaluator at $ip:$port")
 
     BlazeServerBuilder[IO]
       .bindHttp(port, ip)
-      .withHttpApp(auth[IO](service(evaluatorInstance)))
+      .withHttpApp(auth[IO](service(evaluator)))
       .serve
       .compile
       .lastOrError

@@ -10,7 +10,7 @@ package org.scalaexercises.evaluator
 import cats.effect.Sync
 import com.typesafe.config._
 import org.http4s._
-import org.http4s.syntax.kleisli.http4sKleisliResponseSyntax
+import org.http4s.syntax.kleisli._
 import org.http4s.util._
 import org.log4s.getLogger
 import pdi.jwt.{Jwt, JwtAlgorithm}

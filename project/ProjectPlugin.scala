@@ -19,7 +19,7 @@ object ProjectPlugin extends AutoPlugin {
   object autoImport {
 
     object V {
-      lazy val http4s      = "0.20.15"
+      lazy val http4s      = "0.21.0-M6"
       lazy val circe       = "0.12.3"
       lazy val log4s       = "1.7.0"
       lazy val scalatest   = "3.1.0"
@@ -54,18 +54,7 @@ object ProjectPlugin extends AutoPlugin {
       Seq(
         libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
         libraryDependencies += "org.scala-lang" % "scala-reflect"  % scalaVersion.value,
-        libraryDependencies += compilerPlugin(%%("paradise") cross CrossVersion.full),
-        libraryDependencies ++= {
-          CrossVersion.partialVersion(scalaVersion.value) match {
-            // if scala 2.11+ is used, quasiquotes are merged into scala-reflect
-            case Some((2, scalaMajor)) if scalaMajor >= 11 => Seq()
-            // in Scala 2.10, quasiquotes are provided by macro paradise
-            case Some((2, 10)) =>
-              Seq(
-                %%("quasiquotes") cross CrossVersion.binary
-              )
-          }
-        }
+        scalacOptions += "-Ymacro-annotations"
       )
     }
 
@@ -123,10 +112,9 @@ object ProjectPlugin extends AutoPlugin {
         organizationEmail = "hello@47deg.com"
       ),
       orgLicenseSetting := ApacheLicense,
-      scalaVersion := "2.12.10",
+      scalaVersion := "2.13.1",
       scalaOrganization := "org.scala-lang",
       javacOptions ++= Seq("-encoding", "UTF-8", "-Xlint:-options"),
-      scalacOptions += "-Ypartial-unification",
       fork in Test := false,
       parallelExecution in Test := false,
       cancelable in Global := true,

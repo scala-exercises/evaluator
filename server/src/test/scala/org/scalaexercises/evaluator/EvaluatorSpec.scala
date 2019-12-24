@@ -26,7 +26,7 @@ class EvaluatorSpec extends AnyFunSpec with Matchers with Implicits {
         .unsafeRunSync()
 
       result should matchPattern {
-        case EvalSuccess(_, 42, _) ⇒
+        case EvalSuccess(_, 42, _) =>
       }
     }
 
@@ -36,7 +36,7 @@ class EvaluatorSpec extends AnyFunSpec with Matchers with Implicits {
         .unsafeRunSync()
 
       result should matchPattern {
-        case EvalSuccess(_, 42, _) ⇒
+        case EvalSuccess(_, 42, _) =>
       }
     }
 
@@ -49,7 +49,7 @@ class EvaluatorSpec extends AnyFunSpec with Matchers with Implicits {
         .unsafeRunSync()
 
       result should matchPattern {
-        case Timeout(_) ⇒
+        case Timeout(_) =>
       }
     }
 
@@ -69,7 +69,7 @@ Xor.Right(42).toOption.get
         .eval(
           code,
           remotes = remotes,
-          dependencies = dependencies
+          dependencies = scalaDependencies(Scala211) ++ dependencies
         )
         .unsafeRunSync()
 

@@ -13,12 +13,17 @@ object helper {
   val exercisesVersion: String = "0.5.0-SNAPSHOT"
 
   sealed abstract class ScalaVersion(val version: String)
+
   case object Scala211 extends ScalaVersion("2.11.12")
+
   case object Scala212 extends ScalaVersion("2.12.10")
+
+  case object Scala213 extends ScalaVersion("2.13.1")
 
   def toScalaVersion(v: String): ScalaVersion = v match {
     case version if version.startsWith("2.11") => Scala211
     case version if version.startsWith("2.12") => Scala212
+    case version if version.startsWith("2.13") => Scala213
     case _                                     => throw new IllegalArgumentException(s"Unknown Scala Version $v")
   }
 
@@ -38,8 +43,7 @@ object helper {
   def fetchLibraryDependencies(scala: ScalaVersion): List[Dependency] = {
     val sv = scala.version
     List(
-      Dependency("com.47deg", s"fetch_${sv.substring(0, 4)}", "0.7.3"),
-      Dependency("com.47deg", s"fetch-monix_${sv.substring(0, 4)}", "0.7.3")
+      Dependency("com.47deg", s"fetch_${sv.substring(0, 4)}", "1.2.1")
     ) ++ scalaDependencies(scala)
   }
 
@@ -56,76 +60,60 @@ Asserts.scalaTestAsserts($assertCheck)
 
   val fetchCode =
     """
-type UserId = Int
-case class User(id: UserId, username: String)
+import java.util.concurrent.ScheduledThreadPoolExecutor
 
-def latency[A](result: A, msg: String) = {
-  val id = Thread.currentThread.getId
-  println(s"~~> [$id] $msg")
-  Thread.sleep(100)
-  println(s"<~~ [$id] $msg")
-  result
-}
+import scala.concurrent.ExecutionContext
 
 import cats.data.NonEmptyList
-import cats.instances.list._
+import cats.effect._
 
 import fetch._
+import cats.implicits._
+
+val executor                           = new ScheduledThreadPoolExecutor(4)
+val executionContext: ExecutionContext = ExecutionContext.fromExecutor(executor)
+
+implicit val timer: Timer[IO]     = IO.timer(executionContext)
+implicit val cs: ContextShift[IO] = IO.contextShift(executionContext)
+
+type UserId = Int
+
+case class User(id: UserId, username: String)
+
+def latency[F[_]: Concurrent](msg: String): F[Unit] =
+for {
+_ <- Sync[F].delay(println(s"--> [${Thread.currentThread.getId}] $msg"))
+_ <- Sync[F].delay(Thread.sleep(100))
+_ <- Sync[F].delay(println(s"<-- [${Thread.currentThread.getId}] $msg"))
+} yield ()
 
 val userDatabase: Map[UserId, User] = Map(
-  1 -> User(1, "@one"),
-  2 -> User(2, "@two"),
-  3 -> User(3, "@three"),
-  4 -> User(4, "@four")
+1 -> User(1, "@one"),
+2 -> User(2, "@two"),
+3 -> User(3, "@three"),
+4 -> User(4, "@four")
 )
 
-implicit object UserSource extends DataSource[UserId, User]{
-  override def name = "User"
+object Users extends Data[UserId, User] {
+def name = "Users"
 
-  override def fetchOne(id: UserId): Query[Option[User]] = {
-    Query.sync({
-	  latency(userDatabase.get(id), s"One User $id")
-    })
-  }
-  override def fetchMany(ids: NonEmptyList[UserId]): Query[Map[UserId, User]] = {
-    Query.sync({
-	  latency(userDatabase.filterKeys(ids.toList.contains), s"Many Users $ids")
-    })
-  }
+def source[F[_]: Concurrent]: DataSource[F, UserId, User] = new DataSource[F, UserId, User] {
+override def data = Users
+
+def CF = Concurrent[F]
+
+override def fetch(id: UserId): F[Option[User]] =
+latency[F](s"One User $id") >> CF.pure(userDatabase.get(id))
+
+override def batch(ids: NonEmptyList[UserId]): F[Map[UserId, User]] =
+latency[F](s"Batch Users $ids") >> CF.pure(userDatabase.filterKeys(ids.toList.toSet))
+}
 }
 
-def getUser(id: UserId): Fetch[User] = Fetch(id) // or, more explicitly: Fetch(id)(UserSource)
+def getUser[F[_]: Concurrent](id: UserId): Fetch[F, User] = Fetch[F, UserId, User](id, Users.source)
 
-implicit object UnbatchedSource extends DataSource[Int, Int]{
-  override def name = "Unbatched"
+def fetchUser[F[_] : Concurrent]: Fetch[F, User] = getUser(1)
 
-  override def fetchOne(id: Int): Query[Option[Int]] = {
-    Query.sync(Option(id))
-  }
-  override def fetchMany(ids: NonEmptyList[Int]): Query[Map[Int, Int]] = {
-    batchingNotSupported(ids)
-  }
-}
-
-val fetchUser: Fetch[User] = getUser(1)
-
-import cats.Id
-import fetch.unsafe.implicits._
-import fetch.syntax._
-
-fetchUser.runA[Id]
-
-val fetchTwoUsers: Fetch[(User, User)] = for {
-  aUser <- getUser(1)
-  anotherUser <- getUser(aUser.id + 1)
-} yield (aUser, anotherUser)
-
-fetchTwoUsers.runA[Id]
-
-import cats.syntax.cartesian._
-
-val fetchProduct: Fetch[(User, User)] = getUser(1).product(getUser(2))
-
-fetchProduct.runA[Id]
-      """
+Fetch.run[IO](fetchUser).unsafeRunSync()
+    """
 }

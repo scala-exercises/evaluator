@@ -13,15 +13,16 @@ import java.net.URLClassLoader
 import java.security.MessageDigest
 import java.util.jar.JarFile
 
-import cats.effect.{Concurrent, ConcurrentEffect, Timer}
+import cats.effect.syntax.concurrent.catsEffectSyntaxConcurrent
+import cats.effect.{ConcurrentEffect, Timer}
 import cats.implicits._
 import coursier._
 import coursier.cache.{ArtifactError, FileCache}
 import coursier.util.Sync
 import org.scalaexercises.evaluator.Eval.CompilerException
+import org.scalaexercises.evaluator.{Dependency => EvaluatorDependency}
 
 import scala.concurrent.duration._
-import scala.language.reflectiveCalls
 import scala.reflect.internal.util.{AbstractFileClassLoader, BatchSourceFile, Position}
 import scala.tools.nsc.io.{AbstractFile, VirtualDirectory}
 import scala.tools.nsc.reporters._
@@ -41,7 +42,7 @@ class Evaluator[F[_]: Sync](timeout: FiniteDuration = 20.seconds)(
 
   def remoteToRepository(remote: Remote): Repository = MavenRepository(remote)
 
-  def dependencyToModule(dependency: Dependency): coursier.Dependency = {
+  def dependencyToModule(dependency: EvaluatorDependency): Dependency = {
     val exclusions: Set[(Organization, ModuleName)] =
       dependency.exclusions
         .fold(List[(Organization, ModuleName)]())(
@@ -60,7 +61,9 @@ class Evaluator[F[_]: Sync](timeout: FiniteDuration = 20.seconds)(
 
   val cache: FileCache[F] = FileCache[F].noCredentials
 
-  def resolveArtifacts(remotes: Seq[Remote], dependencies: Seq[Dependency]): F[Resolution] = {
+  def resolveArtifacts(
+      remotes: Seq[Remote],
+      dependencies: Seq[EvaluatorDependency]): F[Resolution] = {
     Resolve[F](cache)
       .addDependencies(dependencies.map(dependencyToModule): _*)
       .addRepositories(remotes.map(remoteToRepository): _*)
@@ -70,7 +73,7 @@ class Evaluator[F[_]: Sync](timeout: FiniteDuration = 20.seconds)(
 
   def fetchArtifacts(
       remotes: Seq[Remote],
-      dependencies: Seq[Dependency]): F[Either[ArtifactError, List[File]]] =
+      dependencies: Seq[EvaluatorDependency]): F[Either[ArtifactError, List[File]]] =
     for {
       resolution        <- resolveArtifacts(remotes, dependencies)
       gatheredArtifacts <- resolution.artifacts().toList.traverse(cache.file(_).run)
@@ -96,11 +99,12 @@ class Evaluator[F[_]: Sync](timeout: FiniteDuration = 20.seconds)(
         }
       }
 
-      override lazy val compilerMessageHandler: Option[Reporter] = Some(new AbstractReporter {
-        override val settings: Settings    = compilerSettings
-        override def displayPrompt(): Unit = ()
-        override def display(pos: Position, msg: String, severity: this.type#Severity): Unit =
+      override lazy val compilerMessageHandler: Option[Reporter] = Some(new FilteringReporter {
+        override def settings: Settings = compilerSettings
+
+        override def doReport(pos: Position, msg: String, severity: Severity): Unit =
           errors += convert((pos, msg, severity.toString))
+
         override def reset() = {
           super.reset()
           errors = Map.empty
@@ -117,20 +121,20 @@ class Evaluator[F[_]: Sync](timeout: FiniteDuration = 20.seconds)(
     Console.withOut(outCapture) {
 
       val result = for {
-        _      ← Try(eval.check(code))
-        result ← Try(eval.execute[T](code, resetState = true, jars = jars))
+        _      <- Try(eval.check(code))
+        result <- Try(eval.execute[T](code, resetState = true, jars = jars))
       } yield result
 
       val errors = eval.errors
 
       result match {
-        case scala.util.Success(r) ⇒ EvalSuccess[T](errors, r, outCapture.toString)
-        case scala.util.Failure(t) ⇒
+        case scala.util.Success(r) => EvalSuccess[T](errors, r, outCapture.toString)
+        case scala.util.Failure(t) =>
           t match {
-            case e: CompilerException ⇒ CompilationError(errors)
-            case NonFatal(e) ⇒
+            case e: CompilerException => CompilationError(errors)
+            case NonFatal(e) =>
               EvalRuntimeError(errors, Option(RuntimeError(e, None)))
-            case e ⇒ GeneralError(e)
+            case e => GeneralError(e)
           }
       }
     }
@@ -139,24 +143,17 @@ class Evaluator[F[_]: Sync](timeout: FiniteDuration = 20.seconds)(
   def eval[T](
       code: String,
       remotes: Seq[Remote] = Nil,
-      dependencies: Seq[Dependency] = Nil
+      dependencies: Seq[EvaluatorDependency] = Nil
   ): F[EvalResult[T]] = {
     for {
       allJars <- fetchArtifacts(remotes, dependencies)
       result <- allJars match {
         case Right(jars) =>
-          timeoutTo[EvalResult[T]](F.delay { evaluate(code, jars) }, timeout, Timeout[T](timeout))
+          F.delay[EvalResult[T]](evaluate(code, jars))
+            .timeoutTo(timeout, Timeout[T](timeout).asInstanceOf[EvalResult[T]].pure[F])
         case Left(fileError) => F.pure(UnresolvedDependency[T](fileError.describe))
       }
     } yield result
-  }
-
-  def timeoutTo[A](fa: F[A], after: FiniteDuration, fallback: A): F[A] = {
-
-    Concurrent[F].race(fa, T.sleep(after)).flatMap {
-      case Left(a)  => a.pure[F]
-      case Right(_) => fallback.pure[F]
-    }
   }
 }
 
@@ -181,15 +178,15 @@ private class StringCompiler(
   val cache = new scala.collection.mutable.HashMap[String, Class[_]]()
 
   trait MessageCollector {
-    val messages: Seq[List[String]]
+    val messages: scala.collection.mutable.ListBuffer[List[String]]
   }
 
-  val reporter = messageHandler getOrElse new AbstractReporter with MessageCollector {
+  val reporter = messageHandler getOrElse new FilteringReporter with MessageCollector {
     val settings = StringCompiler.this.settings
     val messages = new scala.collection.mutable.ListBuffer[List[String]]
 
-    def display(pos: Position, message: String, severity: Severity) = {
-      severity.count += 1
+    def doReport(pos: Position, message: String, severity: Severity) = {
+      increment(severity)
       val severityName = severity match {
         case ERROR   => "error: "
         case WARNING => "warning: "
@@ -209,10 +206,6 @@ private class StringCompiler(
        } else {
          Nil
        })
-    }
-
-    def displayPrompt = {
-      // no.
     }
 
     override def reset = {
@@ -264,7 +257,7 @@ private class StringCompiler(
     // ...and 1/2 this line:
     compiler.compileSources(sourceFiles)
 
-    if (reporter.hasErrors || reporter.WARNING.count > 0) {
+    if (reporter.hasErrors || reporter.hasWarnings) {
       val msgs: List[List[String]] = reporter match {
         case collector: MessageCollector =>
           collector.messages.toList
