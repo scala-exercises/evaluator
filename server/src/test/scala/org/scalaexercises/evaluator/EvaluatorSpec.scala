@@ -40,6 +40,16 @@ class EvaluatorSpec extends AnyFunSpec with Matchers with Implicits {
       }
     }
 
+    it("can evaluate simple expressions, for Scala 2.13") {
+      val result: EvalResult[Int] = evaluator
+        .eval("{ 41 + 1 }", remotes = commonResolvers, dependencies = scalaDependencies(Scala213))
+        .unsafeRunSync()
+
+      result should matchPattern {
+        case EvalSuccess(_, 42, _) =>
+      }
+    }
+
     it("fails with a timeout when takes longer than the configured timeout") {
       val result: EvalResult[Int] = evaluator
         .eval(
@@ -54,7 +64,8 @@ class EvaluatorSpec extends AnyFunSpec with Matchers with Implicits {
     }
 
     it("can load dependencies for an evaluation") {
-      val code = """
+      val code =
+        """
 import cats.data.Xor
 
 Xor.Right(42).toOption.get
@@ -95,7 +106,8 @@ Xor.Right(42).toOption.get
     }
 
     it("can load different versions of a dependency across evaluations") {
-      val code = """
+      val code =
+        """
 import cats._
 Eval.now(42).value
       """

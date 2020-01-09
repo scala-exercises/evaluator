@@ -60,60 +60,60 @@ Asserts.scalaTestAsserts($assertCheck)
 
   val fetchCode =
     """
-import java.util.concurrent.ScheduledThreadPoolExecutor
+  import java.util.concurrent.ScheduledThreadPoolExecutor
 
-import scala.concurrent.ExecutionContext
+  import scala.concurrent.ExecutionContext
 
-import cats.data.NonEmptyList
-import cats.effect._
+  import cats.data.NonEmptyList
+  import cats.effect._
 
-import fetch._
-import cats.implicits._
+  import fetch._
+  import cats.implicits._
 
-val executor                           = new ScheduledThreadPoolExecutor(4)
-val executionContext: ExecutionContext = ExecutionContext.fromExecutor(executor)
+  val executor                           = new ScheduledThreadPoolExecutor(4)
+  val executionContext: ExecutionContext = ExecutionContext.fromExecutor(executor)
 
-implicit val timer: Timer[IO]     = IO.timer(executionContext)
-implicit val cs: ContextShift[IO] = IO.contextShift(executionContext)
+  implicit val timer: Timer[IO]     = IO.timer(executionContext)
+  implicit val cs: ContextShift[IO] = IO.contextShift(executionContext)
 
-type UserId = Int
+  type UserId = Int
 
-case class User(id: UserId, username: String)
+  case class User(id: UserId, username: String)
 
-def latency[F[_]: Concurrent](msg: String): F[Unit] =
-for {
-_ <- Sync[F].delay(println(s"--> [${Thread.currentThread.getId}] $msg"))
-_ <- Sync[F].delay(Thread.sleep(100))
-_ <- Sync[F].delay(println(s"<-- [${Thread.currentThread.getId}] $msg"))
-} yield ()
+  def latency[F[_]: Concurrent](msg: String): F[Unit] =
+    for {
+      _ <- Sync[F].delay(println(s"--> [${Thread.currentThread.getId}] $msg"))
+      _ <- Sync[F].delay(Thread.sleep(100))
+      _ <- Sync[F].delay(println(s"<-- [${Thread.currentThread.getId}] $msg"))
+    } yield ()
 
-val userDatabase: Map[UserId, User] = Map(
-1 -> User(1, "@one"),
-2 -> User(2, "@two"),
-3 -> User(3, "@three"),
-4 -> User(4, "@four")
-)
+  val userDatabase: Map[UserId, User] = Map(
+    1 -> User(1, "@one"),
+    2 -> User(2, "@two"),
+    3 -> User(3, "@three"),
+    4 -> User(4, "@four")
+  )
 
-object Users extends Data[UserId, User] {
-def name = "Users"
+  object Users extends Data[UserId, User] {
+    def name = "Users"
 
-def source[F[_]: Concurrent]: DataSource[F, UserId, User] = new DataSource[F, UserId, User] {
-override def data = Users
+    def source[F[_]: Concurrent]: DataSource[F, UserId, User] = new DataSource[F, UserId, User] {
+      override def data = Users
 
-def CF = Concurrent[F]
+      def CF = Concurrent[F]
 
-override def fetch(id: UserId): F[Option[User]] =
-latency[F](s"One User $id") >> CF.pure(userDatabase.get(id))
+      override def fetch(id: UserId): F[Option[User]] =
+        latency[F](s"One User $id") >> CF.pure(userDatabase.get(id))
 
-override def batch(ids: NonEmptyList[UserId]): F[Map[UserId, User]] =
-latency[F](s"Batch Users $ids") >> CF.pure(userDatabase.filterKeys(ids.toList.toSet))
-}
-}
+      override def batch(ids: NonEmptyList[UserId]): F[Map[UserId, User]] =
+        latency[F](s"Batch Users $ids") >> CF.pure(userDatabase.view.filterKeys(ids.toList.toSet).toMap)
+    }
+  }
 
-def getUser[F[_]: Concurrent](id: UserId): Fetch[F, User] = Fetch[F, UserId, User](id, Users.source)
+  def getUser[F[_]: Concurrent](id: UserId): Fetch[F, User] = Fetch[F, UserId, User](id, Users.source)
 
-def fetchUser[F[_] : Concurrent]: Fetch[F, User] = getUser(1)
+  def fetchUser[F[_] : Concurrent]: Fetch[F, User] = getUser(1)
 
-Fetch.run[IO](fetchUser).unsafeRunSync()
+  Fetch.run[IO](fetchUser).unsafeRunSync()
     """
 }
