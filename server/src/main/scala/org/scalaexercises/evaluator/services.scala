@@ -28,9 +28,6 @@ object services {
 
   import EvalResponse.messages._
 
-  def evaluatorInstance[F[_]: ConcurrentEffect: ContextShift: Timer: Sync] =
-    new Evaluator[F](20 seconds)
-
   val corsHeaders = Seq(
     Header("Vary", "Origin,Access-Control-Request-Methods"),
     Header("Access-Control-Allow-Methods", "POST"),
@@ -116,12 +113,14 @@ object EvaluatorServer extends IOApp {
   lazy val port = (Option(System.getenv("PORT")) orElse
     Option(System.getProperty("http.port"))).map(_.toInt).getOrElse(8080)
 
+  lazy val evaluator = new Evaluator[IO](15 seconds)
+
   override def run(args: List[String]): IO[ExitCode] = {
     logger.info(s"Initializing Evaluator at $ip:$port")
 
     BlazeServerBuilder[IO]
       .bindHttp(port, ip)
-      .withHttpApp(auth[IO](service(evaluatorInstance)))
+      .withHttpApp(auth[IO](service(evaluator)))
       .serve
       .compile
       .lastOrError
