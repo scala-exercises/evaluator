@@ -22,7 +22,6 @@ import org.log4s.getLogger
 import org.scalaexercises.evaluator.codecs._
 
 import scala.concurrent.duration._
-import scala.language.postfixOps
 
 object services {
 
@@ -113,16 +112,16 @@ object EvaluatorServer extends IOApp {
   lazy val port = (Option(System.getenv("PORT")) orElse
     Option(System.getProperty("http.port"))).map(_.toInt).getOrElse(8080)
 
-  lazy val evaluator = new Evaluator[IO](15 seconds)
+  val httpApp = auth[IO](service(new Evaluator[IO](15.seconds)))
 
   override def run(args: List[String]): IO[ExitCode] = {
     logger.info(s"Initializing Evaluator at $ip:$port")
 
     BlazeServerBuilder[IO]
       .bindHttp(port, ip)
-      .withHttpApp(auth[IO](service(evaluator)))
-      .serve
-      .compile
-      .lastOrError
+      .withHttpApp(httpApp)
+      .resource
+      .use(_ => IO.never)
+      .as(ExitCode.Success)
   }
 }
