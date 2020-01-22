@@ -7,9 +7,8 @@
 
 package org.scalaexercises.evaluator
 
-import java.io.{ByteArrayOutputStream, File}
+import java.io.{ByteArrayOutputStream, Closeable, File}
 import java.math.BigInteger
-import java.net.URLClassLoader
 import java.security.MessageDigest
 import java.util.jar.JarFile
 
@@ -19,10 +18,12 @@ import coursier._
 import coursier.cache.{ArtifactError, FileCache}
 import coursier.util.Sync
 import org.scalaexercises.evaluator.Eval.CompilerException
+import org.scalaexercises.evaluator.{Dependency => EvaluatorDependency}
 
 import scala.concurrent.duration._
 import scala.language.reflectiveCalls
 import scala.reflect.internal.util.{AbstractFileClassLoader, BatchSourceFile, Position}
+import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
 import scala.tools.nsc.io.{AbstractFile, VirtualDirectory}
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.{Global, Settings}
@@ -60,7 +61,9 @@ class Evaluator[F[_]: Sync](timeout: FiniteDuration = 20.seconds)(
 
   val cache: FileCache[F] = FileCache[F].noCredentials
 
-  def resolveArtifacts(remotes: Seq[Remote], dependencies: Seq[Dependency]): F[Resolution] = {
+  def resolveArtifacts(
+      remotes: Seq[Remote],
+      dependencies: Seq[EvaluatorDependency]): F[Resolution] = {
     Resolve[F](cache)
       .addDependencies(dependencies.map(dependencyToModule): _*)
       .addRepositories(remotes.map(remoteToRepository): _*)
@@ -70,7 +73,7 @@ class Evaluator[F[_]: Sync](timeout: FiniteDuration = 20.seconds)(
 
   def fetchArtifacts(
       remotes: Seq[Remote],
-      dependencies: Seq[Dependency]): F[Either[ArtifactError, List[File]]] =
+      dependencies: Seq[EvaluatorDependency]): F[Either[ArtifactError, List[File]]] =
     for {
       resolution        <- resolveArtifacts(remotes, dependencies)
       gatheredArtifacts <- resolution.artifacts().toList.traverse(cache.file(_).run)
@@ -109,43 +112,41 @@ class Evaluator[F[_]: Sync](timeout: FiniteDuration = 20.seconds)(
     }
   }
 
-  private[this] def evaluate[T](code: String, jars: Seq[File]): EvalResult[T] = {
-    val eval = createEval(jars)
+  private[this] def evaluate[T](code: String, jars: Seq[File]): F[EvalResult[T]] = {
+    F.bracket(F.delay(createEval(jars))) { evalInstance =>
+      val outCapture = new ByteArrayOutputStream
 
-    val outCapture = new ByteArrayOutputStream
+      F.delay[EvalResult[T]](Console.withOut(outCapture) {
 
-    Console.withOut(outCapture) {
+        val result = Try(evalInstance.execute[T](code, resetState = true, jars = jars))
 
-      val result = for {
-        _      ← Try(eval.check(code))
-        result ← Try(eval.execute[T](code, resetState = true, jars = jars))
-      } yield result
+        val errors = evalInstance.errors
 
-      val errors = eval.errors
+        result match {
+          case scala.util.Success(r) => EvalSuccess[T](errors, r, outCapture.toString)
+          case scala.util.Failure(t) =>
+            t match {
+              case e: CompilerException => CompilationError(errors)
+              case NonFatal(e) =>
+                EvalRuntimeError(errors, Option(RuntimeError(e, None)))
+              case e => GeneralError(e)
+            }
+        }
+      })
+    }(EI => F.delay(EI.clean()))
 
-      result match {
-        case scala.util.Success(r) ⇒ EvalSuccess[T](errors, r, outCapture.toString)
-        case scala.util.Failure(t) ⇒
-          t match {
-            case e: CompilerException ⇒ CompilationError(errors)
-            case NonFatal(e) ⇒
-              EvalRuntimeError(errors, Option(RuntimeError(e, None)))
-            case e ⇒ GeneralError(e)
-          }
-      }
-    }
   }
 
   def eval[T](
       code: String,
       remotes: Seq[Remote] = Nil,
-      dependencies: Seq[Dependency] = Nil
+      dependencies: Seq[EvaluatorDependency] = Nil
   ): F[EvalResult[T]] = {
     for {
       allJars <- fetchArtifacts(remotes, dependencies)
       result <- allJars match {
         case Right(jars) =>
-          timeoutTo[EvalResult[T]](F.delay { evaluate(code, jars) }, timeout, Timeout[T](timeout))
+          timeoutTo[EvalResult[T]](evaluate(code, jars), timeout, Timeout[T](timeout))
         case Left(fileError) => F.pure(UnresolvedDependency[T](fileError.describe))
       }
     } yield result
@@ -176,7 +177,7 @@ private class StringCompiler(
     output: AbstractFile,
     settings: Settings,
     messageHandler: Option[Reporter]
-) {
+) extends Closeable {
 
   val cache = new scala.collection.mutable.HashMap[String, Class[_]]()
 
@@ -290,6 +291,12 @@ private class StringCompiler(
       findClass(className, classLoader).get // fixme
     }
   }
+
+  override def close(): Unit = {
+    global.cleanup
+    global.close()
+    reporter.reset()
+  }
 }
 
 /**
@@ -358,13 +365,9 @@ class Eval(target: Option[File] = None, jars: List[File] = Nil) {
   }
 
   def execute[T](className: String, code: String, resetState: Boolean, jars: Seq[File]): T = {
-    val jarUrls = jars
-      .map(jar => new java.net.URL(s"file://${jar.getAbsolutePath}"))
-      .toArray
-    val urlClassLoader =
-      new URLClassLoader(jarUrls, compiler.getClass.getClassLoader)
-    val classLoader =
-      new AbstractFileClassLoader(compilerOutputDir, urlClassLoader)
+    val jarUrls        = jars.map(jar => new java.net.URL(s"file://${jar.getAbsolutePath}"))
+    val urlClassLoader = new URLClassLoader(jarUrls, compiler.getClass.getClassLoader)
+    val classLoader    = new AbstractFileClassLoader(compilerOutputDir, urlClassLoader)
 
     val cls = compiler(
       wrapCodeInClass(className, code),
@@ -372,23 +375,22 @@ class Eval(target: Option[File] = None, jars: List[File] = Nil) {
       resetState,
       classLoader
     )
-    cls
+
+    val res = cls
       .getConstructor()
       .newInstance()
       .asInstanceOf[() => T]
       .apply()
       .asInstanceOf[T]
+
+    urlClassLoader.close()
+
+    res
   }
 
-  /**
-   * Check if code is Eval-able.
-   * @throws CompilerException if not Eval-able.
-   */
-  def check(code: String) = {
-    val id          = uniqueId(code)
-    val className   = "Evaluator__" + id
-    val wrappedCode = wrapCodeInClass(className, code)
-    compiler(wrappedCode)
+  def clean(): Unit = {
+    compiler.close()
+    compilerMessageHandler.foreach(_.reset())
   }
 
   private[this] def uniqueId(code: String, idOpt: Option[Int] = Some(Eval.jvmId)): String = {
