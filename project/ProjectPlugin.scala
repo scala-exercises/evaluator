@@ -115,7 +115,8 @@ object ProjectPlugin extends AutoPlugin {
       scalaVersion := "2.13.1",
       scalaOrganization := "org.scala-lang",
       javacOptions ++= Seq("-encoding", "UTF-8", "-Xlint:-options"),
-      fork in Test := false,
+      //javaOptions += "-Dscala.classpath.closeZip=true",
+      //fork in Test := false,
       parallelExecution in Test := false,
       cancelable in Global := true,
       headerLicense := Some(

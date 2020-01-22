@@ -60,8 +60,6 @@ Asserts.scalaTestAsserts($assertCheck)
 
   val fetchCode =
     """
-  import java.util.concurrent.ScheduledThreadPoolExecutor
-
   import scala.concurrent.ExecutionContext
 
   import cats.data.NonEmptyList
@@ -70,8 +68,7 @@ Asserts.scalaTestAsserts($assertCheck)
   import fetch._
   import cats.implicits._
 
-  val executor                           = new ScheduledThreadPoolExecutor(4)
-  val executionContext: ExecutionContext = ExecutionContext.fromExecutor(executor)
+  val executionContext: ExecutionContext = ExecutionContext.fromExecutor(new java.util.concurrent.ForkJoinPool(2))
 
   implicit val timer: Timer[IO]     = IO.timer(executionContext)
   implicit val cs: ContextShift[IO] = IO.contextShift(executionContext)
