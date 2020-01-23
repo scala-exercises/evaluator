@@ -27,7 +27,7 @@ import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
 import scala.tools.nsc.io.{AbstractFile, VirtualDirectory}
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.{Global, Settings}
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 import scala.util.control.NonFatal
 
 class Evaluator[F[_]: Sync](timeout: FiniteDuration = 20.seconds)(
@@ -463,14 +463,21 @@ class ${className} extends (() => Any) with java.io.Serializable {
     val currentClassPath = classPath.head
 
     // if there's just one thing in the classpath, and it's a jar, assume an executable jar.
-    currentClassPath ::: (if (currentClassPath.size == 1 && currentClassPath(0)
+    currentClassPath ::: (if (currentClassPath.size == 1 && currentClassPath.head
                               .endsWith(".jar")) {
-                            val jarFile = currentClassPath(0)
+                            val jarFile = currentClassPath.head
                             val relativeRoot =
-                              new File(jarFile).getParentFile()
-                            val nestedClassPath =
-                              new JarFile(jarFile).getManifest.getMainAttributes
-                                .getValue("Class-Path")
+                              new File(jarFile).getParentFile
+                            val nestedClassPath = Try {
+                              val jar = new JarFile(jarFile)
+                              val CP  = jar.getManifest.getMainAttributes.getValue("Class-Path")
+                              jar.close()
+                              CP
+                            } match {
+                              case Success(classPath) => classPath
+                              case Failure(throwable) =>
+                                throw new CompilerException(List(List(throwable.getMessage)))
+                            }
                             if (nestedClassPath eq null) {
                               Nil
                             } else {
