@@ -12,7 +12,7 @@ import java.math.BigInteger
 import java.security.MessageDigest
 import java.util.jar.JarFile
 
-import cats.effect.{Concurrent, ConcurrentEffect, Timer}
+import cats.effect._
 import cats.implicits._
 import coursier._
 import coursier.cache.{ArtifactError, FileCache}
@@ -22,8 +22,8 @@ import org.scalaexercises.evaluator.{Dependency => EvaluatorDependency}
 
 import scala.concurrent.duration._
 import scala.language.reflectiveCalls
-import scala.reflect.internal.util.{AbstractFileClassLoader, BatchSourceFile, Position}
 import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
+import scala.reflect.internal.util.{AbstractFileClassLoader, BatchSourceFile, Position}
 import scala.tools.nsc.io.{AbstractFile, VirtualDirectory}
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.{Global, Settings}
@@ -462,28 +462,36 @@ class ${className} extends (() => Any) with java.io.Serializable {
     val classPath        = getClassPath(this.getClass.getClassLoader)
     val currentClassPath = classPath.head
 
+    def checkCurrentClassPath: List[String] = currentClassPath match {
+      case List(jarFile) if jarFile.endsWith(".jar") =>
+        val relativeRoot = new File(jarFile).getParentFile
+        val jarResource: Resource[IO, JarFile] =
+          Resource.make(IO(new JarFile(jarFile)))(jar => IO(jar.close()))
+
+        val nestedClassPath: IO[String] =
+          jarResource
+            .use(jar => IO(jar.getManifest.getMainAttributes.getValue("Class-Path")))
+            .handleError {
+              case scala.util.control.NonFatal(e) =>
+                throw new CompilerException(List(List(e.getMessage)))
+            }
+
+        nestedClassPath.map {
+          case ncp if ncp eq null => Nil
+          case ncp =>
+            ncp
+              .split(" ")
+              .map { f =>
+                new File(relativeRoot, f).getAbsolutePath
+              }
+              .toList
+
+        }.unsafeRunSync
+      case _ => Nil
+    }
+
     // if there's just one thing in the classpath, and it's a jar, assume an executable jar.
-    currentClassPath ::: (if (currentClassPath.size == 1 && currentClassPath(0)
-                              .endsWith(".jar")) {
-                            val jarFile = currentClassPath(0)
-                            val relativeRoot =
-                              new File(jarFile).getParentFile()
-                            val nestedClassPath =
-                              new JarFile(jarFile).getManifest.getMainAttributes
-                                .getValue("Class-Path")
-                            if (nestedClassPath eq null) {
-                              Nil
-                            } else {
-                              nestedClassPath
-                                .split(" ")
-                                .map { f =>
-                                  new File(relativeRoot, f).getAbsolutePath
-                                }
-                                .toList
-                            }
-                          } else {
-                            Nil
-                          }) ::: classPath.tail.flatten
+    currentClassPath ::: checkCurrentClassPath ::: classPath.tail.flatten
   }
 
   lazy val compilerOutputDir = target match {
