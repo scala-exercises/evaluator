@@ -27,9 +27,6 @@ object services {
 
   import EvalResponse.messages._
 
-  //def evaluatorInstance[F[_]: ConcurrentEffect: ContextShift: Timer: Sync] =
-  //  new Evaluator[F](20 seconds)
-
   val corsHeaders = Seq(
     Header("Vary", "Origin,Access-Control-Request-Methods"),
     Header("Access-Control-Allow-Methods", "POST"),

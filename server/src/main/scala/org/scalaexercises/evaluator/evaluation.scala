@@ -12,8 +12,8 @@ import java.math.BigInteger
 import java.security.MessageDigest
 import java.util.jar.JarFile
 
+import cats.effect._
 import cats.effect.syntax.concurrent.catsEffectSyntaxConcurrent
-import cats.effect.{ConcurrentEffect, Timer}
 import cats.implicits._
 import coursier._
 import coursier.cache.{ArtifactError, FileCache}
@@ -21,6 +21,7 @@ import coursier.util.Sync
 import org.scalaexercises.evaluator.Eval.CompilerException
 import org.scalaexercises.evaluator.{Dependency => EvaluatorDependency}
 
+import scala.jdk.CollectionConverters.ConcurrentMapHasAsScala
 import scala.concurrent.duration._
 import scala.reflect.internal.util.{AbstractFileClassLoader, BatchSourceFile, Position}
 import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
@@ -181,7 +182,7 @@ private class StringCompiler(
     messageHandler: Option[Reporter]
 ) extends Closeable {
 
-  //val cache = new java.util.concurrent.ConcurrentHashMap[String, Class[_]]
+  val cache = new java.util.concurrent.ConcurrentHashMap[String, Class[_]].asScala
 
   trait MessageCollector {
     val messages: scala.collection.mutable.ListBuffer[List[String]]
@@ -236,27 +237,15 @@ private class StringCompiler(
       }
     }
     global.cleanup
-    //cache.clear()
+    cache.clear()
     reporter.reset()
   }
 
   def findClass(className: String, classLoader: ClassLoader): Option[Class[_]] =
-    Try( /*cache.getOrElseUpdate(className, */ classLoader.loadClass(className) /*)*/ ) match {
+    Try( cache.getOrElseUpdate(className, classLoader.loadClass(className) ) ) match {
       case Success(cls) => Some(cls)
       case Failure(_)   => None
     }
-  //  synchronized {
-  //    cache.get(className).orElse {
-  //      try {
-  //        val cls = classLoader.loadClass(className)
-  //        cache(className) = cls
-  //        Some(cls)
-  //      } catch {
-  //        case e: ClassNotFoundException => None
-  //      }
-  //    }
-  //  }
-  //}
 
   /**
    * Compile scala code. It can be found using the above class loader.
@@ -466,35 +455,36 @@ class ${className} extends (() => Any) with java.io.Serializable {
     val classPath        = getClassPath(this.getClass.getClassLoader)
     val currentClassPath = classPath.head
 
+    def checkCurrentClassPath: List[String] = currentClassPath match {
+      case List(jarFile) if jarFile.endsWith(".jar") =>
+        val relativeRoot = new File(jarFile).getParentFile
+        val jarResource: Resource[IO, JarFile] =
+          Resource.make(IO(new JarFile(jarFile)))(jar => IO(jar.close()))
+
+        val nestedClassPath: IO[String] =
+          jarResource
+            .use(jar => IO(jar.getManifest.getMainAttributes.getValue("Class-Path")))
+            .handleError {
+              case scala.util.control.NonFatal(e) =>
+                throw new CompilerException(List(List(e.getMessage)))
+            }
+
+        nestedClassPath.map {
+          case ncp if ncp eq null => Nil
+          case ncp =>
+            ncp
+              .split(" ")
+              .map { f =>
+                new File(relativeRoot, f).getAbsolutePath
+              }
+              .toList
+
+        }.unsafeRunSync
+      case _ => Nil
+    }
+
     // if there's just one thing in the classpath, and it's a jar, assume an executable jar.
-    currentClassPath ::: (if (currentClassPath.size == 1 && currentClassPath(0)
-                              .endsWith(".jar")) {
-                            val jarFile = currentClassPath(0)
-                            val relativeRoot =
-                              new File(jarFile).getParentFile()
-                            val nestedClassPath = Try {
-                              val jar = new JarFile(jarFile)
-                              val CP  = jar.getManifest.getMainAttributes.getValue("Class-Path")
-                              jar.close()
-                              CP
-                            } match {
-                              case Success(classPath) => classPath
-                              case Failure(throwable) =>
-                                throw new CompilerException(List(List(throwable.getMessage)))
-                            }
-                            if (nestedClassPath eq null) {
-                              Nil
-                            } else {
-                              nestedClassPath
-                                .split(" ")
-                                .map { f =>
-                                  new File(relativeRoot, f).getAbsolutePath
-                                }
-                                .toList
-                            }
-                          } else {
-                            Nil
-                          }) ::: classPath.tail.flatten
+    currentClassPath ::: checkCurrentClassPath ::: classPath.tail.flatten
   }
 
   lazy val compilerOutputDir = target match {
