@@ -242,7 +242,7 @@ private class StringCompiler(
   }
 
   def findClass(className: String, classLoader: ClassLoader): Option[Class[_]] =
-    Try( cache.getOrElseUpdate(className, classLoader.loadClass(className) ) ) match {
+    Try(cache.getOrElseUpdate(className, classLoader.loadClass(className))) match {
       case Success(cls) => Some(cls)
       case Failure(_)   => None
     }
@@ -346,6 +346,10 @@ class Eval(target: Option[File] = None, jars: List[File] = Nil) {
     compilerMessageHandler
   )
 
+  lazy val jarUrls        = jars.map(jar => new java.net.URL(s"file://${jar.getAbsolutePath}"))
+  lazy val urlClassLoader = new URLClassLoader(jarUrls, compiler.getClass.getClassLoader)
+  lazy val classLoader    = new AbstractFileClassLoader(compilerOutputDir, urlClassLoader)
+
   /**
    * Will generate a classname of the form Evaluater__<unique>,
    * where unique is computed from the jvmID (a random number)
@@ -358,10 +362,6 @@ class Eval(target: Option[File] = None, jars: List[File] = Nil) {
   }
 
   def execute[T](className: String, code: String, resetState: Boolean, jars: Seq[File]): T = {
-    val jarUrls        = jars.map(jar => new java.net.URL(s"file://${jar.getAbsolutePath}"))
-    val urlClassLoader = new URLClassLoader(jarUrls, compiler.getClass.getClassLoader)
-    val classLoader    = new AbstractFileClassLoader(compilerOutputDir, urlClassLoader)
-
     val cls = compiler(
       wrapCodeInClass(className, code),
       className,
@@ -369,19 +369,16 @@ class Eval(target: Option[File] = None, jars: List[File] = Nil) {
       classLoader
     )
 
-    val res = cls
+    cls
       .getConstructor()
       .newInstance()
       .asInstanceOf[() => T]
       .apply()
       .asInstanceOf[T]
-
-    urlClassLoader.close()
-
-    res
   }
 
   def clean(): Unit = {
+    urlClassLoader.close()
     compiler.close()
     compilerMessageHandler.foreach(_.reset())
   }

@@ -94,9 +94,9 @@ Xor.Right(42).toOption.get
 
       val result: EvalResult[Int] = evaluator
         .eval(
-          fetchCode,
+          circeCode,
           remotes = commonResolvers,
-          dependencies = fetchLibraryDependencies(toScalaVersion(BuildInfo.scalaVersion))
+          dependencies = circeLibraryDependencies(toScalaVersion(BuildInfo.scalaVersion))
         )
         .unsafeRunSync()
 

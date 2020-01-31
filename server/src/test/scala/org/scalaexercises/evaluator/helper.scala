@@ -40,10 +40,14 @@ object helper {
     Dependency("org.scala-lang.modules", s"scala-xml_${scala.version.substring(0, 4)}", "1.2.0")
   )
 
-  def fetchLibraryDependencies(scala: ScalaVersion): List[Dependency] = {
+  def circeLibraryDependencies(scala: ScalaVersion): List[Dependency] = {
     val sv = scala.version
+
+    val circeVersion = "0.12.3"
     List(
-      Dependency("com.47deg", s"fetch_${sv.substring(0, 4)}", "1.2.1")
+      Dependency("io.circe", s"circe-core_${sv.substring(0, 4)}", circeVersion),
+      Dependency("io.circe", s"circe-generic_${sv.substring(0, 4)}", circeVersion),
+      Dependency("io.circe", s"circe-parser_${sv.substring(0, 4)}", circeVersion)
     ) ++ scalaDependencies(scala)
   }
 
@@ -58,59 +62,29 @@ import stdlib._
 Asserts.scalaTestAsserts($assertCheck)
     """
 
-  val fetchCode =
-    """
-  import scala.concurrent.ExecutionContext
+  val json = """"{
+               |    "id": "c730433b-082c-4984-9d66-855c243266f0",
+               |    "name": "Foo",
+               |    "counts": [1, 2, 3],
+               |    "values": {
+               |      "bar": true,
+               |      "baz": 100.001,
+               |      "qux": ["a", "b"]
+               |    }
+               |  }"""".stripMargin
 
-  import cats.data.NonEmptyList
-  import cats.effect._
+  val circeCode =
+    s"""
+  import cats.syntax.either._
+  import io.circe._
+  import io.circe.parser._
 
-  import fetch._
-  import cats.implicits._
+  val json: String = ""$json""
 
-  val executionContext: ExecutionContext = ExecutionContext.fromExecutor(new java.util.concurrent.ForkJoinPool(2))
+  val doc: Json    = parse(json).getOrElse(Json.Null)
 
-  implicit val timer: Timer[IO]     = IO.timer(executionContext)
-  implicit val cs: ContextShift[IO] = IO.contextShift(executionContext)
+  val cursor: HCursor = doc.hcursor
 
-  type UserId = Int
-
-  case class User(id: UserId, username: String)
-
-  def latency[F[_]: Concurrent](msg: String): F[Unit] =
-    for {
-      _ <- Sync[F].delay(println(s"--> [${Thread.currentThread.getId}] $msg"))
-      _ <- Sync[F].delay(Thread.sleep(100))
-      _ <- Sync[F].delay(println(s"<-- [${Thread.currentThread.getId}] $msg"))
-    } yield ()
-
-  val userDatabase: Map[UserId, User] = Map(
-    1 -> User(1, "@one"),
-    2 -> User(2, "@two"),
-    3 -> User(3, "@three"),
-    4 -> User(4, "@four")
-  )
-
-  object Users extends Data[UserId, User] {
-    def name = "Users"
-
-    def source[F[_]: Concurrent]: DataSource[F, UserId, User] = new DataSource[F, UserId, User] {
-      override def data = Users
-
-      def CF = Concurrent[F]
-
-      override def fetch(id: UserId): F[Option[User]] =
-        latency[F](s"One User $id") >> CF.pure(userDatabase.get(id))
-
-      override def batch(ids: NonEmptyList[UserId]): F[Map[UserId, User]] =
-        latency[F](s"Batch Users $ids") >> CF.pure(userDatabase.view.filterKeys(ids.toList.toSet).toMap)
-    }
-  }
-
-  def getUser[F[_]: Concurrent](id: UserId): Fetch[F, User] = Fetch[F, UserId, User](id, Users.source)
-
-  def fetchUser[F[_] : Concurrent]: Fetch[F, User] = getUser(1)
-
-  Fetch.run[IO](fetchUser).unsafeRunSync()
+  cursor.downField("values").downField("baz").as[Double]
     """
 }
