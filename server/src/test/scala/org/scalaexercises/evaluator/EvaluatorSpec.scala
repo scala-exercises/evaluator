@@ -55,7 +55,8 @@ class EvaluatorSpec extends AnyFunSpec with Matchers with Implicits {
         .eval(
           "{ while(true) {}; 123 }",
           remotes = commonResolvers,
-          dependencies = scalaDependencies(Scala212))
+          dependencies = scalaDependencies(Scala212)
+        )
         .unsafeRunSync()
 
       result should matchPattern {
@@ -84,13 +85,12 @@ Xor.Right(42).toOption.get
         )
         .unsafeRunSync()
 
-      result should matchPattern {
-        case EvalSuccess(_, 42, _) =>
-      }
+      result should matchPattern { case EvalSuccess(_, 42, _) => }
     }
 
     it(
-      s"can load binary incompatible dependencies for an evaluation, for scala ${BuildInfo.scalaVersion}") {
+      s"can load binary incompatible dependencies for an evaluation, for scala ${BuildInfo.scalaVersion}"
+    ) {
 
       val result: EvalResult[Int] = evaluator
         .eval(
@@ -179,12 +179,12 @@ Eval.now(42).value
       result shouldBe a[EvalRuntimeError[_]]
     }
 
-    describe("can run code from the exercises content") {
+    it("can run code with 2.13 dependencies") {
       val code = "{import cats._; Eval.now(42).value}"
 
-      val dependencies = Dependency("org.typelevel", "cats_2.11", "0.6.0") :: Nil
+      val dependencies = Dependency("org.typelevel", "cats-core_2.13", "2.0.0") :: Nil
 
-      val result: EvalResult[Unit] = evaluator
+      val result: EvalResult[Int] = evaluator
         .eval(code, remotes = remotes, dependencies = dependencies)
         .unsafeRunSync()
 

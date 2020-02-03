@@ -29,7 +29,8 @@ object auth {
     config.getString(SecretKeyPath)
   } else {
     throw new IllegalStateException(
-      "Missing -Deval.auth.secretKey=[YOUR_KEY_HERE] or env var [EVAL_SECRET_KEY] ")
+      "Missing -Deval.auth.secretKey=[YOUR_KEY_HERE] or env var [EVAL_SECRET_KEY] "
+    )
   }
 
   def generateToken(value: String = "{}") =

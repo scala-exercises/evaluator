@@ -39,7 +39,8 @@ class EvalEndpointSpec extends AnyFunSpec with Matchers with Implicits {
       .run(
         Request[IO](POST, Uri(path = "/eval"))
           .withEntity(evalRequest)
-          .putHeaders(authHeader))
+          .putHeaders(authHeader)
+      )
       .unsafeRunSync()
 
   def verifyEvalResponse(
@@ -62,8 +63,10 @@ class EvalEndpointSpec extends AnyFunSpec with Matchers with Implicits {
           EvalRequest(
             code = "{ 41 + 1 }",
             resolvers = commonResolvers,
-            dependencies = scalaDependencies(Scala211)),
-          `X-Scala-Eval-Api-Token`(validToken)),
+            dependencies = scalaDependencies(Scala211)
+          ),
+          `X-Scala-Eval-Api-Token`(validToken)
+        ),
         expectedStatus = HttpStatus.Ok,
         expectedValue = Some("42"),
         expectedMessage = `ok`
@@ -76,8 +79,10 @@ class EvalEndpointSpec extends AnyFunSpec with Matchers with Implicits {
           EvalRequest(
             code = "{ while(true) {}; 123 }",
             resolvers = commonResolvers,
-            dependencies = scalaDependencies(Scala212)),
-          `X-Scala-Eval-Api-Token`(validToken)),
+            dependencies = scalaDependencies(Scala212)
+          ),
+          `X-Scala-Eval-Api-Token`(validToken)
+        ),
         expectedStatus = HttpStatus.Ok,
         expectedValue = None,
         expectedMessage = `Timeout Exceded`
@@ -91,7 +96,8 @@ class EvalEndpointSpec extends AnyFunSpec with Matchers with Implicits {
             code = "{import cats._; Eval.now(42).value}",
             resolvers = commonResolvers,
             dependencies = List(Dependency("org.typelevel", "cats_2.11", "0.6.0")) ++ scalaDependencies(
-              Scala211)
+              Scala211
+            )
           ),
           `X-Scala-Eval-Api-Token`(validToken)
         ),
@@ -112,7 +118,8 @@ class EvalEndpointSpec extends AnyFunSpec with Matchers with Implicits {
               code = code,
               resolvers = resolvers,
               dependencies = List(Dependency("org.typelevel", "cats_2.11", "0.6.0")) ++ scalaDependencies(
-                Scala211)
+                Scala211
+              )
             ),
             `X-Scala-Eval-Api-Token`(validToken)
           ),
@@ -131,10 +138,9 @@ class EvalEndpointSpec extends AnyFunSpec with Matchers with Implicits {
           EvalRequest(
             code = exerciseContentCode(true),
             resolvers = commonResolvers,
-            dependencies = List(Dependency(
-              "org.scala-exercises",
-              "exercises-stdlib_2.12",
-              exercisesVersion)) ++ scalaDependencies(Scala211)
+            dependencies = List(
+              Dependency("org.scala-exercises", "exercises-stdlib_2.12", exercisesVersion)
+            ) ++ scalaDependencies(Scala211)
           ),
           `X-Scala-Eval-Api-Token`(validToken)
         ),
@@ -150,10 +156,9 @@ class EvalEndpointSpec extends AnyFunSpec with Matchers with Implicits {
           EvalRequest(
             code = exerciseContentCode(false),
             resolvers = commonResolvers,
-            dependencies = List(Dependency(
-              "org.scala-exercises",
-              "exercises-stdlib_2.12",
-              exercisesVersion)) ++ scalaDependencies(Scala211)
+            dependencies = List(
+              Dependency("org.scala-exercises", "exercises-stdlib_2.12", exercisesVersion)
+            ) ++ scalaDependencies(Scala211)
           ),
           `X-Scala-Eval-Api-Token`(validToken)
         ),
@@ -170,7 +175,8 @@ class EvalEndpointSpec extends AnyFunSpec with Matchers with Implicits {
           resolvers = Nil,
           dependencies = Nil
         ),
-        `X-Scala-Eval-Api-Token`(invalidToken)).status should be(HttpStatus.Unauthorized)
+        `X-Scala-Eval-Api-Token`(invalidToken)
+      ).status should be(HttpStatus.Unauthorized)
     }
 
     it("rejects requests with missing tokens") {
@@ -180,7 +186,8 @@ class EvalEndpointSpec extends AnyFunSpec with Matchers with Implicits {
           resolvers = Nil,
           dependencies = Nil
         ),
-        `Accept-Ranges`(Nil)).status should be(HttpStatus.Unauthorized)
+        `Accept-Ranges`(Nil)
+      ).status should be(HttpStatus.Unauthorized)
     }
 
   }

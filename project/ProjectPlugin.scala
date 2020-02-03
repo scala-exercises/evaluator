@@ -54,7 +54,6 @@ object ProjectPlugin extends AutoPlugin {
       Seq(
         libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
         libraryDependencies += "org.scala-lang" % "scala-reflect"  % scalaVersion.value,
-        scalacOptions += "-Ymacro-annotations"
       )
     }
 
@@ -114,6 +113,8 @@ object ProjectPlugin extends AutoPlugin {
       orgLicenseSetting := ApacheLicense,
       scalaVersion := "2.13.1",
       scalaOrganization := "org.scala-lang",
+      scalacOptions ~= (_ filterNot (_ == "-Xfuture")),
+      scalacOptions += "-Ymacro-annotations",
       javacOptions ++= Seq("-encoding", "UTF-8", "-Xlint:-options"),
       parallelExecution in Test := false,
       cancelable in Global := true,

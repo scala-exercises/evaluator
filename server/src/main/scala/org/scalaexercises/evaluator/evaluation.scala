@@ -33,7 +33,8 @@ import scala.util.control.NonFatal
 
 class Evaluator[F[_]: Sync](timeout: FiniteDuration = 20.seconds)(
     implicit F: ConcurrentEffect[F],
-    T: Timer[F]) {
+    T: Timer[F]
+) {
   type Remote = String
 
   private[this] def convert(errors: (Position, String, String)): (String, List[CompilationInfo]) = {
@@ -47,9 +48,8 @@ class Evaluator[F[_]: Sync](timeout: FiniteDuration = 20.seconds)(
     val exclusions: Set[(Organization, ModuleName)] =
       dependency.exclusions
         .fold(List[(Organization, ModuleName)]())(
-          _.map(
-            ex => (Organization(ex.organization), ModuleName(ex.moduleName))
-          ))
+          _.map(ex => (Organization(ex.organization), ModuleName(ex.moduleName)))
+        )
         .toSet
 
     coursier
@@ -64,7 +64,8 @@ class Evaluator[F[_]: Sync](timeout: FiniteDuration = 20.seconds)(
 
   def resolveArtifacts(
       remotes: Seq[Remote],
-      dependencies: Seq[EvaluatorDependency]): F[Resolution] = {
+      dependencies: Seq[EvaluatorDependency]
+  ): F[Resolution] = {
     Resolve[F](cache)
       .addDependencies(dependencies.map(dependencyToModule): _*)
       .addRepositories(remotes.map(remoteToRepository): _*)
@@ -74,7 +75,8 @@ class Evaluator[F[_]: Sync](timeout: FiniteDuration = 20.seconds)(
 
   def fetchArtifacts(
       remotes: Seq[Remote],
-      dependencies: Seq[EvaluatorDependency]): F[Either[ArtifactError, List[File]]] =
+      dependencies: Seq[EvaluatorDependency]
+  ): F[Either[ArtifactError, List[File]]] =
     for {
       resolution        <- resolveArtifacts(remotes, dependencies)
       gatheredArtifacts <- resolution.artifacts().toList.traverse(cache.file(_).run)
@@ -200,19 +202,20 @@ private class StringCompiler(
         case _       => ""
       }
       // the line number is not always available
-      val lineMessage = try {
-        "line " + (pos.line - lineOffset)
-      } catch {
-        case _: Throwable => ""
-      }
+      val lineMessage =
+        try {
+          "line " + (pos.line - lineOffset)
+        } catch {
+          case _: Throwable => ""
+        }
       messages += (severityName + lineMessage + ": " + message) ::
         (if (pos.isDefined) {
-         pos.finalPosition.lineContent.stripLineEnd ::
-           (" " * (pos.column - 1) + "^") ::
+           pos.finalPosition.lineContent.stripLineEnd ::
+             (" " * (pos.column - 1) + "^") ::
+             Nil
+         } else {
            Nil
-       } else {
-         Nil
-       })
+         })
     }
 
     override def reset = {
@@ -257,7 +260,7 @@ private class StringCompiler(
     // ...and 1/2 this line:
     compiler.compileSources(sourceFiles)
 
-    if (reporter.hasErrors  || reporter.hasWarnings ) {
+    if (reporter.hasErrors || reporter.hasWarnings) {
       val msgs: List[List[String]] = reporter match {
         case collector: MessageCollector =>
           collector.messages.toList
@@ -275,7 +278,8 @@ private class StringCompiler(
       code: String,
       className: String,
       resetState: Boolean = true,
-      classLoader: ClassLoader): Class[_] = {
+      classLoader: ClassLoader
+  ): Class[_] = {
     synchronized {
       apply(code)
       val clazz = findClass(className, classLoader).get // fixme
@@ -313,23 +317,27 @@ private class StringCompiler(
  * - return the result of `apply()`
  */
 class Eval(target: Option[File] = None, jars: List[File] = Nil) {
-  private lazy val compilerPath = try {
-    classPathOfClass("scala.tools.nsc.Interpreter")
-  } catch {
-    case e: Throwable =>
-      throw new RuntimeException(
-        "Unable to load Scala interpreter from classpath (scala-compiler jar is missing?)",
-        e)
-  }
+  private lazy val compilerPath =
+    try {
+      classPathOfClass("scala.tools.nsc.Interpreter")
+    } catch {
+      case e: Throwable =>
+        throw new RuntimeException(
+          "Unable to load Scala interpreter from classpath (scala-compiler jar is missing?)",
+          e
+        )
+    }
 
-  private lazy val libPath = try {
-    classPathOfClass("scala.AnyVal")
-  } catch {
-    case e: Throwable =>
-      throw new RuntimeException(
-        "Unable to load scala base object from classpath (scala-library jar is missing?)",
-        e)
-  }
+  private lazy val libPath =
+    try {
+      classPathOfClass("scala.AnyVal")
+    } catch {
+      case e: Throwable =>
+        throw new RuntimeException(
+          "Unable to load scala base object from classpath (scala-library jar is missing?)",
+          e
+        )
+    }
 
   // For derived classes to provide an alternate compiler message handler.
   protected lazy val compilerMessageHandler: Option[Reporter] = None
