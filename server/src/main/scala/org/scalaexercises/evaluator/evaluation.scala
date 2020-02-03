@@ -257,7 +257,7 @@ private class StringCompiler(
     // ...and 1/2 this line:
     compiler.compileSources(sourceFiles)
 
-    if (reporter.hasErrors /* || reporter.hasWarnings*/ ) {
+    if (reporter.hasErrors  || reporter.hasWarnings ) {
       val msgs: List[List[String]] = reporter match {
         case collector: MessageCollector =>
           collector.messages.toList
