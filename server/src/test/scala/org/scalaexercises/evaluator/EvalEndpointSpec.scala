@@ -63,7 +63,7 @@ class EvalEndpointSpec extends AnyFunSpec with Matchers with Implicits {
           EvalRequest(
             code = "{ 41 + 1 }",
             resolvers = commonResolvers,
-            dependencies = scalaDependencies(Scala211)
+            dependencies = scalaDependencies(Scala213)
           ),
           `X-Scala-Eval-Api-Token`(validToken)
         ),
@@ -79,7 +79,7 @@ class EvalEndpointSpec extends AnyFunSpec with Matchers with Implicits {
           EvalRequest(
             code = "{ while(true) {}; 123 }",
             resolvers = commonResolvers,
-            dependencies = scalaDependencies(Scala212)
+            dependencies = scalaDependencies(Scala213)
           ),
           `X-Scala-Eval-Api-Token`(validToken)
         ),
@@ -95,8 +95,8 @@ class EvalEndpointSpec extends AnyFunSpec with Matchers with Implicits {
           EvalRequest(
             code = "{import cats._; Eval.now(42).value}",
             resolvers = commonResolvers,
-            dependencies = List(Dependency("org.typelevel", "cats_2.11", "0.6.0")) ++ scalaDependencies(
-              Scala211
+            dependencies = List(Dependency("org.typelevel", "cats-core_2.13", "2.0.0")) ++ scalaDependencies(
+              Scala213
             )
           ),
           `X-Scala-Eval-Api-Token`(validToken)
@@ -111,14 +111,14 @@ class EvalEndpointSpec extends AnyFunSpec with Matchers with Implicits {
       val code      = "{import cats._; Eval.now(42).value}"
       val resolvers = commonResolvers
 
-      List("0.6.0", "0.4.1") foreach { version =>
+      List("2.1.0", "2.0.0") foreach { version =>
         verifyEvalResponse(
           response = serve(
             EvalRequest(
               code = code,
               resolvers = resolvers,
-              dependencies = List(Dependency("org.typelevel", "cats_2.11", "0.6.0")) ++ scalaDependencies(
-                Scala211
+              dependencies = List(Dependency("org.typelevel", "cats-core_2.13", version)) ++ scalaDependencies(
+                Scala213
               )
             ),
             `X-Scala-Eval-Api-Token`(validToken)
@@ -139,13 +139,13 @@ class EvalEndpointSpec extends AnyFunSpec with Matchers with Implicits {
             code = exerciseContentCode(true),
             resolvers = commonResolvers,
             dependencies = List(
-              Dependency("org.scala-exercises", "exercises-stdlib_2.12", exercisesVersion)
-            ) ++ scalaDependencies(Scala211)
+              Dependency("org.scala-exercises", "exercises-stdlib_2.13", exercisesVersion)
+            ) ++ scalaDependencies(Scala213)
           ),
           `X-Scala-Eval-Api-Token`(validToken)
         ),
         expectedStatus = HttpStatus.Ok,
-        expectedValue = Some("()"),
+        expectedValue = Some("Succeeded"),
         expectedMessage = `ok`
       )
     }
@@ -157,8 +157,8 @@ class EvalEndpointSpec extends AnyFunSpec with Matchers with Implicits {
             code = exerciseContentCode(false),
             resolvers = commonResolvers,
             dependencies = List(
-              Dependency("org.scala-exercises", "exercises-stdlib_2.12", exercisesVersion)
-            ) ++ scalaDependencies(Scala211)
+              Dependency("org.scala-exercises", "exercises-stdlib_2.13", exercisesVersion)
+            ) ++ scalaDependencies(Scala213)
           ),
           `X-Scala-Eval-Api-Token`(validToken)
         ),

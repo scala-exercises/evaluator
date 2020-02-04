@@ -19,6 +19,7 @@ object ProjectPlugin extends AutoPlugin {
   object autoImport {
 
     object V {
+      lazy val cats        = "2.1.0"
       lazy val http4s      = "0.21.0-M6"
       lazy val circe       = "0.12.3"
       lazy val log4s       = "1.7.0"
@@ -44,21 +45,27 @@ object ProjectPlugin extends AutoPlugin {
           .user("evaluator")
           .add(artifact, artifactTargetPath)
           .cmdRaw(
-            s"java -Dhttp.port=$$PORT -Deval.auth.secretKey=$$EVAL_SECRET_KEY -jar $artifactTargetPath")
+            s"java -Dhttp.port=$$PORT -Deval.auth.secretKey=$$EVAL_SECRET_KEY -jar $artifactTargetPath"
+          )
       },
-      imageNames in docker := Seq(ImageName(repository =
-        s"registry.heroku.com/${sys.props.getOrElse("evaluator.heroku.name", "scala-evaluator")}/web"))
+      imageNames in docker := Seq(
+        ImageName(repository =
+          s"registry.heroku.com/${sys.props.getOrElse("evaluator.heroku.name", "scala-evaluator")}/web"
+        )
+      )
     )
 
     lazy val serverScalaMacroDependencies: Seq[Setting[_]] = {
       Seq(
         libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
-        libraryDependencies += "org.scala-lang" % "scala-reflect"  % scalaVersion.value,
+        libraryDependencies += "org.scala-lang" % "scala-reflect"  % scalaVersion.value
       )
     }
 
     lazy val serverHttpDependencies = Seq(
       libraryDependencies ++= Seq(
+        %%("cats-core", V.cats),
+        %%("cats-effect", V.cats),
         %%("circe-core", V.circe),
         %%("circe-generic", V.circe),
         %("slf4j-simple", V.slf4jSimple),
@@ -81,6 +88,8 @@ object ProjectPlugin extends AutoPlugin {
 
     lazy val smoketestDependencies = Seq(
       libraryDependencies ++= Seq(
+        %%("cats-core", V.cats),
+        %%("cats-effect", V.cats),
         %%("circe-core", V.circe),
         %%("circe-generic", V.circe),
         %%("circe-parser", V.circe),
@@ -101,7 +110,8 @@ object ProjectPlugin extends AutoPlugin {
       resolvers ++= Seq(
         Resolver.mavenLocal,
         Resolver.sonatypeRepo("snapshots"),
-        Resolver.sonatypeRepo("releases")),
+        Resolver.sonatypeRepo("releases")
+      ),
       orgGithubSetting := GitHubSettings(
         organization = "scala-exercises",
         project = name.value,
@@ -125,6 +135,7 @@ object ProjectPlugin extends AutoPlugin {
               | Copyright (C) 2015-2019 47 Degrees, LLC. <http://www.47deg.com>
               |
               |""".stripMargin
-        ))
+        )
+      )
     ) ++ shellPromptSettings
 }

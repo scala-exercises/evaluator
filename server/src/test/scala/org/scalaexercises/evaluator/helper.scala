@@ -10,19 +10,13 @@ package org.scalaexercises.evaluator
 object helper {
 
   val remotes: List[String]    = "https://oss.sonatype.org/content/repositories/releases/" :: Nil
-  val exercisesVersion: String = "0.5.0-SNAPSHOT"
+  val exercisesVersion: String = "0.6.0-SNAPSHOT"
 
   sealed abstract class ScalaVersion(val version: String)
-
-  case object Scala211 extends ScalaVersion("2.11.12")
-
-  case object Scala212 extends ScalaVersion("2.12.10")
 
   case object Scala213 extends ScalaVersion("2.13.1")
 
   def toScalaVersion(v: String): ScalaVersion = v match {
-    case version if version.startsWith("2.11") => Scala211
-    case version if version.startsWith("2.12") => Scala212
     case version if version.startsWith("2.13") => Scala213
     case _                                     => throw new IllegalArgumentException(s"Unknown Scala Version $v")
   }
