@@ -62,30 +62,6 @@ class Evaluator[F[_]: Sync](timeout: FiniteDuration = 20.seconds)(
 
   val cache: FileCache[F] = FileCache[F].noCredentials
 
-  def resolveArtifacts(
-      remotes: Seq[Remote],
-      dependencies: Seq[EvaluatorDependency]
-  ): F[Resolution] = {
-    Resolve[F](cache)
-      .addDependencies(dependencies.map(dependencyToModule): _*)
-      .addRepositories(remotes.map(remoteToRepository): _*)
-      .addRepositories(coursier.LocalRepositories.ivy2Local)
-      .io
-  }
-
-  def fetchArtifacts(
-      remotes: Seq[Remote],
-      dependencies: Seq[EvaluatorDependency]
-  ): F[Either[ArtifactError, List[File]]] =
-    for {
-      resolution        <- resolveArtifacts(remotes, dependencies)
-      gatheredArtifacts <- resolution.artifacts().toList.traverse(cache.file(_).run)
-      artifacts = gatheredArtifacts.foldRight(Right(Nil): Either[ArtifactError, List[File]]) {
-        case (Right(file), acc) => acc.map(file :: _)
-        case (Left(ae), _)      => Left(ae)
-      }
-    } yield artifacts
-
   def fetch(remotes: Seq[Remote], dependencies: Seq[EvaluatorDependency]) =
     Fetch[F](cache)
       .addDependencies(dependencies.map(dependencyToModule): _*)
@@ -155,12 +131,12 @@ class Evaluator[F[_]: Sync](timeout: FiniteDuration = 20.seconds)(
       dependencies: Seq[EvaluatorDependency] = Nil
   ): F[EvalResult[T]] = {
     for {
-      allJars <- fetchArtifacts(remotes, dependencies)
+      allJars <- fetch(remotes, dependencies)
       result <- allJars match {
         case Right(jars) =>
           evaluate(code, jars)
             .timeoutTo(timeout, Timeout[T](timeout).asInstanceOf[EvalResult[T]].pure[F])
-        case Left(fileError) => F.pure(UnresolvedDependency[T](fileError.describe))
+        case Left(ex) => F.pure(UnresolvedDependency[T](ex.getMessage))
       }
     } yield result
   }
