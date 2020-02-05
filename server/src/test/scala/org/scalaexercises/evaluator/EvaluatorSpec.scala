@@ -9,6 +9,7 @@ package org.scalaexercises.evaluator
 
 import cats.effect.IO
 import org.scalaexercises.evaluator.helper._
+import org.scalatest.Succeeded
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -17,26 +18,17 @@ import scala.language.postfixOps
 
 class EvaluatorSpec extends AnyFunSpec with Matchers with Implicits {
 
-  def evaluator = new Evaluator[IO](10 seconds)
+  val evaluator = new Evaluator[IO](10 seconds)
 
   describe("evaluation") {
-    it("can evaluate simple expressions, for Scala 2.11") {
+
+    it("can evaluate simple expressions, for Scala 2.13") {
       val result: EvalResult[Int] = evaluator
-        .eval("{ 41 + 1 }", remotes = commonResolvers, dependencies = scalaDependencies(Scala211))
+        .eval("{ 41 + 1 }", remotes = commonResolvers, dependencies = scalaDependencies(Scala213))
         .unsafeRunSync()
 
       result should matchPattern {
-        case EvalSuccess(_, 42, _) ⇒
-      }
-    }
-
-    it("can evaluate simple expressions, for Scala 2.12") {
-      val result: EvalResult[Int] = evaluator
-        .eval("{ 41 + 1 }", remotes = commonResolvers, dependencies = scalaDependencies(Scala212))
-        .unsafeRunSync()
-
-      result should matchPattern {
-        case EvalSuccess(_, 42, _) ⇒
+        case EvalSuccess(_, 42, _) =>
       }
     }
 
@@ -45,47 +37,48 @@ class EvaluatorSpec extends AnyFunSpec with Matchers with Implicits {
         .eval(
           "{ while(true) {}; 123 }",
           remotes = commonResolvers,
-          dependencies = scalaDependencies(Scala212))
+          dependencies = scalaDependencies(Scala213)
+        )
         .unsafeRunSync()
 
       result should matchPattern {
-        case Timeout(_) ⇒
+        case Timeout(_) =>
       }
     }
 
     it("can load dependencies for an evaluation") {
-      val code = """
-import cats.data.Xor
+      val code =
+        """
+import cats.effect._
 
-Xor.Right(42).toOption.get
+IO(47 / 2).handleErrorWith(_ => IO.pure(0)).unsafeRunSync()
       """
       val remotes =
         List("https://oss.sonatype.org/content/repositories/releases/")
       val dependencies = List(
-        Dependency("org.typelevel", "cats_2.11", "0.6.0")
+        Dependency("org.typelevel", "cats-effect_2.13", "2.1.0")
       )
 
       val result: EvalResult[Int] = evaluator
         .eval(
           code,
           remotes = remotes,
-          dependencies = dependencies
+          dependencies = scalaDependencies(Scala213) ++ dependencies
         )
         .unsafeRunSync()
 
-      result should matchPattern {
-        case EvalSuccess(_, 42, _) =>
-      }
+      result should matchPattern { case EvalSuccess(_, 23, _) => }
     }
 
     it(
-      s"can load binary incompatible dependencies for an evaluation, for scala ${BuildInfo.scalaVersion}") {
+      s"can load binary incompatible dependencies for an evaluation, for scala ${BuildInfo.scalaVersion}"
+    ) {
 
       val result: EvalResult[Int] = evaluator
         .eval(
-          fetchCode,
+          circeCode,
           remotes = commonResolvers,
-          dependencies = fetchLibraryDependencies(toScalaVersion(BuildInfo.scalaVersion))
+          dependencies = circeLibraryDependencies(toScalaVersion(BuildInfo.scalaVersion))
         )
         .unsafeRunSync()
 
@@ -95,18 +88,19 @@ Xor.Right(42).toOption.get
     }
 
     it("can load different versions of a dependency across evaluations") {
-      val code = """
+      val code =
+        """
 import cats._
 Eval.now(42).value
       """
       val remotes =
         List("https://oss.sonatype.org/content/repositories/releases/")
       val dependencies1 = List(
-        Dependency("org.typelevel", "cats_2.11", "0.4.1")
-      ) ++ scalaDependencies(Scala211)
+        Dependency("org.typelevel", "cats-core_2.13", "2.1.0")
+      ) ++ scalaDependencies(Scala213)
       val dependencies2 = List(
-        Dependency("org.typelevel", "cats_2.11", "0.6.0")
-      ) ++ scalaDependencies(Scala211)
+        Dependency("org.typelevel", "cats-core_2.13", "2.0.0")
+      ) ++ scalaDependencies(Scala213)
 
       val result1: EvalResult[Int] = evaluator
         .eval(
@@ -134,8 +128,8 @@ Eval.now(42).value
     it("can run code from the exercises content") {
       val code = exerciseContentCode(true)
       val dependencies = List(
-        Dependency("org.scala-exercises", "exercises-stdlib_2.12", exercisesVersion)
-      ) ++ scalaDependencies(Scala211)
+        Dependency("org.scala-exercises", "exercises-stdlib_2.13", exercisesVersion)
+      ) ++ scalaDependencies(Scala213)
 
       val result: EvalResult[Unit] = evaluator
         .eval(
@@ -146,15 +140,15 @@ Eval.now(42).value
         .unsafeRunSync()
 
       result should matchPattern {
-        case EvalSuccess(_, (), _) =>
+        case EvalSuccess(_, Succeeded, _) =>
       }
     }
 
     it("captures exceptions when running the exercises content") {
 
       val dependencies = List(
-        Dependency("org.scala-exercises", "exercises-stdlib_2.12", exercisesVersion)
-      ) ++ scalaDependencies(Scala211)
+        Dependency("org.scala-exercises", "exercises-stdlib_2.13", exercisesVersion)
+      ) ++ scalaDependencies(Scala213)
 
       val result: EvalResult[Unit] = evaluator
         .eval(
@@ -167,12 +161,12 @@ Eval.now(42).value
       result shouldBe a[EvalRuntimeError[_]]
     }
 
-    describe("can run code from the exercises content") {
+    it("can run code with 2.13 dependencies") {
       val code = "{import cats._; Eval.now(42).value}"
 
-      val dependencies = Dependency("org.typelevel", "cats_2.11", "0.6.0") :: Nil
+      val dependencies = Dependency("org.typelevel", "cats-core_2.13", "2.1.0") :: Nil
 
-      val result: EvalResult[Unit] = evaluator
+      val result: EvalResult[Int] = evaluator
         .eval(code, remotes = remotes, dependencies = dependencies)
         .unsafeRunSync()
 
