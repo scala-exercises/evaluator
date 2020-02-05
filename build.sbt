@@ -1,3 +1,5 @@
+Universal / javaOptions += "-Dscala.classpath.closeZip=true"
+
 lazy val `evaluator-server` = (project in file("server"))
   .enablePlugins(JavaAppPackaging)
   .enablePlugins(AutomateHeaderPlugin)

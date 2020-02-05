@@ -13,6 +13,7 @@ import java.security.MessageDigest
 import java.util.jar.JarFile
 
 import cats.effect._
+import cats.effect.syntax.concurrent.catsEffectSyntaxConcurrent
 import cats.implicits._
 import coursier._
 import coursier.cache.{ArtifactError, FileCache}
@@ -20,19 +21,20 @@ import coursier.util.Sync
 import org.scalaexercises.evaluator.Eval.CompilerException
 import org.scalaexercises.evaluator.{Dependency => EvaluatorDependency}
 
+import scala.jdk.CollectionConverters.ConcurrentMapHasAsScala
 import scala.concurrent.duration._
-import scala.language.reflectiveCalls
-import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
 import scala.reflect.internal.util.{AbstractFileClassLoader, BatchSourceFile, Position}
+import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
 import scala.tools.nsc.io.{AbstractFile, VirtualDirectory}
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.{Global, Settings}
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 import scala.util.control.NonFatal
 
 class Evaluator[F[_]: Sync](timeout: FiniteDuration = 20.seconds)(
     implicit F: ConcurrentEffect[F],
-    T: Timer[F]) {
+    T: Timer[F]
+) {
   type Remote = String
 
   private[this] def convert(errors: (Position, String, String)): (String, List[CompilationInfo]) = {
@@ -42,13 +44,12 @@ class Evaluator[F[_]: Sync](timeout: FiniteDuration = 20.seconds)(
 
   def remoteToRepository(remote: Remote): Repository = MavenRepository(remote)
 
-  def dependencyToModule(dependency: Dependency): coursier.Dependency = {
+  def dependencyToModule(dependency: EvaluatorDependency): Dependency = {
     val exclusions: Set[(Organization, ModuleName)] =
       dependency.exclusions
         .fold(List[(Organization, ModuleName)]())(
-          _.map(
-            ex => (Organization(ex.organization), ModuleName(ex.moduleName))
-          ))
+          _.map(ex => (Organization(ex.organization), ModuleName(ex.moduleName)))
+        )
         .toSet
 
     coursier
@@ -61,29 +62,15 @@ class Evaluator[F[_]: Sync](timeout: FiniteDuration = 20.seconds)(
 
   val cache: FileCache[F] = FileCache[F].noCredentials
 
-  def resolveArtifacts(
-      remotes: Seq[Remote],
-      dependencies: Seq[EvaluatorDependency]): F[Resolution] = {
-    Resolve[F](cache)
+  def fetch(remotes: Seq[Remote], dependencies: Seq[EvaluatorDependency]) =
+    Fetch[F](cache)
       .addDependencies(dependencies.map(dependencyToModule): _*)
       .addRepositories(remotes.map(remoteToRepository): _*)
       .addRepositories(coursier.LocalRepositories.ivy2Local)
       .io
-  }
+      .attempt
 
-  def fetchArtifacts(
-      remotes: Seq[Remote],
-      dependencies: Seq[EvaluatorDependency]): F[Either[ArtifactError, List[File]]] =
-    for {
-      resolution        <- resolveArtifacts(remotes, dependencies)
-      gatheredArtifacts <- resolution.artifacts().toList.traverse(cache.file(_).run)
-      artifacts = gatheredArtifacts.foldRight(Right(Nil): Either[ArtifactError, List[File]]) {
-        case (Right(file), acc) => acc.map(file :: _)
-        case (Left(ae), _)      => Left(ae)
-      }
-    } yield artifacts
-
-  def createEval(jars: Seq[File]) = {
+  def createEval(jars: Seq[File]) =
     new Eval(jars = jars.toList) {
       @volatile var errors: Map[String, List[CompilationInfo]] = Map.empty
 
@@ -99,18 +86,19 @@ class Evaluator[F[_]: Sync](timeout: FiniteDuration = 20.seconds)(
         }
       }
 
-      override lazy val compilerMessageHandler: Option[Reporter] = Some(new AbstractReporter {
-        override val settings: Settings    = compilerSettings
-        override def displayPrompt(): Unit = ()
-        override def display(pos: Position, msg: String, severity: this.type#Severity): Unit =
+      override lazy val compilerMessageHandler: Option[Reporter] = Some(new FilteringReporter {
+        override def settings: Settings = compilerSettings
+
+        override def doReport(pos: Position, msg: String, severity: Severity): Unit =
           errors += convert((pos, msg, severity.toString))
+
         override def reset() = {
           super.reset()
           errors = Map.empty
         }
       })
+
     }
-  }
 
   private[this] def evaluate[T](code: String, jars: Seq[File]): F[EvalResult[T]] = {
     F.bracket(F.delay(createEval(jars))) { evalInstance =>
@@ -143,21 +131,14 @@ class Evaluator[F[_]: Sync](timeout: FiniteDuration = 20.seconds)(
       dependencies: Seq[EvaluatorDependency] = Nil
   ): F[EvalResult[T]] = {
     for {
-      allJars <- fetchArtifacts(remotes, dependencies)
+      allJars <- fetch(remotes, dependencies)
       result <- allJars match {
         case Right(jars) =>
-          timeoutTo[EvalResult[T]](evaluate(code, jars), timeout, Timeout[T](timeout))
-        case Left(fileError) => F.pure(UnresolvedDependency[T](fileError.describe))
+          evaluate(code, jars)
+            .timeoutTo(timeout, Timeout[T](timeout).asInstanceOf[EvalResult[T]].pure[F])
+        case Left(ex) => F.pure(UnresolvedDependency[T](ex.getMessage))
       }
     } yield result
-  }
-
-  def timeoutTo[A](fa: F[A], after: FiniteDuration, fallback: A): F[A] = {
-
-    Concurrent[F].race(fa, T.sleep(after)).flatMap {
-      case Left(a)  => a.pure[F]
-      case Right(_) => fallback.pure[F]
-    }
   }
 }
 
@@ -179,41 +160,38 @@ private class StringCompiler(
     messageHandler: Option[Reporter]
 ) extends Closeable {
 
-  val cache = new scala.collection.mutable.HashMap[String, Class[_]]()
+  val cache = new java.util.concurrent.ConcurrentHashMap[String, Class[_]].asScala
 
   trait MessageCollector {
-    val messages: Seq[List[String]]
+    val messages: scala.collection.mutable.ListBuffer[List[String]]
   }
 
-  val reporter = messageHandler getOrElse new AbstractReporter with MessageCollector {
+  val reporter = messageHandler getOrElse new FilteringReporter with MessageCollector {
     val settings = StringCompiler.this.settings
     val messages = new scala.collection.mutable.ListBuffer[List[String]]
 
-    def display(pos: Position, message: String, severity: Severity) = {
-      severity.count += 1
+    def doReport(pos: Position, message: String, severity: Severity) = {
+      increment(severity)
       val severityName = severity match {
         case ERROR   => "error: "
         case WARNING => "warning: "
         case _       => ""
       }
       // the line number is not always available
-      val lineMessage = try {
-        "line " + (pos.line - lineOffset)
-      } catch {
-        case _: Throwable => ""
-      }
+      val lineMessage =
+        try {
+          "line " + (pos.line - lineOffset)
+        } catch {
+          case _: Throwable => ""
+        }
       messages += (severityName + lineMessage + ": " + message) ::
         (if (pos.isDefined) {
-         pos.finalPosition.lineContent.stripLineEnd ::
-           (" " * (pos.column - 1) + "^") ::
+           pos.finalPosition.lineContent.stripLineEnd ::
+             (" " * (pos.column - 1) + "^") ::
+             Nil
+         } else {
            Nil
-       } else {
-         Nil
-       })
-    }
-
-    def displayPrompt = {
-      // no.
+         })
     }
 
     override def reset = {
@@ -237,23 +215,16 @@ private class StringCompiler(
         }
       }
     }
+    global.cleanup
     cache.clear()
     reporter.reset()
   }
 
-  def findClass(className: String, classLoader: ClassLoader): Option[Class[_]] = {
-    synchronized {
-      cache.get(className).orElse {
-        try {
-          val cls = classLoader.loadClass(className)
-          cache(className) = cls
-          Some(cls)
-        } catch {
-          case e: ClassNotFoundException => None
-        }
-      }
+  def findClass(className: String, classLoader: ClassLoader): Option[Class[_]] =
+    Try(cache.getOrElseUpdate(className, classLoader.loadClass(className))) match {
+      case Success(cls) => Some(cls)
+      case Failure(_)   => None
     }
-  }
 
   /**
    * Compile scala code. It can be found using the above class loader.
@@ -265,7 +236,7 @@ private class StringCompiler(
     // ...and 1/2 this line:
     compiler.compileSources(sourceFiles)
 
-    if (reporter.hasErrors || reporter.WARNING.count > 0) {
+    if (reporter.hasErrors || reporter.hasWarnings) {
       val msgs: List[List[String]] = reporter match {
         case collector: MessageCollector =>
           collector.messages.toList
@@ -283,12 +254,14 @@ private class StringCompiler(
       code: String,
       className: String,
       resetState: Boolean = true,
-      classLoader: ClassLoader): Class[_] = {
+      classLoader: ClassLoader
+  ): Class[_] = {
     synchronized {
-      if (resetState) reset()
-
       apply(code)
-      findClass(className, classLoader).get // fixme
+      val clazz = findClass(className, classLoader).get // fixme
+
+      if (resetState) reset()
+      clazz
     }
   }
 
@@ -320,23 +293,27 @@ private class StringCompiler(
  * - return the result of `apply()`
  */
 class Eval(target: Option[File] = None, jars: List[File] = Nil) {
-  private lazy val compilerPath = try {
-    classPathOfClass("scala.tools.nsc.Interpreter")
-  } catch {
-    case e: Throwable =>
-      throw new RuntimeException(
-        "Unable to load Scala interpreter from classpath (scala-compiler jar is missing?)",
-        e)
-  }
+  private lazy val compilerPath =
+    try {
+      classPathOfClass("scala.tools.nsc.Interpreter")
+    } catch {
+      case e: Throwable =>
+        throw new RuntimeException(
+          "Unable to load Scala interpreter from classpath (scala-compiler jar is missing?)",
+          e
+        )
+    }
 
-  private lazy val libPath = try {
-    classPathOfClass("scala.AnyVal")
-  } catch {
-    case e: Throwable =>
-      throw new RuntimeException(
-        "Unable to load scala base object from classpath (scala-library jar is missing?)",
-        e)
-  }
+  private lazy val libPath =
+    try {
+      classPathOfClass("scala.AnyVal")
+    } catch {
+      case e: Throwable =>
+        throw new RuntimeException(
+          "Unable to load scala base object from classpath (scala-library jar is missing?)",
+          e
+        )
+    }
 
   // For derived classes to provide an alternate compiler message handler.
   protected lazy val compilerMessageHandler: Option[Reporter] = None
@@ -353,6 +330,10 @@ class Eval(target: Option[File] = None, jars: List[File] = Nil) {
     compilerMessageHandler
   )
 
+  lazy val jarUrls        = jars.map(jar => new java.net.URL(s"file://${jar.getAbsolutePath}"))
+  lazy val urlClassLoader = new URLClassLoader(jarUrls, compiler.getClass.getClassLoader)
+  lazy val classLoader    = new AbstractFileClassLoader(compilerOutputDir, urlClassLoader)
+
   /**
    * Will generate a classname of the form Evaluater__<unique>,
    * where unique is computed from the jvmID (a random number)
@@ -365,10 +346,6 @@ class Eval(target: Option[File] = None, jars: List[File] = Nil) {
   }
 
   def execute[T](className: String, code: String, resetState: Boolean, jars: Seq[File]): T = {
-    val jarUrls        = jars.map(jar => new java.net.URL(s"file://${jar.getAbsolutePath}"))
-    val urlClassLoader = new URLClassLoader(jarUrls, compiler.getClass.getClassLoader)
-    val classLoader    = new AbstractFileClassLoader(compilerOutputDir, urlClassLoader)
-
     val cls = compiler(
       wrapCodeInClass(className, code),
       className,
@@ -376,19 +353,16 @@ class Eval(target: Option[File] = None, jars: List[File] = Nil) {
       classLoader
     )
 
-    val res = cls
+    cls
       .getConstructor()
       .newInstance()
       .asInstanceOf[() => T]
       .apply()
       .asInstanceOf[T]
-
-    urlClassLoader.close()
-
-    res
   }
 
   def clean(): Unit = {
+    urlClassLoader.close()
     compiler.close()
     compilerMessageHandler.foreach(_.reset())
   }
@@ -513,4 +487,5 @@ object Eval {
 
   class CompilerException(val messages: List[List[String]])
       extends Exception("Compiler exception " + messages.map(_.mkString("\n")).mkString("\n"))
+
 }

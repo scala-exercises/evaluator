@@ -10,7 +10,7 @@ package org.scalaexercises.evaluator
 import cats.effect.Sync
 import com.typesafe.config._
 import org.http4s._
-import org.http4s.syntax.kleisli.http4sKleisliResponseSyntax
+import org.http4s.syntax.kleisli._
 import org.http4s.util._
 import org.log4s.getLogger
 import pdi.jwt.{Jwt, JwtAlgorithm}
@@ -29,7 +29,8 @@ object auth {
     config.getString(SecretKeyPath)
   } else {
     throw new IllegalStateException(
-      "Missing -Deval.auth.secretKey=[YOUR_KEY_HERE] or env var [EVAL_SECRET_KEY] ")
+      "Missing -Deval.auth.secretKey=[YOUR_KEY_HERE] or env var [EVAL_SECRET_KEY] "
+    )
   }
 
   def generateToken(value: String = "{}") =

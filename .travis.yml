@@ -3,7 +3,7 @@ sudo: required
 services:
 - docker
 scala:
-- 2.12.10
+- 2.13.1
 jdk:
 - openjdk8
 cache:
@@ -22,7 +22,7 @@ before_install:
   fi
 
 after_success:
-- if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" -a "$TRAVIS_SCALA_VERSION" = "2.12.10" ]; then
+- if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" -a "$TRAVIS_SCALA_VERSION" = "2.13.1" ]; then
      sbt ++$TRAVIS_SCALA_VERSION publishSignedAll;
      echo "Deploying to Heroku";
      docker login --username=noel.m@47deg.com --password=$heroku_token registry.heroku.com;

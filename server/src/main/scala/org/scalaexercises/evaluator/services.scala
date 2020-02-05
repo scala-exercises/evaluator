@@ -17,7 +17,7 @@ import org.http4s._
 import org.http4s.dsl._
 import org.http4s.headers.Allow
 import org.http4s.server.blaze._
-import org.http4s.syntax.kleisli.http4sKleisliResponseSyntax
+import org.http4s.syntax.kleisli.http4sKleisliResponseSyntaxOptionT
 import org.log4s.getLogger
 import org.scalaexercises.evaluator.codecs._
 
@@ -61,7 +61,8 @@ object services {
                         Option(res.toString),
                         Option(res.asInstanceOf[AnyRef].getClass.getName),
                         Option(out),
-                        cis)
+                        cis
+                      )
                     case Timeout(_) =>
                       EvalResponse(`Timeout Exceded`, None, None, None, Map.empty)
                     case UnresolvedDependency(msg) =>
@@ -70,14 +71,16 @@ object services {
                         None,
                         None,
                         None,
-                        Map.empty)
+                        Map.empty
+                      )
                     case EvalRuntimeError(cis, runtimeError) =>
                       EvalResponse(
                         `Runtime Error`,
                         runtimeError map (_.error.getMessage),
                         runtimeError map (_.error.getClass.getName),
                         None,
-                        cis)
+                        cis
+                      )
                     case CompilationError(cis) =>
                       EvalResponse(`Compilation Error`, None, None, None, cis)
                     case GeneralError(err) =>
@@ -112,7 +115,7 @@ object EvaluatorServer extends IOApp {
   lazy val port = (Option(System.getenv("PORT")) orElse
     Option(System.getProperty("http.port"))).map(_.toInt).getOrElse(8080)
 
-  val httpApp = auth[IO](service(new Evaluator[IO](15.seconds)))
+  val httpApp = auth[IO](service(new Evaluator[IO](10.seconds)))
 
   override def run(args: List[String]): IO[ExitCode] = {
     logger.info(s"Initializing Evaluator at $ip:$port")

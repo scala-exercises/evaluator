@@ -10,15 +10,14 @@ package org.scalaexercises.evaluator
 object helper {
 
   val remotes: List[String]    = "https://oss.sonatype.org/content/repositories/releases/" :: Nil
-  val exercisesVersion: String = "0.5.0-SNAPSHOT"
+  val exercisesVersion: String = "0.6.0-SNAPSHOT"
 
   sealed abstract class ScalaVersion(val version: String)
-  case object Scala211 extends ScalaVersion("2.11.12")
-  case object Scala212 extends ScalaVersion("2.12.10")
+
+  case object Scala213 extends ScalaVersion("2.13.1")
 
   def toScalaVersion(v: String): ScalaVersion = v match {
-    case version if version.startsWith("2.11") => Scala211
-    case version if version.startsWith("2.12") => Scala212
+    case version if version.startsWith("2.13") => Scala213
     case _                                     => throw new IllegalArgumentException(s"Unknown Scala Version $v")
   }
 
@@ -35,11 +34,14 @@ object helper {
     Dependency("org.scala-lang.modules", s"scala-xml_${scala.version.substring(0, 4)}", "1.2.0")
   )
 
-  def fetchLibraryDependencies(scala: ScalaVersion): List[Dependency] = {
+  def circeLibraryDependencies(scala: ScalaVersion): List[Dependency] = {
     val sv = scala.version
+
+    val circeVersion = "0.12.3"
     List(
-      Dependency("com.47deg", s"fetch_${sv.substring(0, 4)}", "0.7.3"),
-      Dependency("com.47deg", s"fetch-monix_${sv.substring(0, 4)}", "0.7.3")
+      Dependency("io.circe", s"circe-core_${sv.substring(0, 4)}", circeVersion),
+      Dependency("io.circe", s"circe-generic_${sv.substring(0, 4)}", circeVersion),
+      Dependency("io.circe", s"circe-parser_${sv.substring(0, 4)}", circeVersion)
     ) ++ scalaDependencies(scala)
   }
 
@@ -54,78 +56,29 @@ import stdlib._
 Asserts.scalaTestAsserts($assertCheck)
     """
 
-  val fetchCode =
+  val json = """"{
+               |    "id": "c730433b-082c-4984-9d66-855c243266f0",
+               |    "name": "Foo",
+               |    "counts": [1, 2, 3],
+               |    "values": {
+               |      "bar": true,
+               |      "baz": 100.001,
+               |      "qux": ["a", "b"]
+               |    }
+               |  }"""".stripMargin
+
+  val circeCode =
+    s"""
+  import cats.syntax.either._
+  import io.circe._
+  import io.circe.parser._
+
+  val json: String = ""$json""
+
+  val doc: Json    = parse(json).getOrElse(Json.Null)
+
+  val cursor: HCursor = doc.hcursor
+
+  cursor.downField("values").downField("baz").as[Double]
     """
-type UserId = Int
-case class User(id: UserId, username: String)
-
-def latency[A](result: A, msg: String) = {
-  val id = Thread.currentThread.getId
-  println(s"~~> [$id] $msg")
-  Thread.sleep(100)
-  println(s"<~~ [$id] $msg")
-  result
-}
-
-import cats.data.NonEmptyList
-import cats.instances.list._
-
-import fetch._
-
-val userDatabase: Map[UserId, User] = Map(
-  1 -> User(1, "@one"),
-  2 -> User(2, "@two"),
-  3 -> User(3, "@three"),
-  4 -> User(4, "@four")
-)
-
-implicit object UserSource extends DataSource[UserId, User]{
-  override def name = "User"
-
-  override def fetchOne(id: UserId): Query[Option[User]] = {
-    Query.sync({
-	  latency(userDatabase.get(id), s"One User $id")
-    })
-  }
-  override def fetchMany(ids: NonEmptyList[UserId]): Query[Map[UserId, User]] = {
-    Query.sync({
-	  latency(userDatabase.filterKeys(ids.toList.contains), s"Many Users $ids")
-    })
-  }
-}
-
-def getUser(id: UserId): Fetch[User] = Fetch(id) // or, more explicitly: Fetch(id)(UserSource)
-
-implicit object UnbatchedSource extends DataSource[Int, Int]{
-  override def name = "Unbatched"
-
-  override def fetchOne(id: Int): Query[Option[Int]] = {
-    Query.sync(Option(id))
-  }
-  override def fetchMany(ids: NonEmptyList[Int]): Query[Map[Int, Int]] = {
-    batchingNotSupported(ids)
-  }
-}
-
-val fetchUser: Fetch[User] = getUser(1)
-
-import cats.Id
-import fetch.unsafe.implicits._
-import fetch.syntax._
-
-fetchUser.runA[Id]
-
-val fetchTwoUsers: Fetch[(User, User)] = for {
-  aUser <- getUser(1)
-  anotherUser <- getUser(aUser.id + 1)
-} yield (aUser, anotherUser)
-
-fetchTwoUsers.runA[Id]
-
-import cats.syntax.cartesian._
-
-val fetchProduct: Fetch[(User, User)] = getUser(1).product(getUser(2))
-
-fetchProduct.runA[Id]
-      """
 }
