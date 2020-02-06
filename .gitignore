@@ -27,3 +27,5 @@ ensime.sbt
 
 # OSX
 .DS_Store
+
+.metals/
