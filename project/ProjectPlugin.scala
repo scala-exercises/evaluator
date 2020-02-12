@@ -25,6 +25,7 @@ object ProjectPlugin extends AutoPlugin {
       lazy val log4s               = "1.7.0"
       lazy val scalatest           = "3.1.0"
       lazy val scalatestplusScheck = "3.1.0.0-RC2"
+      lazy val jodaTime            = "2.10.5"
       lazy val slf4jSimple         = "1.7.30"
       lazy val jwtCore             = "4.2.0"
       lazy val coursier            = "2.0.0-RC5-6"
@@ -51,7 +52,8 @@ object ProjectPlugin extends AutoPlugin {
       },
       imageNames in docker := Seq(
         ImageName(repository =
-          s"registry.heroku.com/${sys.props.getOrElse("evaluator.heroku.name", "scala-evaluator")}/web")
+          s"registry.heroku.com/${sys.props.getOrElse("evaluator.heroku.name", "scala-evaluator")}/web"
+        )
       )
     )
 
@@ -78,7 +80,8 @@ object ProjectPlugin extends AutoPlugin {
         %%("coursier-cache", V.coursier),
         "io.get-coursier" %% "coursier-cats-interop" % V.coursier,
         %%("scalatest", V.scalatest),
-        "org.scalatestplus" %% "scalatestplus-scalacheck" % V.scalatestplusScheck
+        "org.scalatestplus" %% "scalatestplus-scalacheck" % V.scalatestplusScheck,
+        "joda-time"         % "joda-time"                 % V.jodaTime
       )
     )
 
