@@ -27,3 +27,7 @@ ensime.sbt
 
 # OSX
 .DS_Store
+
+.metals/
+
+secret_key.asc

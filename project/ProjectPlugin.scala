@@ -19,15 +19,17 @@ object ProjectPlugin extends AutoPlugin {
   object autoImport {
 
     object V {
-      lazy val cats        = "2.1.0"
-      lazy val http4s      = "0.21.0-M6"
-      lazy val circe       = "0.12.3"
-      lazy val log4s       = "1.7.0"
-      lazy val scalatest   = "3.1.0"
-      lazy val slf4jSimple = "1.7.30"
-      lazy val jwtCore     = "4.2.0"
-      lazy val coursier    = "2.0.0-RC5-6"
-      lazy val config      = "1.4.0"
+      lazy val cats                = "2.1.0"
+      lazy val http4s              = "0.21.0-M6"
+      lazy val circe               = "0.12.3"
+      lazy val log4s               = "1.7.0"
+      lazy val scalatest           = "3.1.1"
+      lazy val scalatestplusScheck = "3.1.0.0-RC2"
+      lazy val jodaTime            = "2.10.5"
+      lazy val slf4jSimple         = "1.7.30"
+      lazy val jwtCore             = "4.3.0"
+      lazy val coursier            = "2.0.0-RC5-6"
+      lazy val config              = "1.4.0"
     }
 
     lazy val dockerSettings = Seq(
@@ -77,7 +79,9 @@ object ProjectPlugin extends AutoPlugin {
         %%("coursier", V.coursier),
         %%("coursier-cache", V.coursier),
         "io.get-coursier" %% "coursier-cats-interop" % V.coursier,
-        %%("scalatest", V.scalatest)
+        %%("scalatest", V.scalatest),
+        "org.scalatestplus" %% "scalatestplus-scalacheck" % V.scalatestplusScheck,
+        "joda-time"         % "joda-time"                 % V.jodaTime
       )
     )
 
@@ -96,7 +100,8 @@ object ProjectPlugin extends AutoPlugin {
         %%("http4s-blaze-client", V.http4s),
         %%("http4s-circe", V.http4s),
         %%("jwt-core", V.jwtCore),
-        %%("scalatest", V.scalatest) % "test"
+        %%("scalatest", V.scalatest) % Test,
+        "org.scalatestplus"          %% "scalatestplus-scalacheck" % V.scalatestplusScheck % Test
       )
     )
 
