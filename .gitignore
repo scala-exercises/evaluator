@@ -29,3 +29,5 @@ ensime.sbt
 .DS_Store
 
 .metals/
+
+secret_key.asc
