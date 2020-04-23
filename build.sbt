@@ -1,5 +1,5 @@
-addCommandAlias("ci-test", "scalafmtCheck; scalafmtSbtCheck; test")
-addCommandAlias("ci-docs", "project-docs/mdoc")
+addCommandAlias("ci-test", "github; scalafmtCheck; scalafmtSbtCheck; test")
+addCommandAlias("ci-docs", "github; project-docs/mdoc; headerCreateAll")
 
 Universal / javaOptions += "-Dscala.classpath.closeZip=true"
 
@@ -8,7 +8,7 @@ lazy val `evaluator-server` = (project in file("server"))
   .enablePlugins(AutomateHeaderPlugin)
   .enablePlugins(sbtdocker.DockerPlugin)
   .enablePlugins(BuildInfoPlugin)
-  .settings(noPublishSettings: _*)
+  .settings(skip in publish := true)
   .settings(
     name := "evaluator-server",
     serverHttpDependencies,
@@ -21,17 +21,17 @@ lazy val `evaluator-server` = (project in file("server"))
 lazy val smoketests = (project in file("smoketests"))
   .dependsOn(`evaluator-server`)
   .enablePlugins(BuildInfoPlugin)
-  .settings(noPublishSettings: _*)
+  .settings(skip in publish := true)
   .settings(
     name := "evaluator-server-smoke-tests",
-    smoketestDependencies
+    serverHttpDependencies
   )
   .settings(buildInfoSettings: _*)
 
 lazy val root = (project in file("."))
   .settings(mainClass in Universal := Some("org.scalaexercises.evaluator.EvaluatorServer"))
   .settings(stage := (stage in Universal in `evaluator-server`).value)
-  .settings(noPublishSettings: _*)
+  .settings(skip in publish := true)
   .aggregate(`evaluator-server`)
   .dependsOn(`evaluator-server`)
 
