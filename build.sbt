@@ -1,11 +1,10 @@
-addCommandAlias("ci-test", "github; scalafmtCheck; scalafmtSbtCheck; test")
+addCommandAlias("ci-test", "scalafmtCheck; scalafmtSbtCheck; test")
 addCommandAlias("ci-docs", "github; project-docs/mdoc; headerCreateAll")
 
 Universal / javaOptions += "-Dscala.classpath.closeZip=true"
 
 lazy val `evaluator-server` = (project in file("server"))
   .enablePlugins(JavaAppPackaging)
-  .enablePlugins(AutomateHeaderPlugin)
   .enablePlugins(sbtdocker.DockerPlugin)
   .enablePlugins(BuildInfoPlugin)
   .settings(skip in publish := true)
