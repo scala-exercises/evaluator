@@ -95,9 +95,10 @@ class EvalEndpointSpec extends AnyFunSpec with Matchers with Implicits {
           EvalRequest(
             code = "{import cats._; Eval.now(42).value}",
             resolvers = commonResolvers,
-            dependencies = List(Dependency("org.typelevel", "cats-core_2.13", "2.0.0")) ++ scalaDependencies(
-              Scala213
-            )
+            dependencies =
+              List(Dependency("org.typelevel", "cats-core_2.13", "2.0.0")) ++ scalaDependencies(
+                Scala213
+              )
           ),
           `X-Scala-Eval-Api-Token`(validToken)
         ),
@@ -117,9 +118,10 @@ class EvalEndpointSpec extends AnyFunSpec with Matchers with Implicits {
             EvalRequest(
               code = code,
               resolvers = resolvers,
-              dependencies = List(Dependency("org.typelevel", "cats-core_2.13", version)) ++ scalaDependencies(
-                Scala213
-              )
+              dependencies =
+                List(Dependency("org.typelevel", "cats-core_2.13", version)) ++ scalaDependencies(
+                  Scala213
+                )
             ),
             `X-Scala-Eval-Api-Token`(validToken)
           ),
