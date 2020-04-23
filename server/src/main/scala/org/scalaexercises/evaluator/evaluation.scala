@@ -455,9 +455,7 @@ class ${className} extends (() => Any) with java.io.Serializable {
           case ncp =>
             ncp
               .split(" ")
-              .map { f =>
-                new File(relativeRoot, f).getAbsolutePath
-              }
+              .map(f => new File(relativeRoot, f).getAbsolutePath)
               .toList
 
         }.unsafeRunSync

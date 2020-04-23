@@ -29,15 +29,20 @@ class Smoketests extends AnyFunSpec with Matchers with CirceInstances with Impli
       case _        => Uri.fromString("https://scala-evaluator-212.herokuapp.com/eval")
     })
     .handleErrorWith(_ =>
-      IO.raiseError(new RuntimeException(
-        s"Unable to parse the scala evaluator url for scala version ${BuildInfo.scalaVersion}")))
+      IO.raiseError(
+        new RuntimeException(
+          s"Unable to parse the scala evaluator url for scala version ${BuildInfo.scalaVersion}"
+        )
+      )
+    )
     .unsafeRunSync()
 
   case class EvaluatorResponse(
       msg: String,
       value: String,
       valueType: String,
-      compilationInfos: Map[String, String])
+      compilationInfos: Map[String, String]
+  )
 
   implicit def decoder[F[_]: Sync]: EntityDecoder[F, EvaluatorResponse] =
     jsonOf[F, EvaluatorResponse]
@@ -45,9 +50,9 @@ class Smoketests extends AnyFunSpec with Matchers with CirceInstances with Impli
   val validToken =
     Jwt.encode("""{"user": "scala-exercises"}""", auth.secretKey, JwtAlgorithm.HS256)
 
-  def makeRequest(code: String)(
-      expectation: EvaluatorResponse => Unit,
-      failExpectation: Throwable => Unit = fail(_)): Unit = {
+  def makeRequest(
+      code: String
+  )(expectation: EvaluatorResponse => Unit, failExpectation: Throwable => Unit = fail(_)): Unit = {
 
     val request = Request[IO](method = Method.POST, uri = evaluatorUrl)
       .withEntity(s"""{"resolvers" : [], "dependencies" : [], "code" : "$code"}""")
@@ -72,9 +77,7 @@ class Smoketests extends AnyFunSpec with Matchers with CirceInstances with Impli
 
   describe("Querying the /eval endpoint") {
     it("should succeed for a simple request") {
-      makeRequest("1 + 1") { evaluatorResponse =>
-        evaluatorResponse.value shouldBe "2"
-      }
+      makeRequest("1 + 1")(evaluatorResponse => evaluatorResponse.value shouldBe "2")
     }
 
     it("should continue to work after calling System.exit") {
@@ -83,9 +86,7 @@ class Smoketests extends AnyFunSpec with Matchers with CirceInstances with Impli
         failExpectation = _ => ()
       )
 
-      makeRequest("1 + 1") { evaluatorResponse =>
-        evaluatorResponse.value shouldBe "2"
-      }
+      makeRequest("1 + 1")(evaluatorResponse => evaluatorResponse.value shouldBe "2")
     }
 
     it("should not expose sensitive details by calling sys.env") {
