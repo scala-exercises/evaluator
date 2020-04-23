@@ -1,5 +1,3 @@
-[![Build Status](https://travis-ci.org/scala-exercises/evaluator.svg?branch=master)](https://travis-ci.org/scala-exercises/evaluator)
-
 # Remote Scala Eval
 
 The remote Scala evaluator is a server based application that
@@ -14,14 +12,14 @@ sbt "project evaluator-server" "run"
 # Authentication
 
 The remote Scala eval uses [JWT](https://jwt.io/) to encode / decode tokens.
-The `secretKey` used for encoding/decoding is configurable as part of the service configuration in 
+The `secretKey` used for encoding/decoding is configurable as part of the service configuration in
 `server/src/main/resources/application.conf`.
 
 Please change `secretKey` by overriding it or providing the `EVAL_SECRET_KEY` env var.
 
 ```
 eval.auth {
-  secretKey = "secretKey"	  
+  secretKey = "secretKey"
   secretKey = ${?EVAL_SECRET_KEY}
 }
 ```
@@ -52,12 +50,12 @@ Requests are sent in JSON format via HTTP POST and are authenticated via the `x-
 Given the token above a sample request may look like:
 
 ```bash
-curl -X POST -H "Content-Type: application/json" -H "x-scala-eval-api-token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eW91ciBpZGVudGl0eQ.cfH43Wa7k_w1i0W2pQhV1k21t2JqER9lw5EpJcENRMI" -d '{  
-   "resolvers":[  
+curl -X POST -H "Content-Type: application/json" -H "x-scala-eval-api-token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eW91ciBpZGVudGl0eQ.cfH43Wa7k_w1i0W2pQhV1k21t2JqER9lw5EpJcENRMI" -d '{
+   "resolvers":[
       "https://oss.sonatype.org/content/repositories/releases"
    ],
-   "dependencies":[  
-      {  
+   "dependencies":[
+      {
          "groupId":"org.typelevel",
          "artifactId":"cats-core_2.11",
          "version":"0.4.1"
@@ -78,12 +76,12 @@ x-scala-eval-api-token : eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eW91ciBpZGVudGl0eQ
 ## Body
 
 ```json
-{  
-   "resolvers":[  
+{
+   "resolvers":[
       "https://oss.sonatype.org/content/repositories/releases"
    ],
-   "dependencies":[  
-      {  
+   "dependencies":[
+      {
          "groupId":"org.typelevel",
          "artifactId":"cats-core_2.11",
          "version":"0.4.1"
@@ -151,16 +149,3 @@ Evaluating code that may result in a thrown exception
   "compilationInfos": {}
 }
 ```
-
-
-# License
-
-Copyright (C) 2015-2016 47 Degrees, LLC. Reactive, scalable software solutions. http://47deg.com hello@47deg.com
-
-Some parts of the code have been taken from twitter-eval, and slightly adapted to the evaluator needs. Copyright 2010 Twitter, Inc.
-
-Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
-
-http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.

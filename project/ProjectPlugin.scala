@@ -1,35 +1,35 @@
 import de.heikoseeberger.sbtheader.HeaderPlugin
 import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
 import sbt.Keys._
-import sbt.{Def, _}
+import sbt._
 import sbtassembly.AssemblyPlugin.autoImport.assembly
 import sbtbuildinfo.BuildInfoKey
 import sbtbuildinfo.BuildInfoPlugin.autoImport._
 import sbtdocker.DockerPlugin.autoImport._
-import sbtorgpolicies.OrgPoliciesPlugin.autoImport._
-import sbtorgpolicies._
-import sbtorgpolicies.model._
+import com.alejandrohdezma.sbt.github.SbtGithubPlugin
 
 object ProjectPlugin extends AutoPlugin {
 
   override def trigger: PluginTrigger = allRequirements
 
-  override def requires: Plugins = plugins.JvmPlugin && HeaderPlugin && OrgPoliciesPlugin
+  override def requires: Plugins = plugins.JvmPlugin && SbtGithubPlugin
 
   object autoImport {
 
     object V {
       lazy val cats                = "2.1.0"
-      lazy val http4s              = "0.21.0-M6"
-      lazy val circe               = "0.12.3"
+      lazy val catsEffect          = "2.1.3"
+      lazy val http4s              = "0.21.3"
+      lazy val circe               = "0.13.0"
       lazy val log4s               = "1.7.0"
       lazy val scalatest           = "3.1.1"
-      lazy val scalatestplusScheck = "3.1.0.0-RC2"
+      lazy val scalatestplusScheck = "3.1.1.1"
       lazy val jodaTime            = "2.10.5"
-      lazy val slf4jSimple         = "1.7.30"
+      lazy val slf4j               = "1.7.30"
       lazy val jwtCore             = "4.3.0"
-      lazy val coursier            = "2.0.0-RC5-6"
+      lazy val coursier            = "2.0.0-RC6-12"
       lazy val config              = "1.4.0"
+      lazy val scala               = "2.13.1"
     }
 
     lazy val dockerSettings = Seq(
@@ -66,22 +66,22 @@ object ProjectPlugin extends AutoPlugin {
 
     lazy val serverHttpDependencies = Seq(
       libraryDependencies ++= Seq(
-        %%("cats-core", V.cats),
-        %%("cats-effect", V.cats),
-        %%("circe-core", V.circe),
-        %%("circe-generic", V.circe),
-        %("slf4j-simple", V.slf4jSimple),
-        %%("http4s-dsl", V.http4s),
-        %%("http4s-blaze-server", V.http4s),
-        %%("http4s-circe", V.http4s),
-        %("config", V.config),
-        %%("jwt-core", V.jwtCore),
-        %%("coursier", V.coursier),
-        %%("coursier-cache", V.coursier),
-        "io.get-coursier" %% "coursier-cats-interop" % V.coursier,
-        %%("scalatest", V.scalatest),
-        "org.scalatestplus" %% "scalatestplus-scalacheck" % V.scalatestplusScheck,
-        "joda-time"         % "joda-time"                 % V.jodaTime
+        "org.typelevel"     %% "cats-core"             % V.cats,
+        "org.typelevel"     %% "cats-effect"           % V.catsEffect,
+        "io.circe"          %% "circe-core"            % V.circe,
+        "io.circe"          %% "circe-generic"         % V.circe,
+        "org.slf4j"         % "slf4j-simple"           % V.slf4j,
+        "org.http4s"        %% "http4s-dsl"            % V.http4s,
+        "org.http4s"        %% "http4s-blaze-server"   % V.http4s,
+        "org.http4s"        %% "http4s-circe"          % V.http4s,
+        "io.get-coursier"   %% "coursier"              % V.coursier,
+        "io.get-coursier"   %% "coursier-cache"        % V.coursier,
+        "com.typesafe"      % "config"                 % V.config,
+        "com.pauldijou"     %% "jwt-core"              % V.jwtCore,
+        "io.get-coursier"   %% "coursier-cats-interop" % V.coursier,
+        "org.scalatest"     %% "scalatest"             % V.scalatest,
+        "org.scalatestplus" %% "scalacheck-1-14"       % V.scalatestplusScheck,
+        "joda-time"         % "joda-time"              % V.jodaTime
       )
     )
 
@@ -90,57 +90,23 @@ object ProjectPlugin extends AutoPlugin {
       buildInfoPackage := "org.scalaexercises.evaluator"
     )
 
-    lazy val smoketestDependencies = Seq(
-      libraryDependencies ++= Seq(
-        %%("cats-core", V.cats),
-        %%("cats-effect", V.cats),
-        %%("circe-core", V.circe),
-        %%("circe-generic", V.circe),
-        %%("circe-parser", V.circe),
-        %%("http4s-blaze-client", V.http4s),
-        %%("http4s-circe", V.http4s),
-        %%("jwt-core", V.jwtCore),
-        %%("scalatest", V.scalatest) % Test,
-        "org.scalatestplus"          %% "scalatestplus-scalacheck" % V.scalatestplusScheck % Test
-      )
-    )
-
   }
+
+  import autoImport._
 
   override def projectSettings: Seq[Def.Setting[_]] =
     Seq(
       name := "evaluator",
       description := "Scala Exercises: The path to enlightenment",
-      startYear := Option(2016),
-      resolvers ++= Seq(
-        Resolver.mavenLocal,
-        Resolver.sonatypeRepo("snapshots"),
-        Resolver.sonatypeRepo("releases")
-      ),
-      orgGithubSetting := GitHubSettings(
-        organization = "scala-exercises",
-        project = name.value,
-        organizationName = "Scala Exercises",
-        groupId = "org.scala-exercises",
-        organizationHomePage = url("https://www.scala-exercises.org"),
-        organizationEmail = "hello@47deg.com"
-      ),
-      orgLicenseSetting := ApacheLicense,
-      scalaVersion := "2.13.1",
-      scalaOrganization := "org.scala-lang",
+      organization := "org.scala-exercises",
+      organizationName := "47 Degrees",
+      organizationHomepage := Some(url("https://47deg.com")),
+      scalaVersion := V.scala,
+      crossScalaVersions := Seq(V.scala),
       scalacOptions ~= (_ filterNot (_ == "-Xfuture")),
       scalacOptions += "-Ymacro-annotations",
       javacOptions ++= Seq("-encoding", "UTF-8", "-Xlint:-options"),
       parallelExecution in Test := false,
-      cancelable in Global := true,
-      headerLicense := Some(
-        HeaderLicense.Custom(
-          s"""|
-              | scala-exercises - ${name.value}
-              | Copyright (C) 2015-2019 47 Degrees, LLC. <http://www.47deg.com>
-              |
-              |""".stripMargin
-        )
-      )
-    ) ++ shellPromptSettings
+      cancelable in Global := true
+    )
 }
