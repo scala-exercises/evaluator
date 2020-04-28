@@ -101,6 +101,13 @@ object ProjectPlugin extends AutoPlugin {
       organization := "org.scala-exercises",
       organizationName := "47 Degrees",
       organizationHomepage := Some(url("https://47deg.com")),
+      scmInfo := Some(
+        ScmInfo(
+          url("https://github.com/scala-exercises/evaluator"),
+          "scm:git:https://github.com/scala-exercises/evaluator.git",
+          Some("scm:git:git@github.com:scala-exercises/evaluator.git")
+        )
+      ),
       scalaVersion := V.scala,
       crossScalaVersions := Seq(V.scala),
       scalacOptions ~= (_ filterNot (_ == "-Xfuture")),

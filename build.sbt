@@ -1,4 +1,4 @@
-addCommandAlias("ci-test", "scalafmtCheck; scalafmtSbtCheck; test")
+addCommandAlias("ci-test", "scalafmtCheckAll; scalafmtSbtCheck; test")
 addCommandAlias("ci-docs", "github; project-docs/mdoc; headerCreateAll")
 
 Universal / javaOptions += "-Dscala.classpath.closeZip=true"
@@ -36,7 +36,6 @@ lazy val root = (project in file("."))
 
 lazy val `project-docs` = (project in file(".docs"))
   .aggregate(`evaluator-server`, smoketests)
-  .dependsOn(`evaluator-server`, smoketests)
   .settings(moduleName := "evaluator-project-docs")
   .settings(mdocIn := file(".docs"))
   .settings(mdocOut := file("."))
