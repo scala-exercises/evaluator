@@ -25,10 +25,11 @@ object helper {
 
   case object Scala213 extends ScalaVersion("2.13.1")
 
-  def toScalaVersion(v: String): ScalaVersion = v match {
-    case version if version.startsWith("2.13") => Scala213
-    case _                                     => throw new IllegalArgumentException(s"Unknown Scala Version $v")
-  }
+  def toScalaVersion(v: String): ScalaVersion =
+    v match {
+      case version if version.startsWith("2.13") => Scala213
+      case _                                     => throw new IllegalArgumentException(s"Unknown Scala Version $v")
+    }
 
   val commonResolvers = List(
     "https://oss.sonatype.org/content/repositories/snapshots",
@@ -36,12 +37,13 @@ object helper {
     "http://repo1.maven.org/maven2"
   )
 
-  def scalaDependencies(scala: ScalaVersion): List[Dependency] = List(
-    Dependency("org.scala-lang", s"scala-library", s"${scala.version}"),
-    Dependency("org.scala-lang", s"scala-reflect", s"${scala.version}"),
-    Dependency("org.scala-lang", s"scala-compiler", s"${scala.version}"),
-    Dependency("org.scala-lang.modules", s"scala-xml_${scala.version.substring(0, 4)}", "1.2.0")
-  )
+  def scalaDependencies(scala: ScalaVersion): List[Dependency] =
+    List(
+      Dependency("org.scala-lang", s"scala-library", s"${scala.version}"),
+      Dependency("org.scala-lang", s"scala-reflect", s"${scala.version}"),
+      Dependency("org.scala-lang", s"scala-compiler", s"${scala.version}"),
+      Dependency("org.scala-lang.modules", s"scala-xml_${scala.version.substring(0, 4)}", "1.2.0")
+    )
 
   def circeLibraryDependencies(scala: ScalaVersion): List[Dependency] = {
     val sv = scala.version

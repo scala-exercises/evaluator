@@ -1,4 +1,4 @@
-addCommandAlias("ci-test", "scalafmtCheck; scalafmtSbtCheck; test")
+addCommandAlias("ci-test", "scalafmtCheckAll; scalafmtSbtCheck; test")
 addCommandAlias("ci-docs", "github; project-docs/mdoc; headerCreateAll")
 
 Universal / javaOptions += "-Dscala.classpath.closeZip=true"
