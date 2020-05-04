@@ -34,13 +34,14 @@ object auth {
 
   val SecretKeyPath = "eval.auth.secretKey"
 
-  val secretKey = if (config.hasPath(SecretKeyPath)) {
-    config.getString(SecretKeyPath)
-  } else {
-    throw new IllegalStateException(
-      "Missing -Deval.auth.secretKey=[YOUR_KEY_HERE] or env var [EVAL_SECRET_KEY] "
-    )
-  }
+  val secretKey =
+    if (config.hasPath(SecretKeyPath))
+      config.getString(SecretKeyPath)
+    else {
+      throw new IllegalStateException(
+        "Missing -Deval.auth.secretKey=[YOUR_KEY_HERE] or env var [EVAL_SECRET_KEY] "
+      )
+    }
 
   def generateToken(value: String = "{}") =
     Jwt.encode(value, secretKey, JwtAlgorithm.HS256)
@@ -69,22 +70,19 @@ object auth {
   def apply[F[_]: Sync](service: HttpApp[F]): HttpApp[F] =
     HttpRoutes
       .of[F] {
-        case req if req.headers.nonEmpty => {
+        case req if req.headers.nonEmpty =>
           req.headers.get(`X-Scala-Eval-Api-Token`) match {
             case Some(header) =>
               Jwt.decodeRaw(header.token, secretKey, Seq(JwtAlgorithm.HS256)) match {
-                case Success(tokenIdentity) => {
+                case Success(tokenIdentity) =>
                   logger.info(s"Auth success with identity : $tokenIdentity")
                   service(req)
-                }
-                case Failure(ex) => {
+                case Failure(ex) =>
                   logger.warn(s"Auth failed : $ex")
                   Sync[F].pure(Response(Status.Unauthorized))
-                }
               }
             case None => Sync[F].pure(Response(Status.Unauthorized))
           }
-        }
         case _ => Sync[F].pure(Response(Status.Unauthorized))
       }
       .orNotFound

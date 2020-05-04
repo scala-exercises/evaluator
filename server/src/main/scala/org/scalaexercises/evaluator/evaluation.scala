@@ -40,8 +40,8 @@ import scala.tools.nsc.{Global, Settings}
 import scala.util.{Failure, Success, Try}
 import scala.util.control.NonFatal
 
-class Evaluator[F[_]: Sync](timeout: FiniteDuration = 20.seconds)(
-    implicit F: ConcurrentEffect[F],
+class Evaluator[F[_]: Sync](timeout: FiniteDuration = 20.seconds)(implicit
+    F: ConcurrentEffect[F],
     T: Timer[F]
 ) {
   type Remote = String
@@ -188,9 +188,8 @@ private class StringCompiler(
       }
       // the line number is not always available
       val lineMessage =
-        try {
-          "line " + (pos.line - lineOffset)
-        } catch {
+        try "line " + (pos.line - lineOffset)
+        catch {
           case _: Throwable => ""
         }
       messages += (severityName + lineMessage + ": " + message) ::
@@ -198,9 +197,8 @@ private class StringCompiler(
            pos.finalPosition.lineContent.stripLineEnd ::
              (" " * (pos.column - 1) + "^") ::
              Nil
-         } else {
-           Nil
-         })
+         } else
+           Nil)
     }
 
     override def reset = {
@@ -213,16 +211,13 @@ private class StringCompiler(
 
   def reset() = {
     targetDir match {
-      case None => {
+      case None =>
         output.asInstanceOf[VirtualDirectory].clear()
-      }
-      case Some(t) => {
+      case Some(t) =>
         output.foreach { abstractFile =>
-          if (abstractFile.file == null || abstractFile.file.getName.endsWith(".class")) {
+          if (abstractFile.file == null || abstractFile.file.getName.endsWith(".class"))
             abstractFile.delete()
-          }
         }
-      }
     }
     global.cleanup
     cache.clear()
@@ -303,9 +298,8 @@ private class StringCompiler(
  */
 class Eval(target: Option[File] = None, jars: List[File] = Nil) {
   private lazy val compilerPath =
-    try {
-      classPathOfClass("scala.tools.nsc.Interpreter")
-    } catch {
+    try classPathOfClass("scala.tools.nsc.Interpreter")
+    catch {
       case e: Throwable =>
         throw new RuntimeException(
           "Unable to load Scala interpreter from classpath (scala-compiler jar is missing?)",
@@ -314,9 +308,8 @@ class Eval(target: Option[File] = None, jars: List[File] = Nil) {
     }
 
   private lazy val libPath =
-    try {
-      classPathOfClass("scala.AnyVal")
-    } catch {
+    try classPathOfClass("scala.AnyVal")
+    catch {
       case e: Throwable =>
         throw new RuntimeException(
           "Unable to load scala base object from classpath (scala-library jar is missing?)",
@@ -445,31 +438,32 @@ class ${className} extends (() => Any) with java.io.Serializable {
     val classPath        = getClassPath(this.getClass.getClassLoader)
     val currentClassPath = classPath.head
 
-    def checkCurrentClassPath: List[String] = currentClassPath match {
-      case List(jarFile) if jarFile.endsWith(".jar") =>
-        val relativeRoot = new File(jarFile).getParentFile
-        val jarResource: Resource[IO, JarFile] =
-          Resource.make(IO(new JarFile(jarFile)))(jar => IO(jar.close()))
+    def checkCurrentClassPath: List[String] =
+      currentClassPath match {
+        case List(jarFile) if jarFile.endsWith(".jar") =>
+          val relativeRoot = new File(jarFile).getParentFile
+          val jarResource: Resource[IO, JarFile] =
+            Resource.make(IO(new JarFile(jarFile)))(jar => IO(jar.close()))
 
-        val nestedClassPath: IO[String] =
-          jarResource
-            .use(jar => IO(jar.getManifest.getMainAttributes.getValue("Class-Path")))
-            .handleError {
-              case scala.util.control.NonFatal(e) =>
-                throw new CompilerException(List(List(e.getMessage)))
-            }
+          val nestedClassPath: IO[String] =
+            jarResource
+              .use(jar => IO(jar.getManifest.getMainAttributes.getValue("Class-Path")))
+              .handleError {
+                case scala.util.control.NonFatal(e) =>
+                  throw new CompilerException(List(List(e.getMessage)))
+              }
 
-        nestedClassPath.map {
-          case ncp if ncp eq null => Nil
-          case ncp =>
-            ncp
-              .split(" ")
-              .map(f => new File(relativeRoot, f).getAbsolutePath)
-              .toList
+          nestedClassPath.map {
+            case ncp if ncp eq null => Nil
+            case ncp =>
+              ncp
+                .split(" ")
+                .map(f => new File(relativeRoot, f).getAbsolutePath)
+                .toList
 
-        }.unsafeRunSync
-      case _ => Nil
-    }
+          }.unsafeRunSync
+        case _ => Nil
+      }
 
     // if there's just one thing in the classpath, and it's a jar, assume an executable jar.
     currentClassPath ::: checkCurrentClassPath ::: classPath.tail.flatten
