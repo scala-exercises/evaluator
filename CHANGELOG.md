@@ -1,5 +1,22 @@
 # Changelog
 
+## [v0.1.1](https://github.com/scala-exercises/evaluator/tree/v0.1.1) (2020-06-09)
+
+[Full Changelog](https://github.com/scala-exercises/evaluator/compare/v0.1.0...v0.1.1)
+
+📈 **Dependency updates**
+
+- Update sbt to 1.3.11 [\#119](https://github.com/scala-exercises/evaluator/pull/119) ([scala-steward](https://github.com/scala-steward))
+- Update scalatest to 3.1.2 [\#117](https://github.com/scala-exercises/evaluator/pull/117) ([scala-steward](https://github.com/scala-steward))
+- Update sbt-native-packager to 1.7.1 [\#113](https://github.com/scala-exercises/evaluator/pull/113) ([scala-steward](https://github.com/scala-steward))
+- Update joda-time to 2.10.6 [\#110](https://github.com/scala-exercises/evaluator/pull/110) ([scala-steward](https://github.com/scala-steward))
+
+**Merged pull requests:**
+
+- Prepare repository for next `.github` release and SBT build improvements [\#122](https://github.com/scala-exercises/evaluator/pull/122) ([juanpedromoreno](https://github.com/juanpedromoreno))
+- Update scalafmt-core to 2.5.1 [\#116](https://github.com/scala-exercises/evaluator/pull/116) ([BenFradet](https://github.com/BenFradet))
+- Adds scmInfo settings [\#112](https://github.com/scala-exercises/evaluator/pull/112) ([juanpedromoreno](https://github.com/juanpedromoreno))
+
 ## [v0.1.0](https://github.com/scala-exercises/evaluator/tree/v0.1.0) (2020-04-23)
 
 [Full Changelog](https://github.com/scala-exercises/evaluator/compare/da6604a17a43c748f59436eb533986c6b041529f...v0.1.0)
