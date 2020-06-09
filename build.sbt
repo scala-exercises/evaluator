@@ -36,7 +36,6 @@ lazy val root = (project in file("."))
 
 lazy val `project-docs` = (project in file(".docs"))
   .aggregate(`evaluator-server`, smoketests)
-  .dependsOn(`evaluator-server`, smoketests)
   .settings(moduleName := "evaluator-project-docs")
   .settings(mdocIn := file(".docs"))
   .settings(mdocOut := file("."))
