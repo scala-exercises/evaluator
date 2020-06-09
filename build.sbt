@@ -26,16 +26,6 @@ lazy val `evaluator-server` = (project in file("server"))
   .settings(buildInfoSettings: _*)
   .settings(serverScalaMacroDependencies: _*)
 
-lazy val smoketests = (project in file("smoketests"))
-  .dependsOn(`evaluator-server`)
-  .enablePlugins(BuildInfoPlugin)
-  .settings(skip in publish := true)
-  .settings(
-    name := "evaluator-server-smoke-tests",
-    serverHttpDependencies
-  )
-  .settings(buildInfoSettings: _*)
-
 lazy val documentation = project
   .settings(mdocOut := file("."))
   .settings(publish / skip := true)
