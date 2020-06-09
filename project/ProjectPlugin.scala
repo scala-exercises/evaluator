@@ -92,8 +92,6 @@ object ProjectPlugin extends AutoPlugin {
 
   }
 
-  import autoImport._
-
   override def projectSettings: Seq[Def.Setting[_]] =
     Seq(
       scmInfo := Some(

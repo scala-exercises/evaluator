@@ -7,6 +7,10 @@ addCommandAlias("ci-docs", "github; mdoc; headerCreateAll")
 addCommandAlias("ci-publish", "github; ci-release")
 
 Universal / javaOptions += "-Dscala.classpath.closeZip=true"
+Universal / mainClass := Some("org.scalaexercises.evaluator.EvaluatorServer")
+
+stage := (stage in Universal in `evaluator-server`).value
+skip in publish := true
 
 lazy val `evaluator-server` = (project in file("server"))
   .enablePlugins(JavaAppPackaging)
@@ -31,13 +35,6 @@ lazy val smoketests = (project in file("smoketests"))
     serverHttpDependencies
   )
   .settings(buildInfoSettings: _*)
-
-lazy val root = (project in file("."))
-  .settings(mainClass in Universal := Some("org.scalaexercises.evaluator.EvaluatorServer"))
-  .settings(stage := (stage in Universal in `evaluator-server`).value)
-  .settings(skip in publish := true)
-  .aggregate(`evaluator-server`)
-  .dependsOn(`evaluator-server`)
 
 lazy val documentation = project
   .settings(mdocOut := file("."))
