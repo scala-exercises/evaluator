@@ -1,7 +1,16 @@
-addCommandAlias("ci-test", "scalafmtCheckAll; scalafmtSbtCheck; test")
-addCommandAlias("ci-docs", "github; project-docs/mdoc; headerCreateAll")
+ThisBuild / organization := "org.scala-exercises"
+ThisBuild / githubOrganization := "47degrees"
+ThisBuild / scalaVersion := V.scala
 
 Universal / javaOptions += "-Dscala.classpath.closeZip=true"
+Universal / mainClass := Some("org.scalaexercises.evaluator.EvaluatorServer")
+
+stage := (stage in Universal in `evaluator-server`).value
+skip in publish := true
+
+addCommandAlias("ci-test", "scalafmtCheckAll; scalafmtSbtCheck; test")
+addCommandAlias("ci-docs", "github; mdoc; headerCreateAll")
+addCommandAlias("ci-publish", "github; ci-release")
 
 lazy val `evaluator-server` = (project in file("server"))
   .enablePlugins(JavaAppPackaging)
@@ -17,27 +26,7 @@ lazy val `evaluator-server` = (project in file("server"))
   .settings(buildInfoSettings: _*)
   .settings(serverScalaMacroDependencies: _*)
 
-lazy val smoketests = (project in file("smoketests"))
-  .dependsOn(`evaluator-server`)
-  .enablePlugins(BuildInfoPlugin)
-  .settings(skip in publish := true)
-  .settings(
-    name := "evaluator-server-smoke-tests",
-    serverHttpDependencies
-  )
-  .settings(buildInfoSettings: _*)
-
-lazy val root = (project in file("."))
-  .settings(mainClass in Universal := Some("org.scalaexercises.evaluator.EvaluatorServer"))
-  .settings(stage := (stage in Universal in `evaluator-server`).value)
-  .settings(skip in publish := true)
-  .aggregate(`evaluator-server`)
-  .dependsOn(`evaluator-server`)
-
-lazy val `project-docs` = (project in file(".docs"))
-  .aggregate(`evaluator-server`, smoketests)
-  .settings(moduleName := "evaluator-project-docs")
-  .settings(mdocIn := file(".docs"))
+lazy val documentation = project
   .settings(mdocOut := file("."))
-  .settings(skip in publish := true)
+  .settings(publish / skip := true)
   .enablePlugins(MdocPlugin)

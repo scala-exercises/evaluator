@@ -1,5 +1,3 @@
-import de.heikoseeberger.sbtheader.HeaderPlugin
-import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
 import sbt.Keys._
 import sbt._
 import sbtassembly.AssemblyPlugin.autoImport.assembly
@@ -17,19 +15,19 @@ object ProjectPlugin extends AutoPlugin {
   object autoImport {
 
     object V {
-      lazy val cats                = "2.1.0"
+      lazy val cats                = "2.1.1"
       lazy val catsEffect          = "2.1.3"
-      lazy val http4s              = "0.21.3"
+      lazy val http4s              = "0.21.4"
       lazy val circe               = "0.13.0"
       lazy val log4s               = "1.7.0"
       lazy val scalatest           = "3.1.2"
-      lazy val scalatestplusScheck = "3.1.1.1"
+      lazy val scalatestplusScheck = "3.1.2.0"
       lazy val jodaTime            = "2.10.6"
       lazy val slf4j               = "1.7.30"
       lazy val jwtCore             = "4.3.0"
-      lazy val coursier            = "2.0.0-RC6-12"
+      lazy val coursier            = "2.0.0-RC6-21"
       lazy val config              = "1.4.0"
-      lazy val scala               = "2.13.1"
+      lazy val scala               = "2.13.2"
     }
 
     lazy val dockerSettings = Seq(
@@ -92,15 +90,8 @@ object ProjectPlugin extends AutoPlugin {
 
   }
 
-  import autoImport._
-
   override def projectSettings: Seq[Def.Setting[_]] =
     Seq(
-      name := "evaluator",
-      description := "Scala Exercises: The path to enlightenment",
-      organization := "org.scala-exercises",
-      organizationName := "47 Degrees",
-      organizationHomepage := Some(url("https://47deg.com")),
       scmInfo := Some(
         ScmInfo(
           url("https://github.com/scala-exercises/evaluator"),
@@ -108,8 +99,6 @@ object ProjectPlugin extends AutoPlugin {
           Some("scm:git:git@github.com:scala-exercises/evaluator.git")
         )
       ),
-      scalaVersion := V.scala,
-      crossScalaVersions := Seq(V.scala),
       scalacOptions ~= (_ filterNot (_ == "-Xfuture")),
       scalacOptions += "-Ymacro-annotations",
       javacOptions ++= Seq("-encoding", "UTF-8", "-Xlint:-options"),
