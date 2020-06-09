@@ -96,11 +96,6 @@ object ProjectPlugin extends AutoPlugin {
 
   override def projectSettings: Seq[Def.Setting[_]] =
     Seq(
-      name := "evaluator",
-      description := "Scala Exercises: The path to enlightenment",
-      organization := "org.scala-exercises",
-      organizationName := "47 Degrees",
-      organizationHomepage := Some(url("https://47deg.com")),
       scmInfo := Some(
         ScmInfo(
           url("https://github.com/scala-exercises/evaluator"),
@@ -108,8 +103,6 @@ object ProjectPlugin extends AutoPlugin {
           Some("scm:git:git@github.com:scala-exercises/evaluator.git")
         )
       ),
-      scalaVersion := V.scala,
-      crossScalaVersions := Seq(V.scala),
       scalacOptions ~= (_ filterNot (_ == "-Xfuture")),
       scalacOptions += "-Ymacro-annotations",
       javacOptions ++= Seq("-encoding", "UTF-8", "-Xlint:-options"),

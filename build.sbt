@@ -1,3 +1,7 @@
+ThisBuild / organization := "org.scala-exercises"
+ThisBuild / githubOrganization := "47degrees"
+ThisBuild / scalaVersion := V.scala
+
 addCommandAlias("ci-test", "scalafmtCheckAll; scalafmtSbtCheck; test")
 addCommandAlias("ci-docs", "github; project-docs/mdoc; headerCreateAll")
 
