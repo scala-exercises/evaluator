@@ -3,7 +3,8 @@ ThisBuild / githubOrganization := "47degrees"
 ThisBuild / scalaVersion := V.scala
 
 addCommandAlias("ci-test", "scalafmtCheckAll; scalafmtSbtCheck; test")
-addCommandAlias("ci-docs", "github; project-docs/mdoc; headerCreateAll")
+addCommandAlias("ci-docs", "github; mdoc; headerCreateAll")
+addCommandAlias("ci-publish", "github; ci-release")
 
 Universal / javaOptions += "-Dscala.classpath.closeZip=true"
 
