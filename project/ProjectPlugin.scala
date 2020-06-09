@@ -22,7 +22,7 @@ object ProjectPlugin extends AutoPlugin {
       lazy val http4s              = "0.21.3"
       lazy val circe               = "0.13.0"
       lazy val log4s               = "1.7.0"
-      lazy val scalatest           = "3.1.1"
+      lazy val scalatest           = "3.1.2"
       lazy val scalatestplusScheck = "3.1.1.1"
       lazy val jodaTime            = "2.10.6"
       lazy val slf4j               = "1.7.30"
@@ -70,18 +70,18 @@ object ProjectPlugin extends AutoPlugin {
         "org.typelevel"     %% "cats-effect"           % V.catsEffect,
         "io.circe"          %% "circe-core"            % V.circe,
         "io.circe"          %% "circe-generic"         % V.circe,
-        "org.slf4j"         % "slf4j-simple"           % V.slf4j,
+        "org.slf4j"          % "slf4j-simple"          % V.slf4j,
         "org.http4s"        %% "http4s-dsl"            % V.http4s,
         "org.http4s"        %% "http4s-blaze-server"   % V.http4s,
         "org.http4s"        %% "http4s-circe"          % V.http4s,
         "io.get-coursier"   %% "coursier"              % V.coursier,
         "io.get-coursier"   %% "coursier-cache"        % V.coursier,
-        "com.typesafe"      % "config"                 % V.config,
+        "com.typesafe"       % "config"                % V.config,
         "com.pauldijou"     %% "jwt-core"              % V.jwtCore,
         "io.get-coursier"   %% "coursier-cats-interop" % V.coursier,
         "org.scalatest"     %% "scalatest"             % V.scalatest,
         "org.scalatestplus" %% "scalacheck-1-14"       % V.scalatestplusScheck,
-        "joda-time"         % "joda-time"              % V.jodaTime
+        "joda-time"          % "joda-time"             % V.jodaTime
       )
     )
 
