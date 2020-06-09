@@ -1,5 +1,3 @@
-import de.heikoseeberger.sbtheader.HeaderPlugin
-import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
 import sbt.Keys._
 import sbt._
 import sbtassembly.AssemblyPlugin.autoImport.assembly
