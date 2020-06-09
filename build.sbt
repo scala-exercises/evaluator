@@ -39,10 +39,7 @@ lazy val root = (project in file("."))
   .aggregate(`evaluator-server`)
   .dependsOn(`evaluator-server`)
 
-lazy val `project-docs` = (project in file(".docs"))
-  .aggregate(`evaluator-server`, smoketests)
-  .settings(moduleName := "evaluator-project-docs")
-  .settings(mdocIn := file(".docs"))
+lazy val documentation = project
   .settings(mdocOut := file("."))
-  .settings(skip in publish := true)
+  .settings(publish / skip := true)
   .enablePlugins(MdocPlugin)
