@@ -22,7 +22,8 @@ import org.http4s._
 import org.http4s.circe._
 
 /**
- * Provides Json serialization codecs for the http4s services */
+ * Provides Json serialization codecs for the http4s services
+ */
 trait Http4sCodecInstances {
 
   implicit def entityDecoderOf[F[_]: Sync, A: Decoder]: EntityDecoder[F, A] = jsonOf[F, A]
