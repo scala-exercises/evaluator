@@ -19,11 +19,11 @@ package org.scalaexercises.evaluator
 object helper {
 
   val remotes: List[String]    = "https://oss.sonatype.org/content/repositories/releases/" :: Nil
-  val exercisesVersion: String = "0.6.0-SNAPSHOT"
+  val exercisesVersion: String = "0.6.2"
 
   sealed abstract class ScalaVersion(val version: String)
 
-  case object Scala213 extends ScalaVersion("2.13.1")
+  case object Scala213 extends ScalaVersion("2.13.3")
 
   def toScalaVersion(v: String): ScalaVersion =
     v match {
@@ -48,7 +48,7 @@ object helper {
   def circeLibraryDependencies(scala: ScalaVersion): List[Dependency] = {
     val sv = scala.version
 
-    val circeVersion = "0.12.3"
+    val circeVersion = "0.13.0"
     List(
       Dependency("io.circe", s"circe-core_${sv.substring(0, 4)}", circeVersion),
       Dependency("io.circe", s"circe-generic_${sv.substring(0, 4)}", circeVersion),
