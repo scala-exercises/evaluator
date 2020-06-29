@@ -19,7 +19,7 @@ package org.scalaexercises.evaluator
 object helper {
 
   val remotes: List[String]    = "https://oss.sonatype.org/content/repositories/releases/" :: Nil
-  val exercisesVersion: String = "0.6.1"
+  val exercisesVersion: String = "0.6.2"
 
   sealed abstract class ScalaVersion(val version: String)
 
