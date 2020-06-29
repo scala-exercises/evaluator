@@ -1,5 +1,25 @@
 # Changelog
 
+## [v0.1.2](https://github.com/scala-exercises/evaluator/tree/v0.1.2) (2020-06-29)
+
+[Full Changelog](https://github.com/scala-exercises/evaluator/compare/v0.1.1...v0.1.2)
+
+📈 **Dependency updates**
+
+- Update sbt-mdoc to 2.2.3 [\#136](https://github.com/scala-exercises/evaluator/pull/136) ([scala-steward](https://github.com/scala-steward))
+- Update http4s-blaze-server, http4s-circe, ... to 0.21.5 [\#135](https://github.com/scala-exercises/evaluator/pull/135) ([scala-steward](https://github.com/scala-steward))
+- Update scalacheck-1-14 to 3.2.0.0 [\#131](https://github.com/scala-exercises/evaluator/pull/131) ([scala-steward](https://github.com/scala-steward))
+- Update scalatest to 3.2.0 [\#130](https://github.com/scala-exercises/evaluator/pull/130) ([scala-steward](https://github.com/scala-steward))
+- Update scalafmt-core to 2.5.3 [\#126](https://github.com/scala-exercises/evaluator/pull/126) ([scala-steward](https://github.com/scala-steward))
+- Update sbt-mdoc to 2.2.2 [\#125](https://github.com/scala-exercises/evaluator/pull/125) ([scala-steward](https://github.com/scala-steward))
+- Update sbt-native-packager to 1.7.3 [\#124](https://github.com/scala-exercises/evaluator/pull/124) ([scala-steward](https://github.com/scala-steward))
+
+**Merged pull requests:**
+
+- Updates build [\#140](https://github.com/scala-exercises/evaluator/pull/140) ([juanpedromoreno](https://github.com/juanpedromoreno))
+- Update scalafmt-core to 2.6.1 [\#133](https://github.com/scala-exercises/evaluator/pull/133) ([BenFradet](https://github.com/BenFradet))
+- Update scalafmt-core to 2.6.0 [\#128](https://github.com/scala-exercises/evaluator/pull/128) ([BenFradet](https://github.com/BenFradet))
+
 ## [v0.1.1](https://github.com/scala-exercises/evaluator/tree/v0.1.1) (2020-06-09)
 
 [Full Changelog](https://github.com/scala-exercises/evaluator/compare/v0.1.0...v0.1.1)
