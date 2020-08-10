@@ -1,5 +1,28 @@
 # Changelog
 
+## [v0.1.3](https://github.com/scala-exercises/evaluator/tree/v0.1.3) (2020-08-10)
+
+[Full Changelog](https://github.com/scala-exercises/evaluator/compare/v0.1.2...v0.1.3)
+
+📈 **Dependency updates**
+
+- Update sbt-mdoc to 2.2.4 [\#160](https://github.com/scala-exercises/evaluator/pull/160) ([47erbot](https://github.com/47erbot))
+- Update http4s-blaze-server, http4s-circe, ... to 0.21.7 [\#159](https://github.com/scala-exercises/evaluator/pull/159) ([47erbot](https://github.com/47erbot))
+- Update sbt-buildinfo to 0.10.0 [\#158](https://github.com/scala-exercises/evaluator/pull/158) ([47erbot](https://github.com/47erbot))
+- Update scalacheck-1-14 to 3.2.1.0 [\#157](https://github.com/scala-exercises/evaluator/pull/157) ([47erbot](https://github.com/47erbot))
+- Update scalatest to 3.2.1 [\#156](https://github.com/scala-exercises/evaluator/pull/156) ([47erbot](https://github.com/47erbot))
+- Update sbt-scalafmt to 2.4.2 [\#155](https://github.com/scala-exercises/evaluator/pull/155) ([47erbot](https://github.com/47erbot))
+- Update coursier, coursier-cache, ... to 2.0.0-RC6-24 [\#154](https://github.com/scala-exercises/evaluator/pull/154) ([47erbot](https://github.com/47erbot))
+- Update scalafmt-core to 2.6.4 [\#153](https://github.com/scala-exercises/evaluator/pull/153) ([47erbot](https://github.com/47erbot))
+- Update cats-effect to 2.1.4 [\#152](https://github.com/scala-exercises/evaluator/pull/152) ([scala-steward](https://github.com/scala-steward))
+- Update scalafmt-core to 2.6.3 [\#151](https://github.com/scala-exercises/evaluator/pull/151) ([scala-steward](https://github.com/scala-steward))
+- Update sbt-docker to 1.7.0 [\#150](https://github.com/scala-exercises/evaluator/pull/150) ([scala-steward](https://github.com/scala-steward))
+- Update coursier, coursier-cache, ... to 2.0.0-RC6-23 [\#149](https://github.com/scala-exercises/evaluator/pull/149) ([scala-steward](https://github.com/scala-steward))
+- Update sbt-native-packager to 1.7.4 [\#148](https://github.com/scala-exercises/evaluator/pull/148) ([scala-steward](https://github.com/scala-steward))
+- Update coursier, coursier-cache, ... to 2.0.0-RC6-22 [\#147](https://github.com/scala-exercises/evaluator/pull/147) ([scala-steward](https://github.com/scala-steward))
+- Update scalafmt-core to 2.6.2 [\#146](https://github.com/scala-exercises/evaluator/pull/146) ([scala-steward](https://github.com/scala-steward))
+- Update sbt-docker to 1.6.0 [\#145](https://github.com/scala-exercises/evaluator/pull/145) ([scala-steward](https://github.com/scala-steward))
+
 ## [v0.1.2](https://github.com/scala-exercises/evaluator/tree/v0.1.2) (2020-06-29)
 
 [Full Changelog](https://github.com/scala-exercises/evaluator/compare/v0.1.1...v0.1.2)

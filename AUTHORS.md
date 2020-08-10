@@ -9,6 +9,7 @@
 The maintainers of the project are:
 
 - [![47erbot](https://avatars1.githubusercontent.com/u/24799081?v=4&s=20) **47erbot**](https://github.com/47erbot)
+- [![alejandrohdezma](https://avatars0.githubusercontent.com/u/9027541?v=4&s=20) **Alejandro Hernández (alejandrohdezma)**](https://github.com/alejandrohdezma)
 - [![angoglez](https://avatars0.githubusercontent.com/u/10107285?v=4&s=20) **Ana Gómez González (angoglez)**](https://github.com/angoglez)
 - [![andyscott](https://avatars3.githubusercontent.com/u/310363?v=4&s=20) **Andy Scott (andyscott)**](https://github.com/andyscott)
 - [![BenFradet](https://avatars2.githubusercontent.com/u/1737211?v=4&s=20) **Ben Fradet (BenFradet)**](https://github.com/BenFradet)
@@ -25,10 +26,11 @@ These are the people that have contributed to the _evaluator_ project:
 - [![juanpedromoreno](https://avatars2.githubusercontent.com/u/4879373?v=4&s=20) **juanpedromoreno**](https://github.com/juanpedromoreno)
 - [![kiroco12](https://avatars1.githubusercontent.com/u/48894338?v=4&s=20) **kiroco12**](https://github.com/kiroco12)
 - [![raulraja](https://avatars3.githubusercontent.com/u/456796?v=4&s=20) **raulraja**](https://github.com/raulraja)
+- [![47erbot](https://avatars1.githubusercontent.com/u/24799081?v=4&s=20) **47erbot**](https://github.com/47erbot)
 - [![noelmarkham](https://avatars1.githubusercontent.com/u/1492487?v=4&s=20) **noelmarkham**](https://github.com/noelmarkham)
 - [![dominv](https://avatars1.githubusercontent.com/u/3943031?v=4&s=20) **dominv**](https://github.com/dominv)
-- [![47erbot](https://avatars1.githubusercontent.com/u/24799081?v=4&s=20) **47erbot**](https://github.com/47erbot)
 - [![jdesiloniz](https://avatars2.githubusercontent.com/u/2835739?v=4&s=20) **jdesiloniz**](https://github.com/jdesiloniz)
 - [![BenFradet](https://avatars2.githubusercontent.com/u/1737211?v=4&s=20) **BenFradet**](https://github.com/BenFradet)
 - [![andyscott](https://avatars3.githubusercontent.com/u/310363?v=4&s=20) **andyscott**](https://github.com/andyscott)
 - [![angoglez](https://avatars0.githubusercontent.com/u/10107285?v=4&s=20) **angoglez**](https://github.com/angoglez)
+- [![alejandrohdezma](https://avatars0.githubusercontent.com/u/9027541?v=4&s=20) **alejandrohdezma**](https://github.com/alejandrohdezma)
