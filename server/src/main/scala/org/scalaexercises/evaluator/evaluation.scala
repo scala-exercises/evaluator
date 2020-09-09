@@ -448,9 +448,8 @@ class ${className} extends (() => Any) with java.io.Serializable {
           val nestedClassPath: IO[String] =
             jarResource
               .use(jar => IO(jar.getManifest.getMainAttributes.getValue("Class-Path")))
-              .handleError {
-                case scala.util.control.NonFatal(e) =>
-                  throw new CompilerException(List(List(e.getMessage)))
+              .handleError { case scala.util.control.NonFatal(e) =>
+                throw new CompilerException(List(List(e.getMessage)))
               }
 
           nestedClassPath.map {
