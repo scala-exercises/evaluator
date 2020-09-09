@@ -36,8 +36,7 @@ class EvaluatorSpec extends AnyFunSpec with Matchers with Implicits {
         .eval("{ 41 + 1 }", remotes = commonResolvers, dependencies = scalaDependencies(Scala213))
         .unsafeRunSync()
 
-      result should matchPattern {
-        case EvalSuccess(_, 42, _) =>
+      result should matchPattern { case EvalSuccess(_, 42, _) =>
       }
     }
 
@@ -50,8 +49,7 @@ class EvaluatorSpec extends AnyFunSpec with Matchers with Implicits {
         )
         .unsafeRunSync()
 
-      result should matchPattern {
-        case Timeout(_) =>
+      result should matchPattern { case Timeout(_) =>
       }
     }
 
@@ -91,8 +89,7 @@ IO(47 / 2).handleErrorWith(_ => IO.pure(0)).unsafeRunSync()
         )
         .unsafeRunSync()
 
-      result should matchPattern {
-        case EvalSuccess(_, _, _) =>
+      result should matchPattern { case EvalSuccess(_, _, _) =>
       }
     }
 
@@ -126,11 +123,9 @@ Eval.now(42).value
         )
         .unsafeRunSync()
 
-      result1 should matchPattern {
-        case EvalSuccess(_, 42, _) =>
+      result1 should matchPattern { case EvalSuccess(_, 42, _) =>
       }
-      result2 should matchPattern {
-        case EvalSuccess(_, 42, _) =>
+      result2 should matchPattern { case EvalSuccess(_, 42, _) =>
       }
     }
 
@@ -148,8 +143,7 @@ Eval.now(42).value
         )
         .unsafeRunSync()
 
-      result should matchPattern {
-        case EvalSuccess(_, Succeeded, _) =>
+      result should matchPattern { case EvalSuccess(_, Succeeded, _) =>
       }
     }
 
@@ -179,8 +173,7 @@ Eval.now(42).value
         .eval(code, remotes = remotes, dependencies = dependencies)
         .unsafeRunSync()
 
-      result should matchPattern {
-        case EvalSuccess(_, 42, _) =>
+      result should matchPattern { case EvalSuccess(_, 42, _) =>
       }
     }
   }
