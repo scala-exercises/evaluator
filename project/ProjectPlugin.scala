@@ -16,7 +16,7 @@ object ProjectPlugin extends AutoPlugin {
 
     object V {
       lazy val cats                = "2.5.0"
-      lazy val catsEffect          = "2.4.0"
+      lazy val catsEffect          = "2.4.1"
       lazy val http4s              = "0.21.20"
       lazy val circe               = "0.13.0"
       lazy val log4s               = "1.7.0"
