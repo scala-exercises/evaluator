@@ -16,7 +16,7 @@
 
 package org.scalaexercises.evaluator
 
-import cats.effect.{ConcurrentEffect, ContextShift, ExitCode, IO, IOApp, Timer}
+import cats.effect.{ConcurrentEffect, ExitCode, IO, IOApp}
 import cats.implicits._
 import coursier.interop.cats._
 import coursier.util.Sync
@@ -31,6 +31,7 @@ import org.log4s.getLogger
 import org.scalaexercises.evaluator.codecs._
 
 import scala.concurrent.duration._
+import cats.effect.Temporal
 
 object services {
 
@@ -44,7 +45,7 @@ object services {
     Header("Access-Control-Max-Age", 1.day.toSeconds.toString())
   )
 
-  def service[F[_]: ConcurrentEffect: ContextShift: Timer: Sync](evaluator: Evaluator[F]) = {
+  def service[F[_]: ConcurrentEffect: ContextShift: Temporal: Sync](evaluator: Evaluator[F]) = {
 
     object dsl extends Http4sDsl[F]
 
