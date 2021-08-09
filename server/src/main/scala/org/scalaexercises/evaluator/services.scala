@@ -25,7 +25,7 @@ import io.circe.syntax._
 import org.http4s._
 import org.http4s.dsl._
 import org.http4s.headers.Allow
-import org.http4s.server.blaze._
+import org.http4s.blaze.server._
 import org.http4s.syntax.kleisli.http4sKleisliResponseSyntaxOptionT
 import org.log4s.getLogger
 import org.scalaexercises.evaluator.codecs._
