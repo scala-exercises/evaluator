@@ -1,11 +1,11 @@
-ThisBuild / organization := "org.scala-exercises"
+ThisBuild / organization       := "org.scala-exercises"
 ThisBuild / githubOrganization := "47degrees"
-ThisBuild / scalaVersion := V.scala
+ThisBuild / scalaVersion       := V.scala
 
 Universal / javaOptions += "-Dscala.classpath.closeZip=true"
 Universal / mainClass := Some("org.scalaexercises.evaluator.EvaluatorServer")
 
-stage := (stage in Universal in `evaluator-server`).value
+stage           := (stage in Universal in `evaluator-server`).value
 skip in publish := true
 
 addCommandAlias("ci-test", "scalafmtCheckAll; scalafmtSbtCheck; test")

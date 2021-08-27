@@ -84,7 +84,7 @@ object ProjectPlugin extends AutoPlugin {
     )
 
     lazy val buildInfoSettings = Seq(
-      buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
+      buildInfoKeys    := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
       buildInfoPackage := "org.scalaexercises.evaluator"
     )
 
@@ -103,6 +103,6 @@ object ProjectPlugin extends AutoPlugin {
       scalacOptions += "-Ymacro-annotations",
       javacOptions ++= Seq("-encoding", "UTF-8", "-Xlint:-options"),
       parallelExecution in Test := false,
-      cancelable in Global := true
+      cancelable in Global      := true
     )
 }
