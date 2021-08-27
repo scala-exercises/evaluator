@@ -158,8 +158,8 @@ class Evaluator[F[_]: Sync](timeout: FiniteDuration = 20.seconds)(implicit
  *
  * Twitter, Inc.
  *
- * Dynamic scala compiler. Lots of (slow) state is created, so it may be advantageous to keep
- * around one of these and reuse it.
+ * Dynamic scala compiler. Lots of (slow) state is created, so it may be advantageous to keep around
+ * one of these and reuse it.
  */
 private class StringCompiler(
     lineOffset: Int,
@@ -286,15 +286,15 @@ private class StringCompiler(
  * Evaluates files, strings, or input streams as Scala code, and returns the result.
  *
  * If `target` is `None`, the results are compiled to memory (and are therefore ephemeral). If
- * `target` is `Some(path)`, the path must point to a directory, and classes will be saved into
- * that directory. You can optionally pass a list of JARs to include to the classpath during
- * compilation and evaluation.
+ * `target` is `Some(path)`, the path must point to a directory, and classes will be saved into that
+ * directory. You can optionally pass a list of JARs to include to the classpath during compilation
+ * and evaluation.
  *
  * The flow of evaluation is:
- * - wrap code in an `apply` method in a generated class
- * - compile the class adding the jars to the classpath
- * - contruct an instance of that class
- * - return the result of `apply()`
+ *   - wrap code in an `apply` method in a generated class
+ *   - compile the class adding the jars to the classpath
+ *   - contruct an instance of that class
+ *   - return the result of `apply()`
  */
 class Eval(target: Option[File] = None, jars: List[File] = Nil) {
   private lazy val compilerPath =
@@ -337,9 +337,8 @@ class Eval(target: Option[File] = None, jars: List[File] = Nil) {
   lazy val classLoader    = new AbstractFileClassLoader(compilerOutputDir, urlClassLoader)
 
   /**
-   * Will generate a classname of the form Evaluater__<unique>,
-   * where unique is computed from the jvmID (a random number)
-   * and a digest of code
+   * Will generate a classname of the form Evaluater__<unique>, where unique is computed from the
+   * jvmID (a random number) and a digest of code
    */
   def execute[T](code: String, resetState: Boolean, jars: Seq[File]): T = {
     val id        = uniqueId(code)
@@ -384,7 +383,7 @@ class Eval(target: Option[File] = None, jars: List[File] = Nil) {
    */
   private[this] def wrapCodeInClass(className: String, code: String) = {
     s"""
-class ${className} extends (() => Any) with java.io.Serializable {
+class $className extends (() => Any) with java.io.Serializable {
   def apply() = {
     $code
   }
