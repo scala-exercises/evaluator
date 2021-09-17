@@ -24,7 +24,7 @@ object ProjectPlugin extends AutoPlugin {
       lazy val scalatestplusScheck = "3.2.2.0"
       lazy val jodaTime            = "2.10.10"
       lazy val slf4j               = "1.7.32"
-      lazy val jwtCore             = "5.0.0"
+      lazy val jwtCore             = "6.0.0"
       lazy val coursier            = "2.0.16"
       lazy val config              = "1.4.1"
       lazy val scala               = "2.13.3"
@@ -75,7 +75,7 @@ object ProjectPlugin extends AutoPlugin {
         "io.get-coursier"   %% "coursier"              % V.coursier,
         "io.get-coursier"   %% "coursier-cache"        % V.coursier,
         "com.typesafe"       % "config"                % V.config,
-        "com.pauldijou"     %% "jwt-core"              % V.jwtCore,
+        "com.github.jwt-scala"     %% "jwt-core"              % V.jwtCore,
         "io.get-coursier"   %% "coursier-cats-interop" % V.coursier,
         "org.scalatest"     %% "scalatest"             % V.scalatest,
         "org.scalatestplus" %% "scalacheck-1-14"       % V.scalatestplusScheck,
