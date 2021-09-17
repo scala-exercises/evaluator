@@ -64,22 +64,22 @@ object ProjectPlugin extends AutoPlugin {
 
     lazy val serverHttpDependencies = Seq(
       libraryDependencies ++= Seq(
-        "org.typelevel"     %% "cats-core"             % V.cats,
-        "org.typelevel"     %% "cats-effect"           % V.catsEffect,
-        "io.circe"          %% "circe-core"            % V.circe,
-        "io.circe"          %% "circe-generic"         % V.circe,
-        "org.slf4j"          % "slf4j-simple"          % V.slf4j,
-        "org.http4s"        %% "http4s-dsl"            % V.http4s,
-        "org.http4s"        %% "http4s-blaze-server"   % V.http4s,
-        "org.http4s"        %% "http4s-circe"          % V.http4s,
-        "io.get-coursier"   %% "coursier"              % V.coursier,
-        "io.get-coursier"   %% "coursier-cache"        % V.coursier,
-        "com.typesafe"       % "config"                % V.config,
-        "com.github.jwt-scala"     %% "jwt-core"              % V.jwtCore,
-        "io.get-coursier"   %% "coursier-cats-interop" % V.coursier,
-        "org.scalatest"     %% "scalatest"             % V.scalatest,
-        "org.scalatestplus" %% "scalacheck-1-14"       % V.scalatestplusScheck,
-        "joda-time"          % "joda-time"             % V.jodaTime
+        "org.typelevel"        %% "cats-core"             % V.cats,
+        "org.typelevel"        %% "cats-effect"           % V.catsEffect,
+        "io.circe"             %% "circe-core"            % V.circe,
+        "io.circe"             %% "circe-generic"         % V.circe,
+        "org.slf4j"             % "slf4j-simple"          % V.slf4j,
+        "org.http4s"           %% "http4s-dsl"            % V.http4s,
+        "org.http4s"           %% "http4s-blaze-server"   % V.http4s,
+        "org.http4s"           %% "http4s-circe"          % V.http4s,
+        "io.get-coursier"      %% "coursier"              % V.coursier,
+        "io.get-coursier"      %% "coursier-cache"        % V.coursier,
+        "com.typesafe"          % "config"                % V.config,
+        "com.github.jwt-scala" %% "jwt-core"              % V.jwtCore,
+        "io.get-coursier"      %% "coursier-cats-interop" % V.coursier,
+        "org.scalatest"        %% "scalatest"             % V.scalatest,
+        "org.scalatestplus"    %% "scalacheck-1-14"       % V.scalatestplusScheck,
+        "joda-time"             % "joda-time"             % V.jodaTime
       )
     )
 
