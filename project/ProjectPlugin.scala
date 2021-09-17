@@ -27,7 +27,7 @@ object ProjectPlugin extends AutoPlugin {
       lazy val jwtCore             = "5.0.0"
       lazy val coursier            = "2.0.16"
       lazy val config              = "1.4.1"
-      lazy val scala               = "2.13.3"
+      lazy val scala               = "2.13.6"
     }
 
     lazy val dockerSettings = Seq(
