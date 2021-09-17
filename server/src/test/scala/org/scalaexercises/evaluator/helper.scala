@@ -23,7 +23,7 @@ object helper {
 
   sealed abstract class ScalaVersion(val version: String)
 
-  case object Scala213 extends ScalaVersion("2.13.3")
+  case object Scala213 extends ScalaVersion("2.13.6")
 
   def toScalaVersion(v: String): ScalaVersion =
     v match {
