@@ -106,7 +106,7 @@ object services {
         // Options service
         // CORS middleware in http4s can't be combined with our `auth` middleware. We need to handle CORS calls ourselves.
         case OPTIONS -> Root / "eval" =>
-          Ok().map(res => res.withHeaders(corsHeaders: _*)) //putHeaders(corsHeaders: _*)
+          Ok().map(res => res.withHeaders(corsHeaders: _*)) // putHeaders(corsHeaders: _*)
       }
       .orNotFound
   }
