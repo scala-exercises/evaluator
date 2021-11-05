@@ -56,7 +56,7 @@ object helper {
     ) ++ scalaDependencies(scala)
   }
 
-  //TODO: Update test code for newer version of Fetch
+  // TODO: Update test code for newer version of Fetch
   def exerciseContentCode(assertCheck: Boolean) =
     s"""
 import org.scalaexercises.content._
