@@ -23,11 +23,11 @@ object ProjectPlugin extends AutoPlugin {
       lazy val scalatest           = "3.2.10"
       lazy val scalatestplusScheck = "3.2.2.0"
       lazy val jodaTime            = "2.10.13"
-      lazy val slf4j               = "1.7.32"
+      lazy val slf4j               = "1.7.35"
       lazy val jwtCore             = "9.0.3"
       lazy val coursier            = "2.0.16"
       lazy val config              = "1.4.1"
-      lazy val scala               = "2.13.7"
+      lazy val scala               = "2.13.8"
     }
 
     lazy val dockerSettings = Seq(
