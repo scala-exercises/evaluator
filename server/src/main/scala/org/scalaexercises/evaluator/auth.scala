@@ -17,18 +17,22 @@
 package org.scalaexercises.evaluator
 
 import cats.effect.Sync
+import cats.syntax.list._
 import com.typesafe.config._
 import org.http4s._
 import org.http4s.syntax.kleisli._
 import org.http4s.util._
 import org.log4s.getLogger
 import pdi.jwt.{Jwt, JwtAlgorithm}
+import org.typelevel.ci.CIString
 
 import scala.util.{Failure, Success}
 
 object auth {
 
   private[this] val logger = getLogger
+
+  private[this] val tokenHeaderKey = CIString("X-Scala-Eval-Api-Token")
 
   val config = ConfigFactory.load()
 
@@ -46,34 +50,13 @@ object auth {
   def generateToken(value: String = "{}") =
     Jwt.encode(value, secretKey, JwtAlgorithm.HS256)
 
-  object `X-Scala-Eval-Api-Token` extends HeaderKey.Singleton {
-
-    type HeaderT = `X-Scala-Eval-Api-Token`
-
-    def name: CaseInsensitiveString = CaseInsensitiveString("x-scala-eval-api-token")
-
-    override def parse(s: String): ParseResult[`X-Scala-Eval-Api-Token`] =
-      ParseResult.success(`X-Scala-Eval-Api-Token`(s))
-
-    def matchHeader(header: Header): Option[HeaderT] =
-      if (header.name == name) Some(`X-Scala-Eval-Api-Token`(header.value))
-      else None
-
-  }
-
-  final case class `X-Scala-Eval-Api-Token`(token: String) extends Header.Parsed {
-    override def key = `X-Scala-Eval-Api-Token`
-    override def renderValue(writer: Writer): writer.type =
-      writer.append(token)
-  }
-
   def apply[F[_]: Sync](service: HttpApp[F]): HttpApp[F] =
     HttpRoutes
       .of[F] {
-        case req if req.headers.nonEmpty =>
-          req.headers.get(`X-Scala-Eval-Api-Token`) match {
+        case req if req.headers.headers.nonEmpty =>
+          req.headers.get(tokenHeaderKey) match {
             case Some(header) =>
-              Jwt.decodeRaw(header.token, secretKey, Seq(JwtAlgorithm.HS256)) match {
+              Jwt.decodeRaw(header.head.value, secretKey, Seq(JwtAlgorithm.HS256)) match {
                 case Success(tokenIdentity) =>
                   logger.info(s"Auth success with identity : $tokenIdentity")
                   service(req)

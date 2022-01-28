@@ -16,28 +16,29 @@
 
 package org.scalaexercises.evaluator
 
-import cats.effect.{ConcurrentEffect, ExitCode, IO, IOApp}
+import cats.effect.{ExitCode, IO, IOApp}
 import cats.implicits._
-import coursier.interop.cats._
 import coursier.util.Sync
+import io.circe.Json
 import io.circe.generic.auto._
 import io.circe.syntax._
 import org.http4s._
+import org.http4s.circe.CirceEntityEncoder._
 import org.http4s.dsl._
 import org.http4s.headers.Allow
 import org.http4s.server.blaze._
 import org.http4s.syntax.kleisli.http4sKleisliResponseSyntaxOptionT
 import org.log4s.getLogger
-import org.scalaexercises.evaluator.codecs._
 
 import scala.concurrent.duration._
 import cats.effect.Temporal
+import org.http4s.circe.JsonDecoder
 
 object services {
 
   import EvalResponse.messages._
 
-  val corsHeaders = Seq(
+  val corsHeaders: Seq[Header.ToRaw] = Seq(
     Header("Vary", "Origin,Access-Control-Request-Methods"),
     Header("Access-Control-Allow-Methods", "POST"),
     Header("Access-Control-Allow-Origin", "*"),
@@ -45,7 +46,7 @@ object services {
     Header("Access-Control-Max-Age", 1.day.toSeconds.toString())
   )
 
-  def service[F[_]: ConcurrentEffect: ContextShift: Temporal: Sync](evaluator: Evaluator[F]) = {
+  def service[F[_]: Temporal: Sync: JsonDecoder](evaluator: Evaluator[F]) = {
 
     object dsl extends Http4sDsl[F]
 

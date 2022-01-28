@@ -16,7 +16,10 @@
 
 package org.scalaexercises.evaluator
 
+import io.circe.generic.semiauto.deriveDecoder
+
 import scala.concurrent.duration._
+import io.circe.Decoder
 
 final case class RangePosition(start: Int, point: Int, end: Int)
 
@@ -47,6 +50,11 @@ final case class CompilationError[A](compilationInfos: CI) extends EvalResult[A]
 final case class GeneralError[A](stack: Throwable) extends EvalResult[A]
 
 final case class Exclusion(organization: String, moduleName: String)
+
+object Exclusion {
+  implicit val decExclusion: Decoder[Exclusion] = deriveDecoder
+}
+
 final case class Dependency(
     groupId: String,
     artifactId: String,
@@ -54,11 +62,19 @@ final case class Dependency(
     exclusions: Option[List[Exclusion]] = None
 )
 
+object Dependency {
+  implicit val decDependency: Decoder[Dependency] = deriveDecoder
+}
+
 final case class EvalRequest(
     resolvers: List[String] = Nil,
     dependencies: List[Dependency] = Nil,
     code: String
 )
+
+object EvalRequest {
+  implicit val decEvalRequest: Decoder[EvalRequest] = deriveDecoder
+}
 
 final case class EvalResponse(
     msg: String,

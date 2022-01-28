@@ -17,7 +17,7 @@ object ProjectPlugin extends AutoPlugin {
     object V {
       lazy val cats                = "2.7.0"
       lazy val catsEffect          = "3.3.4"
-      lazy val http4s              = "0.21.31"
+      lazy val http4s              = "0.23.8"
       lazy val circe               = "0.14.1"
       lazy val log4s               = "1.7.0"
       lazy val scalatest           = "3.2.10"
@@ -25,7 +25,7 @@ object ProjectPlugin extends AutoPlugin {
       lazy val jodaTime            = "2.10.13"
       lazy val slf4j               = "1.7.35"
       lazy val jwtCore             = "9.0.3"
-      lazy val coursier            = "2.0.16"
+      lazy val coursier            = "2.1.0-M2-19-g5a34ba7c1"
       lazy val config              = "1.4.1"
       lazy val scala               = "2.13.8"
     }

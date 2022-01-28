@@ -22,7 +22,6 @@ import java.security.MessageDigest
 import java.util.jar.JarFile
 
 import cats.effect._
-import cats.effect.syntax.concurrent.catsEffectSyntaxConcurrent
 import cats.implicits._
 import coursier._
 import coursier.cache.{ArtifactError, FileCache}
@@ -40,10 +39,12 @@ import scala.tools.nsc.{Global, Settings}
 import scala.util.{Failure, Success, Try}
 import scala.util.control.NonFatal
 import cats.effect.Temporal
+import cats.effect.unsafe.IORuntime
 
 class Evaluator[F[_]: Sync](timeout: FiniteDuration = 20.seconds)(implicit
-    F: ConcurrentEffect[F],
-    T: Temporal[F]
+    F: Async[F],
+    T: Temporal[F],
+    runtime: IORuntime
 ) {
   type Remote = String
 
@@ -144,8 +145,11 @@ class Evaluator[F[_]: Sync](timeout: FiniteDuration = 20.seconds)(implicit
       allJars <- fetch(remotes, dependencies)
       result <- allJars match {
         case Right(jars) =>
-          evaluate(code, jars)
-            .timeoutTo(timeout, Timeout[T](timeout).asInstanceOf[EvalResult[T]].pure[F])
+          Clock[F].timeoutTo(
+            evaluate[T](code, jars),
+            timeout,
+            Timeout[T](timeout).asInstanceOf[EvalResult[T]].pure[F]
+          )
         case Left(ex) => F.pure(UnresolvedDependency[T](ex.getMessage))
       }
     } yield result
@@ -202,7 +206,7 @@ private class StringCompiler(
            Nil)
     }
 
-    override def reset = {
+    override def reset() = {
       super.reset
       messages.clear()
     }
@@ -297,7 +301,7 @@ private class StringCompiler(
  *   - contruct an instance of that class
  *   - return the result of `apply()`
  */
-class Eval(target: Option[File] = None, jars: List[File] = Nil) {
+class Eval(target: Option[File] = None, jars: List[File] = Nil)(implicit runtime: IORuntime) {
   private lazy val compilerPath =
     try classPathOfClass("scala.tools.nsc.Interpreter")
     catch {
