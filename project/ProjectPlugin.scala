@@ -32,7 +32,7 @@ object ProjectPlugin extends AutoPlugin {
 
     lazy val dockerSettings = Seq(
       docker := (docker dependsOn assembly).value,
-      dockerfile in docker := {
+      (docker / dockerfile) := {
 
         val artifact: File     = assembly.value
         val artifactTargetPath = artifact.name
@@ -48,7 +48,7 @@ object ProjectPlugin extends AutoPlugin {
             s"java -Dhttp.port=$$PORT -Deval.auth.secretKey=$$EVAL_SECRET_KEY -jar $artifactTargetPath"
           )
       },
-      imageNames in docker := Seq(
+      (docker / imageNames) := Seq(
         ImageName(repository =
           s"registry.heroku.com/${sys.props.getOrElse("evaluator.heroku.name", "scala-evaluator")}/web"
         )
@@ -102,7 +102,7 @@ object ProjectPlugin extends AutoPlugin {
       scalacOptions ~= (_ filterNot (_ == "-Xfuture")),
       scalacOptions += "-Ymacro-annotations",
       javacOptions ++= Seq("-encoding", "UTF-8", "-Xlint:-options"),
-      parallelExecution in Test := false,
-      cancelable in Global      := true
+      (Test / parallelExecution) := false,
+      (Global / cancelable)      := true
     )
 }
