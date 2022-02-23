@@ -1,4 +1,4 @@
-addSbtPlugin("com.github.sbt"       % "sbt-native-packager"      % "1.9.7")
+addSbtPlugin("com.github.sbt"       % "sbt-native-packager"      % "1.9.9")
 addSbtPlugin("com.eed3si9n"         % "sbt-assembly"             % "1.2.0")
 addSbtPlugin("se.marcuslonnberg"    % "sbt-docker"               % "1.8.3")
 addSbtPlugin("com.eed3si9n"         % "sbt-buildinfo"            % "0.11.0")
