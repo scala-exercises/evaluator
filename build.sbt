@@ -26,7 +26,7 @@ lazy val `evaluator-server` = (project in file("server"))
   .settings(buildInfoSettings: _*)
   .settings(serverScalaMacroDependencies: _*)
   .settings(
-    dependencyOverrides += "org.scala-lang.modules" % "scala-xml" % "1.3.0"
+    dependencyOverrides += "org.scala-lang.modules" %% "scala-xml" % "1.3.0"
   )
 
 lazy val documentation = project
