@@ -5,8 +5,8 @@ ThisBuild / scalaVersion       := V.scala
 Universal / javaOptions += "-Dscala.classpath.closeZip=true"
 Universal / mainClass := Some("org.scalaexercises.evaluator.EvaluatorServer")
 
-stage           := (stage in Universal in `evaluator-server`).value
-skip in publish := true
+stage            := (`evaluator-server` / Universal / stage).value
+(publish / skip) := true
 
 addCommandAlias("ci-test", "scalafmtCheckAll; scalafmtSbtCheck; test")
 addCommandAlias("ci-docs", "github; mdoc; headerCreateAll")
@@ -16,15 +16,18 @@ lazy val `evaluator-server` = (project in file("server"))
   .enablePlugins(JavaAppPackaging)
   .enablePlugins(sbtdocker.DockerPlugin)
   .enablePlugins(BuildInfoPlugin)
-  .settings(skip in publish := true)
+  .settings((publish / skip) := true)
   .settings(
     name := "evaluator-server",
     serverHttpDependencies,
-    assemblyJarName in assembly := "evaluator-server.jar"
+    (assembly / assemblyJarName) := "evaluator-server.jar"
   )
   .settings(dockerSettings: _*)
   .settings(buildInfoSettings: _*)
   .settings(serverScalaMacroDependencies: _*)
+  .settings(
+    dependencyOverrides += "org.scala-lang.modules" %% "scala-xml" % "1.3.0"
+  )
 
 lazy val documentation = project
   .settings(mdocOut := file("."))
