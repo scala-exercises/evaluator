@@ -5,7 +5,7 @@ ThisBuild / scalaVersion       := V.scala
 Universal / javaOptions += "-Dscala.classpath.closeZip=true"
 Universal / mainClass := Some("org.scalaexercises.evaluator.EvaluatorServer")
 
-stage           := (`evaluator-server` / Universal / stage).value
+stage            := (`evaluator-server` / Universal / stage).value
 (publish / skip) := true
 
 addCommandAlias("ci-test", "scalafmtCheckAll; scalafmtSbtCheck; test")
