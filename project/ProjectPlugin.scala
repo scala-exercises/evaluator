@@ -16,13 +16,13 @@ object ProjectPlugin extends AutoPlugin {
 
     object V {
       lazy val cats                = "2.7.0"
-      lazy val catsEffect          = "3.3.8"
-      lazy val http4s              = "0.21.32"
+      lazy val catsEffect          = "2.5.4"
+      lazy val http4s              = "0.21.33"
       lazy val circe               = "0.14.1"
       lazy val log4s               = "1.7.0"
       lazy val scalatest           = "3.2.11"
       lazy val scalatestplusScheck = "3.2.2.0"
-      lazy val jodaTime            = "2.10.13"
+      lazy val jodaTime            = "2.10.14"
       lazy val slf4j               = "1.7.36"
       lazy val jwtCore             = "9.0.4"
       lazy val coursier            = "2.0.16"
