@@ -18,7 +18,7 @@ object ProjectPlugin extends AutoPlugin {
       lazy val cats                = "2.7.0"
       lazy val catsEffect          = "2.5.4"
       lazy val http4s              = "0.21.33"
-      lazy val circe               = "0.14.1"
+      lazy val circe               = "0.14.2"
       lazy val log4s               = "1.7.0"
       lazy val scalatest           = "3.2.12"
       lazy val scalatestplusScheck = "3.2.2.0"
