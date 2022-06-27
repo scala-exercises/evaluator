@@ -25,23 +25,24 @@ import io.circe.syntax._
 import org.http4s._
 import org.http4s.dsl._
 import org.http4s.headers.Allow
-import org.http4s.server.blaze._
+import org.http4s.blaze.server._
 import org.http4s.syntax.kleisli.http4sKleisliResponseSyntaxOptionT
 import org.log4s.getLogger
 import org.scalaexercises.evaluator.codecs._
 
 import scala.concurrent.duration._
+import org.typelevel.ci._
 
 object services {
 
   import EvalResponse.messages._
 
   val corsHeaders = Seq(
-    Header("Vary", "Origin,Access-Control-Request-Methods"),
-    Header("Access-Control-Allow-Methods", "POST"),
-    Header("Access-Control-Allow-Origin", "*"),
-    Header("Access-Control-Allow-Headers", "x-scala-eval-api-token, Content-Type"),
-    Header("Access-Control-Max-Age", 1.day.toSeconds.toString())
+    Header.Raw(ci"Vary", "Origin,Access-Control-Request-Methods"),
+    Header.Raw(ci"Access-Control-Allow-Methods", "POST"),
+    Header.Raw(ci"Access-Control-Allow-Origin", "*"),
+    Header.Raw(ci"Access-Control-Allow-Headers", "x-scala-eval-api-token, Content-Type"),
+    Header.Raw(ci"Access-Control-Max-Age", 1.day.toSeconds.toString())
   )
 
   def service[F[_]: ConcurrentEffect: ContextShift: Timer: Sync](evaluator: Evaluator[F]) = {

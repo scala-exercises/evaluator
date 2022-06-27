@@ -25,6 +25,7 @@ import org.log4s.getLogger
 import pdi.jwt.{Jwt, JwtAlgorithm}
 
 import scala.util.{Failure, Success}
+import org.typelevel.ci.CIString
 
 object auth {
 
@@ -50,18 +51,18 @@ object auth {
 
     type HeaderT = `X-Scala-Eval-Api-Token`
 
-    def name: CaseInsensitiveString = CaseInsensitiveString("x-scala-eval-api-token")
+    def name: CIString = CIString("x-scala-eval-api-token")
 
     override def parse(s: String): ParseResult[`X-Scala-Eval-Api-Token`] =
       ParseResult.success(`X-Scala-Eval-Api-Token`(s))
 
-    def matchHeader(header: Header): Option[HeaderT] =
+    def matchHeader(header: Header.Raw): Option[HeaderT] =
       if (header.name == name) Some(`X-Scala-Eval-Api-Token`(header.value))
       else None
 
   }
 
-  final case class `X-Scala-Eval-Api-Token`(token: String) extends Header.Parsed {
+  final case class `X-Scala-Eval-Api-Token`(token: String) extends Header.Raw.Parsed {
     override def key = `X-Scala-Eval-Api-Token`
     override def renderValue(writer: Writer): writer.type =
       writer.append(token)
