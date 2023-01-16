@@ -39,11 +39,10 @@ import scala.tools.nsc.reporters._
 import scala.tools.nsc.{Global, Settings}
 import scala.util.{Failure, Success, Try}
 import scala.util.control.NonFatal
-import cats.effect.Temporal
 
 class Evaluator[F[_]: Sync](timeout: FiniteDuration = 20.seconds)(implicit
     F: ConcurrentEffect[F],
-    T: Temporal[F]
+    T: Timer[F]
 ) {
   type Remote = String
 
