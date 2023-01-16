@@ -15,19 +15,19 @@ object ProjectPlugin extends AutoPlugin {
   object autoImport {
 
     object V {
-      lazy val cats                = "2.8.0"
+      lazy val cats                = "2.9.0"
       lazy val catsEffect          = "2.5.5"
-      lazy val http4s              = "0.21.33"
+      lazy val http4s              = "0.21.34"
       lazy val circe               = "0.14.2"
       lazy val log4s               = "1.7.0"
-      lazy val scalatest           = "3.2.13"
+      lazy val scalatest           = "3.2.15"
       lazy val scalatestplusScheck = "3.2.2.0"
-      lazy val jodaTime            = "2.11.1"
-      lazy val slf4j               = "2.0.0"
-      lazy val jwtCore             = "9.1.1"
+      lazy val jodaTime            = "2.12.2"
+      lazy val slf4j               = "2.0.6"
+      lazy val jwtCore             = "9.1.2"
       lazy val coursier            = "2.0.16"
       lazy val config              = "1.4.2"
-      lazy val scala               = "2.13.8"
+      lazy val scala               = "2.13.10"
     }
 
     lazy val dockerSettings = Seq(
