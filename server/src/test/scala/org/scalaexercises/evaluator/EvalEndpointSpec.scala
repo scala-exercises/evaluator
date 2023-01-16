@@ -26,7 +26,6 @@ import org.scalatest.Assertion
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 import pdi.jwt.{Jwt, JwtAlgorithm}
-import org.http4s.syntax.literals._
 
 class EvalEndpointSpec extends AnyFunSpec with Matchers with Implicits {
 
@@ -44,10 +43,10 @@ class EvalEndpointSpec extends AnyFunSpec with Matchers with Implicits {
 
   val server = auth[IO](service[IO](evaluator))
 
-  def serve(evalRequest: EvalRequest, authHeader: Header.Raw): Response[IO] =
+  def serve(evalRequest: EvalRequest, authHeader: Header): Response[IO] =
     server
       .run(
-        Request[IO](POST, Uri(path = path"/eval"))
+        Request[IO](POST, Uri(path = "/eval"))
           .withEntity(evalRequest)
           .putHeaders(authHeader)
       )
