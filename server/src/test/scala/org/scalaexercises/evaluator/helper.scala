@@ -48,7 +48,7 @@ object helper {
   def circeLibraryDependencies(scala: ScalaVersion): List[Dependency] = {
     val sv = scala.version
 
-    val circeVersion = "0.14.3"
+    val circeVersion = "0.14.2"
     List(
       Dependency("io.circe", s"circe-core_${sv.substring(0, 4)}", circeVersion),
       Dependency("io.circe", s"circe-generic_${sv.substring(0, 4)}", circeVersion),
