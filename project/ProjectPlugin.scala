@@ -23,7 +23,7 @@ object ProjectPlugin extends AutoPlugin {
       lazy val scalatest           = "3.2.15"
       lazy val scalatestplusScheck = "3.2.2.0"
       lazy val jodaTime            = "2.12.2"
-      lazy val slf4j               = "2.0.6"
+      lazy val slf4j               = "2.0.7"
       lazy val jwtCore             = "9.2.0"
       lazy val coursier            = "2.0.16"
       lazy val config              = "1.4.2"
